@@ -687,7 +687,10 @@ describe('useMobileNativeChatSession transcriptLoading', () => {
       onData({ type: 'snapshot', messages: [], hasMore: false, pending: true })
       return () => {}
     })
-    await mountAt({ subscribe } as unknown as RpcClient, 'session-a')
+    await mountAt(
+      { subscribe, sendRequest: () => new Promise<never>(() => {}) } as unknown as RpcClient,
+      'session-a'
+    )
 
     expect(subscribe).toHaveBeenCalledWith(
       'nativeChat.subscribe',

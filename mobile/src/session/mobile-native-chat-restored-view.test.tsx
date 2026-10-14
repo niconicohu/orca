@@ -19,6 +19,8 @@ afterEach(() => {
   renderer = null
   scrollToEnd.mockClear()
   scrollToOffset.mockClear()
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
 })
 describe('restored native chat surface', () => {
   it('does not page older history during the initial programmatic layout scroll', async () => {
@@ -107,6 +109,10 @@ describe('restored native chat surface', () => {
     expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 350 })
   })
   it('keeps following A after a tail drag, a tab switch, a late old callback and newer history', async () => {
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(Date.now()), 16)
+    )
+    vi.stubGlobal('cancelAnimationFrame', clearTimeout)
     await render({ folded: [assistantTurn('a', 'A')], sendSurfaceId: 'a' })
     const oldAContent = list().props.onContentSizeChange
     act(() => {
@@ -133,5 +139,43 @@ describe('restored native chat surface', () => {
     })
     expect(scrollToEnd).not.toHaveBeenCalled()
     expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 1500 })
+  })
+  it('keeps cached rows hidden until the initial tail is acknowledged and layout settles', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(Date.now()), 16)
+    )
+    vi.stubGlobal('cancelAnimationFrame', clearTimeout)
+    await render({ folded: [assistantTurn('a', 'A')], sendSurfaceId: 'a' })
+    expect(list().props.style).toContainEqual({ opacity: 0 })
+    act(() => {
+      list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
+      list().props.onContentSizeChange(320, 1200)
+      list().props.onScroll({
+        nativeEvent: {
+          contentOffset: { y: 700 },
+          contentSize: { height: 1200 },
+          layoutMeasurement: { height: 500 }
+        }
+      })
+    })
+    expect(list().props.style).toContainEqual({ opacity: 0 })
+    await act(async () => vi.advanceTimersByTime(32))
+    expect(list().props.style).not.toContainEqual({ opacity: 0 })
+    vi.useRealTimers()
+  })
+  it('reveals short histories after measurement without requiring a scroll event', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(Date.now()), 16)
+    )
+    vi.stubGlobal('cancelAnimationFrame', clearTimeout)
+    await render({ folded: [assistantTurn('short', 'Short')], sendSurfaceId: 'short' })
+    act(() => {
+      list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
+      list().props.onContentSizeChange(320, 400)
+    })
+    await act(async () => vi.advanceTimersByTime(32))
+    expect(list().props.style).not.toContainEqual({ opacity: 0 })
   })
 })

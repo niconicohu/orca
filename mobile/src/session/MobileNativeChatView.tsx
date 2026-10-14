@@ -1,3 +1,4 @@
+import { MobileChatPositioningCover } from './MobileChatPositioningCover'
 import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -217,8 +218,7 @@ export function MobileNativeChatView({
     listRef,
     showJumpToTail,
     followingTail,
-    pinToTail,
-    pinToTailAfterContentResize,
+    initialPosition,
     jumpToTail,
     beginUserScroll,
     endUserDrag,
@@ -257,12 +257,13 @@ export function MobileNativeChatView({
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset } = e.nativeEvent
       recordScrollMetrics(e.nativeEvent)
+      initialPosition.scrolled(e.nativeEvent)
       // Near the top — page in older history.
       if (canPageFromScroll() && contentOffset.y < 60 && hasMore && !loadingEarlier) {
         loadEarlier()
       }
     },
-    [hasMore, loadingEarlier, loadEarlier, recordScrollMetrics, canPageFromScroll]
+    [hasMore, loadingEarlier, loadEarlier, recordScrollMetrics, canPageFromScroll, initialPosition]
   )
 
   // Per-turn status rows: one live indicator while the turn runs, then a settled
@@ -313,6 +314,7 @@ export function MobileNativeChatView({
           <GestureDetector gesture={pinchGesture}>
             <FlatList
               key={sendSurfaceId}
+              {...initialPosition.listProps}
               maintainVisibleContentPosition={followingTail ? undefined : { minIndexForVisible: 0 }}
               ref={listRef}
               data={data}
@@ -328,8 +330,6 @@ export function MobileNativeChatView({
               onMomentumScrollBegin={beginMomentum}
               onMomentumScrollEnd={endMomentum}
               scrollEventThrottle={32}
-              onContentSizeChange={pinToTailAfterContentResize}
-              onLayout={pinToTail}
               ListHeaderComponent={
                 hasMore ? (
                   <Pressable
@@ -365,6 +365,7 @@ export function MobileNativeChatView({
               }
             />
           </GestureDetector>
+          <MobileChatPositioningCover ready={initialPosition.ready} />
           {/* Jump-to-latest control. */}
           {showJumpToTail ? (
             <Pressable

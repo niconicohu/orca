@@ -1,3 +1,4 @@
+import { useMobileChatInitialPosition } from './use-mobile-chat-initial-position'
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import type { FlatList, NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 
@@ -15,6 +16,7 @@ export type MobileNativeChatTailFollow<TItem> = {
   /** Render flag for the jump-to-latest control. */
   showJumpToTail: boolean
   followingTail: boolean
+  initialPosition: ReturnType<typeof useMobileChatInitialPosition>
   /** Passive maintenance: re-pin after the viewport resizes. */
   pinToTail: () => void
   /** Content-size maintenance using the list's authoritative measured height. */
@@ -243,12 +245,20 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     setFollowing(false)
   }, [clearUserScrollSettle, setAtTail, setFollowing, scopeGeneration])
 
+  const initialPosition = useMobileChatInitialPosition(
+    args.scopeKey ?? '',
+    hasItems,
+    restoringOffsetRef.current,
+    { pinToTail, pinToTailAfterContentResize }
+  )
+
   useEffect(() => clearUserScrollSettle, [clearUserScrollSettle, scopeGeneration])
 
   return {
     listRef,
     showJumpToTail: !following && !atTail,
     followingTail: following,
+    initialPosition,
     pinToTail,
     pinToTailAfterContentResize,
     jumpToTail,

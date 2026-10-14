@@ -58,6 +58,13 @@ export const styles = StyleSheet.create({
     flex: 1,
     position: 'relative'
   },
+  positioningList: { opacity: 0 },
+  positioningCover: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bgBase
+  },
   listContent: {
     paddingVertical: spacing.sm,
     flexGrow: 1
