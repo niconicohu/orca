@@ -178,7 +178,8 @@ export function HostScreenOverlays({ controller }: { controller: HostScreenContr
                           )
                           void client
                             .sendRequest('worktree.sleep', {
-                              worktree: `id:${actionTarget.worktreeId}`
+                              worktree: `id:${actionTarget.worktreeId}`,
+                              hostId: actionTarget.hostId
                             })
                             .catch(() => null)
                         }

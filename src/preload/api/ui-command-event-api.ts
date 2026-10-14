@@ -1,6 +1,7 @@
 import type { MarkdownDocument } from '../../shared/filesystem-entry-types'
 import type { PersistedUIState } from '../../shared/persisted-ui-state-types'
 import type { TuiAgent } from '../../shared/tui-agent'
+import type { ExecutionHostId } from '../../shared/execution-host'
 import type {
   AgentLaunchTabPublishReply,
   AgentLaunchTabViewerRule,
@@ -253,7 +254,9 @@ export type UiCommandEventApi = {
   onCloseTerminal: (callback: (target: TerminalSurfaceCloseTarget) => void) => () => void
   onTerminalTabCloseRequest: (callback: (request: TerminalTabCloseRequest) => void) => () => void
   respondTerminalTabClose: (response: TerminalTabCloseResponse) => void
-  onSleepWorktree: (callback: (data: { worktreeId: string }) => void) => () => void
+  onSleepWorktree: (
+    callback: (data: { worktreeId: string; executionHostId?: ExecutionHostId }) => void
+  ) => () => void
   onResumeSleepingAgents: (callback: (data: { worktreeId: string }) => void) => () => void
   onTerminalZoom: (callback: (direction: 'in' | 'out' | 'reset') => void) => () => void
   onSystemResumed: (callback: () => void) => () => void

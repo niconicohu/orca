@@ -25,6 +25,7 @@ import {
   WorktreeResolveMrBase,
   WorktreeResolvePrBase,
   WorktreeSelector,
+  WorktreeSleep,
   WorktreeSet,
   WorktreeSortOrder,
   WorktreeTeardownMissingTerminalsParams
@@ -66,8 +67,12 @@ export const WORKTREE_METHODS = [
   defineMethod({
     name: 'worktree.sleep',
     permission: 'workspace',
-    params: WorktreeSelector,
-    handler: async (params, { runtime }) => runtime.sleepManagedWorktree(params.worktree)
+    params: WorktreeSleep,
+    handler: async (params, { runtime }) =>
+      runtime.sleepManagedWorktree(
+        params.worktree,
+        resolvePairedCallerHostId(() => runtime.listRepos(), params.worktree, params.hostId)
+      )
   }),
   defineMethod({
     name: 'worktree.activate',
