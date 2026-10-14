@@ -76,19 +76,19 @@ async function pass(label: string): Promise<void> {
 
 async function barrier(label: string): Promise<void> {
   const rows: string[] = []
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 8; i++) {
     const { dir, cmd } = await fixture()
     const started = Date.now()
     const result = await runProcess({
       program: cmd,
       args: ['--version'],
-      timeoutMs: [300, 1000, 3000][i % 3],
+      timeoutMs: 8000,
       terminationBarrier: true
     })
     const ms = Date.now() - started
     const pid = await childPid(dir)
     rows.push(
-      `${label} barrier i=${i} timeout=${[300, 1000, 3000][i % 3]} elapsedMs=${ms} timedOut=${result.timedOut} code=${result.code} nodePid=${pid} nodeAlive=${pid ? alive(pid) : null}`
+      `${label} barrier i=${i} taskkillCap=${process.env.ORCA_DIAG_TASKKILL_MS ?? 2000} elapsedMs=${ms} timedOut=${result.timedOut} code=${result.code} nodePid=${pid} nodeAlive=${pid ? alive(pid) : null}`
     )
     if (pid && alive(pid)) {
       process.kill(pid)
@@ -98,14 +98,10 @@ async function barrier(label: string): Promise<void> {
 }
 
 describe.runIf(process.platform === 'win32')('diag taskkill', () => {
-  it('idle', async () => {
-    await pass('idle')
-    await barrier('idle')
-  }, 600_000)
+
   it('loaded', async () => {
     const load = burners(cpus().length * 2)
     try {
-      await pass('loaded')
       await barrier('loaded')
     } finally {
       for (const b of load) b.kill()

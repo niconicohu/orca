@@ -4,6 +4,7 @@ import { windowsSystem32Binary } from './windows-system-binary'
 
 const PROBE_INTERVAL_MS = 25
 const SUBPROCESS_TIMEOUT_MS = 2_000
+const TASKKILL_TIMEOUT_MS = Number(process.env.ORCA_DIAG_TASKKILL_MS || SUBPROCESS_TIMEOUT_MS)
 const MAX_PS_OUTPUT_BYTES = 8 * 1024 * 1024
 
 /**
@@ -131,7 +132,7 @@ function taskkillTree(
     const timer = setTimeout(() => {
       killer.kill()
       finish(true)
-    }, SUBPROCESS_TIMEOUT_MS)
+    }, TASKKILL_TIMEOUT_MS)
     timer.unref?.()
   })
 }
