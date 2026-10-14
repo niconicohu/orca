@@ -19943,6 +19943,13 @@
       "back": "Back",
       "apply": "Change status",
       "empty": "No status changes available."
+    },
+    "savedFilters": {
+      "retry": "Retry",
+      "find": "Find a saved filter",
+      "noMatch": "No matching filters.",
+      "loadFailed": "Could not load saved Jira filters.",
+      "saveFailed": "Could not save Jira filters."
     }
   }
 }
