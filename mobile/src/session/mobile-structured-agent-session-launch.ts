@@ -1,3 +1,4 @@
+import { recordChatClientDiagnostic } from '../diagnostics/chat-runtime-diagnostics'
 import {
   launchAgentInExistingWorkspace,
   supportsMobileExistingAgentLaunch
@@ -98,6 +99,11 @@ export async function createMobileStructuredAgentSession(
     })
     if (launched.kind === 'launched') {
       const outcome = launched.result.outcome
+      recordChatClientDiagnostic(client, worktreeId, 'agent-launch-result', {
+        mode: launched.result.receipt.mode,
+        kind: outcome.kind,
+        sessionResolved: outcome.kind === 'structured'
+      })
       return outcome.kind === 'structured'
         ? {
             kind: 'created',

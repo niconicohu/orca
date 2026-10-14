@@ -1,5 +1,5 @@
+import { RetainedMobileChatViews } from './RetainedMobileChatViews'
 import { useMemo } from 'react'
-import { StyleSheet, View } from 'react-native'
 import { MobileNativeChatView, type MobileNativeChatInputLockReason } from './MobileNativeChatView'
 import { foldMobileNativeChatMessages } from './mobile-native-chat-render-data'
 import type { MobileNativeChatImageAttachments } from './use-mobile-native-chat-image-attachments'
@@ -25,6 +25,7 @@ type Props = {
   /** Drops that failure once a later send succeeds. */
   onClearSendError: () => void
   /** Stable host/worktree/tab identity for accepted-send completion fencing. */
+  liveChatSurfaceIds?: readonly string[]
   sendSurfaceId: string
   /** Reads the retained route's focus generation for accepted-send fencing. */
   getSendCompletionGeneration: () => number
@@ -48,6 +49,7 @@ export function MobileNativeChatOverlay({
   sendErrorMessage,
   onClearSendError,
   sendSurfaceId,
+  liveChatSurfaceIds,
   getSendCompletionGeneration,
   keyboardInset
 }: Props): React.JSX.Element | null {
@@ -59,68 +61,65 @@ export function MobileNativeChatOverlay({
     controller.nativeChatStreamScopeKey,
     controller.nativeChatStreamLive
   )
-  if (!controller.showNativeChat) {
-    return null
-  }
   return (
-    <View style={styles.overlay}>
-      <MobileNativeChatView
-        messages={session.messages}
-        folded={folded}
-        status={session.status}
-        error={session.error}
-        agent={controller.nativeChatAgent}
-        agentWorking={controller.nativeChatAgentWorking}
-        canStop={controller.nativeChatCanStop}
-        structuredActivityUi={controller.nativeChatStructured}
-        turnIndicator={controller.nativeChatTurnIndicator}
-        workingStartedAt={controller.nativeChatWorkingStartedAt}
-        settledTurns={controller.nativeChatSettledTurns}
-        streaming={streaming}
-        onStop={controller.handleNativeChatStop}
-        ask={controller.nativeChatAsk}
-        askKey={controller.nativeChatAskKey}
-        onDismissAsk={controller.dismissNativeChatAsk}
-        onAnswerAsk={controller.handleNativeChatAnswerAsk}
-        onCancelAsk={controller.handleNativeChatCancelAsk}
-        onCancelPrompt={controller.handleNativeChatCancelPrompt}
-        question={controller.nativeChatQuestion}
-        onAnswerQuestion={controller.handleNativeChatQuestionAnswer}
-        permission={controller.nativeChatPermission}
-        onRespondPermission={controller.handleNativeChatRespondPermission}
-        onOpenFile={onOpenFile}
-        hasMore={session.hasMore}
-        loadingEarlier={session.loadingEarlier}
-        onLoadEarlier={session.loadEarlier}
-        onSend={images.sendNativeChat}
-        sendSurfaceId={sendSurfaceId}
-        getSendCompletionGeneration={getSendCompletionGeneration}
-        getComposerEditGeneration={controller.getChatComposerEditGeneration}
-        pending={controller.chatPending}
-        imagePreviewsByMessageId={controller.chatImagePreviewsByMessageId}
-        composerText={controller.chatComposerText}
-        onComposerTextChange={controller.setChatComposerText}
-        onAttachImage={() => void images.attachImage('library')}
-        attachments={images.attachments}
-        onRemoveAttachment={images.removeAttachment}
-        isAttaching={images.isAttaching}
-        onMicPress={onMicPress}
-        micActive={micActive}
-        dictationMode={dictationMode}
-        onMicPressIn={onMicPressIn}
-        onMicPressOut={onMicPressOut}
-        inputLockReason={inputLockReason}
-        sendErrorMessage={sendErrorMessage}
-        onClearSendError={onClearSendError}
-        filePaths={controller.nativeChatFilePaths}
-        onNeedFiles={controller.loadNativeChatFiles}
-        sessionOptions={controller.nativeChatSessionOptions}
-        keyboardInset={keyboardInset}
-      />
-    </View>
+    <RetainedMobileChatViews
+      activeKey={controller.showNativeChat ? sendSurfaceId : null}
+      liveKeys={liveChatSurfaceIds}
+      view={
+        <MobileNativeChatView
+          messages={session.messages}
+          folded={folded}
+          status={session.status}
+          error={session.error}
+          agent={controller.nativeChatAgent}
+          agentWorking={controller.nativeChatAgentWorking}
+          canStop={controller.nativeChatCanStop}
+          structuredActivityUi={controller.nativeChatStructured}
+          turnIndicator={controller.nativeChatTurnIndicator}
+          workingStartedAt={controller.nativeChatWorkingStartedAt}
+          settledTurns={controller.nativeChatSettledTurns}
+          streaming={streaming}
+          onStop={controller.handleNativeChatStop}
+          ask={controller.nativeChatAsk}
+          askKey={controller.nativeChatAskKey}
+          onDismissAsk={controller.dismissNativeChatAsk}
+          onAnswerAsk={controller.handleNativeChatAnswerAsk}
+          onCancelAsk={controller.handleNativeChatCancelAsk}
+          onCancelPrompt={controller.handleNativeChatCancelPrompt}
+          question={controller.nativeChatQuestion}
+          onAnswerQuestion={controller.handleNativeChatQuestionAnswer}
+          permission={controller.nativeChatPermission}
+          onRespondPermission={controller.handleNativeChatRespondPermission}
+          onOpenFile={onOpenFile}
+          hasMore={session.hasMore}
+          loadingEarlier={session.loadingEarlier}
+          onLoadEarlier={session.loadEarlier}
+          onSend={images.sendNativeChat}
+          sendSurfaceId={sendSurfaceId}
+          getSendCompletionGeneration={getSendCompletionGeneration}
+          getComposerEditGeneration={controller.getChatComposerEditGeneration}
+          pending={controller.chatPending}
+          imagePreviewsByMessageId={controller.chatImagePreviewsByMessageId}
+          composerText={controller.chatComposerText}
+          onComposerTextChange={controller.setChatComposerText}
+          onAttachImage={() => void images.attachImage('library')}
+          attachments={images.attachments}
+          onRemoveAttachment={images.removeAttachment}
+          isAttaching={images.isAttaching}
+          onMicPress={onMicPress}
+          micActive={micActive}
+          dictationMode={dictationMode}
+          onMicPressIn={onMicPressIn}
+          onMicPressOut={onMicPressOut}
+          inputLockReason={inputLockReason}
+          sendErrorMessage={sendErrorMessage}
+          onClearSendError={onClearSendError}
+          filePaths={controller.nativeChatFilePaths}
+          onNeedFiles={controller.loadNativeChatFiles}
+          sessionOptions={controller.nativeChatSessionOptions}
+          keyboardInset={keyboardInset}
+        />
+      }
+    />
   )
 }
-
-const styles = StyleSheet.create({
-  overlay: StyleSheet.absoluteFillObject
-})

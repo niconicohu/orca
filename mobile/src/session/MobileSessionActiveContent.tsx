@@ -1,3 +1,4 @@
+import { mobileNativeChatScopeKey } from './mobile-native-chat-scope-key'
 import { Animated, View, Text, Pressable, ActivityIndicator } from 'react-native'
 import { saveTerminalTextScale } from '../storage/preferences'
 import { MobileBrowserPane } from '../browser/MobileBrowserPane'
@@ -236,22 +237,6 @@ export function MobileSessionActiveContent({
           onOpenUrl={handleTerminalOpenUrl}
         />
       ))}
-      <MobileNativeChatOverlay
-        controller={nativeChatController}
-        onOpenFile={handleNativeChatFileTap}
-        images={nativeChatImages}
-        onMicPress={handleDictationToggle}
-        micActive={dictation.isRecording}
-        dictationMode={dictationMode}
-        onMicPressIn={handleDictationPressIn}
-        onMicPressOut={handleDictationPressOut}
-        inputLockReason={nativeChatOverlayInputLockReason}
-        sendErrorMessage={nativeChatSendError.message}
-        onClearSendError={nativeChatSendError.clear}
-        sendSurfaceId={controller.nativeChatScopeKey ?? ''}
-        getSendCompletionGeneration={controller.getSendCompletionGeneration}
-        keyboardInset={keyboardLift}
-      />
       {toastMessage && (
         <Animated.View pointerEvents="none" style={[styles.toast, toastAnimatedStyle]}>
           <Text style={styles.toastText}>{toastMessage}</Text>
@@ -269,6 +254,25 @@ export function MobileSessionActiveContent({
       }}
     >
       {content}
+      <MobileNativeChatOverlay
+        controller={nativeChatController}
+        liveChatSurfaceIds={controller.sessionTabs.map(
+          (tab) => mobileNativeChatScopeKey(controller.hostId, worktreeId, tab.id) ?? ''
+        )}
+        onOpenFile={handleNativeChatFileTap}
+        images={nativeChatImages}
+        onMicPress={handleDictationToggle}
+        micActive={dictation.isRecording}
+        dictationMode={dictationMode}
+        onMicPressIn={handleDictationPressIn}
+        onMicPressOut={handleDictationPressOut}
+        inputLockReason={nativeChatOverlayInputLockReason}
+        sendErrorMessage={nativeChatSendError.message}
+        onClearSendError={nativeChatSendError.clear}
+        sendSurfaceId={controller.nativeChatScopeKey ?? ''}
+        getSendCompletionGeneration={controller.getSendCompletionGeneration}
+        keyboardInset={keyboardLift}
+      />
     </View>
   )
 }

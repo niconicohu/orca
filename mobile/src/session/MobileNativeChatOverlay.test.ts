@@ -18,15 +18,19 @@ function assistantTurn(id: string, text: string): NativeChatMessage {
 
 /** One render of the route: chat visible or not, the transcript it currently
  *  holds, and the agent-status stream behind it. */
+let activeSurface: string | null = null
+
 type Tick = {
   show?: boolean
   messages?: NativeChatMessage[]
   streamingText?: string
   streamLive?: boolean
   identity?: string
+  liveKeys?: string[]
 }
 
 function overlayElement(tick: Tick): ReturnType<typeof createElement> {
+  activeSurface = tick.show === false ? null : (tick.identity ?? 'tab-a')
   const controller = {
     showNativeChat: tick.show ?? true,
     nativeChatSession: { messages: tick.messages ?? [], status: 'ready' },
@@ -51,6 +55,7 @@ function overlayElement(tick: Tick): ReturnType<typeof createElement> {
     inputLockReason: null,
     sendErrorMessage: null,
     onClearSendError: vi.fn(),
+    liveChatSurfaceIds: tick.liveKeys,
     sendSurfaceId: tick.identity ?? 'tab-a',
     getSendCompletionGeneration: () => 0,
     keyboardInset: 0
@@ -80,7 +85,8 @@ describe('MobileNativeChatOverlay streaming gate', () => {
   /** The bubble text handed to the chat list, or `'hidden'` when chat is off. */
   function streaming(): string | null | 'hidden' {
     const views = renderer!.root.findAll((node) => node.type === 'ChatView')
-    return views.length === 0 ? 'hidden' : (views[0].props.streaming as string | null)
+    const visible = views.find((view) => view.props.sendSurfaceId === activeSurface)
+    return visible ? (visible.props.streaming as string | null) : 'hidden'
   }
 
   it('keeps streaming a reply that repeats the previous turn as a prefix', async () => {
@@ -172,5 +178,34 @@ describe('MobileNativeChatOverlay streaming gate', () => {
     })
 
     expect(streaming()).toBeNull()
+  })
+  it('retains the actual cached chat view across A to B and back, including a non-chat tab', async () => {
+    await render({ identity: 'a', messages: [assistantTurn('a1', 'cached A')] })
+    const originalA = renderer!.root.find(
+      (node) => node.type === 'ChatView' && node.props.sendSurfaceId === 'a'
+    )
+    await update({ identity: 'b', messages: [assistantTurn('b1', 'cached B')] })
+    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(2)
+    expect(
+      renderer!.root.find((node) => node.type === 'ChatView' && node.props.sendSurfaceId === 'a')
+    ).toBe(originalA)
+    await update({ identity: 'terminal', show: false })
+    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(2)
+    await update({ identity: 'a', messages: [assistantTurn('a1', 'cached A')] })
+    expect(
+      renderer!.root.find((node) => node.type === 'ChatView' && node.props.sendSurfaceId === 'a')
+    ).toBe(originalA)
+  })
+  it('releases closed tabs and bounds retained native lists', async () => {
+    await render({ identity: 'a' })
+    for (const id of ['b', 'c', 'd', 'e']) await update({ identity: id })
+    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(4)
+    expect(
+      renderer!.root.findAll((node) => node.type === 'ChatView' && node.props.sendSurfaceId === 'a')
+    ).toHaveLength(0)
+    await update({ identity: 'e', liveKeys: ['e'] })
+    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(1)
+    await update({ show: false, liveKeys: [] })
+    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(0)
   })
 })

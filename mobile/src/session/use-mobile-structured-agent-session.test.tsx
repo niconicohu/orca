@@ -853,4 +853,41 @@ describe('useMobileStructuredAgentSession', () => {
     })
     expect(hook?.session.messages).toEqual([])
   })
+  it('keeps a cached tab ready when a valid resumed batch precedes a slow history timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      sendRequest.mockImplementation((method, params) =>
+        method === 'agentSession.history'
+          ? new Promise<never>(() => {})
+          : defaultSendRequest(method, params)
+      )
+      await act(async () => {
+        renderer = create(createElement(Harness, { sessionId: 'session-1' }))
+      })
+      act(() => listener?.(snapshotWithMessage()))
+      await act(async () => renderer?.update(createElement(Harness, { sessionId: 'session-2' })))
+      await act(async () => renderer?.update(createElement(Harness, { sessionId: 'session-1' })))
+      await act(async () => vi.advanceTimersByTimeAsync(0))
+      act(() =>
+        listener?.({
+          type: 'batch',
+          sessionId: 'session-1',
+          fence: 3,
+          batch: {
+            epoch: 'epoch-1',
+            cursor: { epoch: 'epoch-1', sequence: 2 },
+            items: [],
+            removedItemIds: [],
+            submissions: []
+          }
+        })
+      )
+      expect(hook?.session.status).toBe('ready')
+      await act(async () => vi.advanceTimersByTimeAsync(8001))
+      expect(hook?.session.status).toBe('ready')
+      expect(hook?.session.messages).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

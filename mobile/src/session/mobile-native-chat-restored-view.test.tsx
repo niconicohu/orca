@@ -180,4 +180,19 @@ describe('restored native chat surface', () => {
     await act(async () => vi.advanceTimersByTime(32))
     expect(list().props.style).not.toContainEqual({ opacity: 0 })
   })
+  it('does not keep cached messages hidden indefinitely when native visibility acknowledgement is late', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(Date.now()), 16)
+    )
+    vi.stubGlobal('cancelAnimationFrame', clearTimeout)
+    await render({ folded: [assistantTurn('cached', 'Cached')], sendSurfaceId: 'cached' })
+    act(() => {
+      list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
+      list().props.onContentSizeChange(320, 1200)
+    })
+    await act(async () => vi.advanceTimersByTime(300))
+    expect(list().props.style).not.toContainEqual({ opacity: 0 })
+    expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 1200 })
+  })
 })

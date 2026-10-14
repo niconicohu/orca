@@ -8,7 +8,10 @@ import {
   validStructuredChatRead
 } from './mobile-chat-persisted-transcript'
 import { useMobileChatCheckpoint } from './use-mobile-chat-checkpoint'
-import { reduceMobileStructuredChatCheckpoint } from './mobile-structured-chat-checkpoint'
+import {
+  reduceMobileStructuredChatCheckpoint,
+  isResumedBatchForCheckpoint
+} from './mobile-structured-chat-checkpoint'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type {
   AgentSessionHistoryResult,
@@ -214,7 +217,11 @@ export function useMobileStructuredAgentState(
               return
             }
           }
-          if (raw.type === 'snapshot' || raw.type === 'reset') {
+          if (
+            raw.type === 'snapshot' ||
+            raw.type === 'reset' ||
+            isResumedBatchForCheckpoint(stateRef.current, raw)
+          ) {
             hasBase = true
             pendingBatches.length = 0
             liveCheckpoint = true

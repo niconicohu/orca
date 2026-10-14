@@ -1,4 +1,7 @@
-import type { AgentSessionHistoryPage } from '../../../src/shared/agent-session-wire'
+import type {
+  AgentSessionSubscribeEvent,
+  AgentSessionHistoryPage
+} from '../../../src/shared/agent-session-wire'
 import {
   reduceStructuredAgentSession,
   type StructuredAgentSessionAction,
@@ -66,4 +69,16 @@ export function reduceMobileStructuredChatCheckpoint(
   }
 
   return reduceStructuredAgentSession(state, action, now)
+}
+
+export function isResumedBatchForCheckpoint(
+  state: StructuredAgentSessionState,
+  event: AgentSessionSubscribeEvent
+): boolean {
+  return (
+    event.type === 'batch' &&
+    state.items.length > 0 &&
+    event.batch.cursor.epoch === state.epoch &&
+    event.batch.cursor.sequence >= (state.cursor?.sequence ?? 0)
+  )
 }

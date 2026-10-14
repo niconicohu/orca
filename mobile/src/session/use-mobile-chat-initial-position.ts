@@ -19,6 +19,7 @@ export function useMobileChatInitialPosition(
   const scope = useRef(scopeKey)
   const generation = useRef(0)
   const frame = useRef<number | null>(null)
+  const layoutDeadline = useRef<ReturnType<typeof setTimeout> | null>(null)
   const measurements = useRef({
     height: 0,
     viewport: 0,
@@ -29,6 +30,10 @@ export function useMobileChatInitialPosition(
   const shown = useRef(-1)
   const [shownGeneration, setShownGeneration] = useState(-1)
   const cancel = () => {
+    if (layoutDeadline.current !== null) {
+      clearTimeout(layoutDeadline.current)
+      layoutDeadline.current = null
+    }
     if (frame.current !== null) {
       cancelAnimationFrame(frame.current)
       frame.current = null
@@ -72,6 +77,10 @@ export function useMobileChatInitialPosition(
         latest.visible &&
         (stableFrames >= 2 || Date.now() - startedAt >= 400)
       ) {
+        if (layoutDeadline.current !== null) {
+          clearTimeout(layoutDeadline.current)
+          layoutDeadline.current = null
+        }
         shown.current = current
         setShownGeneration(current)
       } else if (Date.now() - startedAt < 400) {
@@ -89,6 +98,24 @@ export function useMobileChatInitialPosition(
       latest[key] = value
       latest.version += 1
       latest.aligned = latest.height > 0 && latest.viewport > 0 && latest.height <= latest.viewport
+    }
+    if (latest.height > 0 && latest.viewport > 0 && layoutDeadline.current === null) {
+      layoutDeadline.current = setTimeout(() => {
+        if (generation.current !== current || shown.current === current) {
+          return
+        }
+        cancel()
+        scroll.pinToTailAfterContentResize(0, measurements.current.height)
+        frame.current = requestAnimationFrame(() => {
+          frame.current = requestAnimationFrame(() => {
+            frame.current = null
+            if (generation.current === current) {
+              shown.current = current
+              setShownGeneration(current)
+            }
+          })
+        })
+      }, 250)
     }
     settle()
   }
