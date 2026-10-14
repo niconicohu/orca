@@ -59,6 +59,7 @@ import {
   projectStructuredAiVaultSessions
 } from '../ai-vault/structured-session-ownership'
 import { AI_VAULT_ALL_HOST_TIMEOUT_MS } from './ai-vault-all-host-timeouts'
+import { registerAiVaultScanProgressBroadcast } from './ai-vault-scan-progress-broadcast'
 
 type AiVaultHandlerOptions = AiVaultSessionSources &
   AiVaultResumeHandlerOptions & {
@@ -152,7 +153,10 @@ async function scanAiVaultSessionsByHostScope(
               hostInfo,
               scanner: handlerOptions.scanRuntimeAiVaultSessions,
               listArgs: args ? { ...args, afterFingerprint: undefined } : undefined,
-              options: { signal, timeoutMs: AI_VAULT_ALL_HOST_TIMEOUT_MS.runtimeScan }
+              options: {
+                signal,
+                timeoutMs: AI_VAULT_ALL_HOST_TIMEOUT_MS.runtimeScan
+              }
             })
         })
       )
@@ -243,7 +247,9 @@ export function registerAiVaultHandlers(options: AiVaultHandlerOptions = {}): vo
     const controller = listCancellations.begin(event, requestToken)
     try {
       await handlerOptions.ensureStructuredSessionOwnership?.()
-      const result = await listAiVaultSessions(args, { signal: controller?.signal })
+      const result = await listAiVaultSessions(args, {
+        signal: controller?.signal
+      })
       return projectStructuredAiVaultSessions(result, OPENS_EVERY_STRUCTURED_CHAT)
     } catch (error) {
       // Why: superseding a scan is normal control flow, but Electron logs every
@@ -279,6 +285,7 @@ export function registerAiVaultHandlers(options: AiVaultHandlerOptions = {}): vo
     handleAiVaultGetFirstUserPrompt(args)
   )
   registerAiVaultDeleteHandler(aiVaultDeleteDeps)
+  registerAiVaultScanProgressBroadcast()
   // macOS app activation skips DOM focus events, so emit the refresh signal here.
   app.on('browser-window-focus', (_event, window) => {
     if (!window.isDestroyed()) {

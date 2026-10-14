@@ -24,6 +24,7 @@ import type {
   AiVaultPrepareSessionResumeResult
 } from '../../shared/ai-vault-resume-preparation'
 import type { ExecutionHostId, ExecutionHostScope } from '../../shared/execution-host'
+import type { AiVaultScanProgress } from '../../shared/ai-vault-scan-progress'
 
 export type AiVaultApi = {
   /** Omitted host means this host; `all` is merged by this desktop across every enumerated host. */
@@ -58,4 +59,8 @@ export type AiVaultApi = {
   deleteSession: (args: AiVaultDeleteSessionArgs) => Promise<AiVaultDeleteSessionResult>
   /** Fires when any app window regains OS focus; returns an unsubscribe. */
   onWindowFocused: (callback: () => void) => () => void
+  /** This computer's running scan, else its last one; null on hosts that do not report one. */
+  getScanProgress: () => Promise<AiVaultScanProgress | null>
+  /** Fires on every change to this computer's scan progress; returns an unsubscribe. */
+  onScanProgress: (callback: (progress: AiVaultScanProgress | null) => void) => () => void
 }
