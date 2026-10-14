@@ -1,3 +1,4 @@
+import { readMobileStructuredChatHistory } from './mobile-structured-chat-history-read'
 import type {
   MobileStructuredAgentStateArgs,
   MobileStructuredAgentState
@@ -23,10 +24,7 @@ import {
 } from '../../../src/shared/structured-agent-session-reducer'
 import { callAgentSession } from './mobile-structured-agent-session-rpc'
 import { createMobileChatReadCache } from '../cache/mobile-chat-read-cache'
-import {
-  startMobileChatFirstRead,
-  MOBILE_CHAT_FIRST_READ_TIMEOUT_MS
-} from './mobile-chat-first-read'
+import { startMobileChatFirstRead } from './mobile-chat-first-read'
 
 const MAX_RETAINED_SESSION_STATES = 32
 /** Bounded so a busy stream cannot turn one Load-earlier tap into an endless read chain. */
@@ -151,13 +149,7 @@ export function useMobileStructuredAgentState(
     })
     void held.catch(() => undefined)
     const finishFirstRead = startMobileChatFirstRead({
-      read: () =>
-        callAgentSession<AgentSessionHistoryResult>(
-          client,
-          'agentSession.history',
-          { sessionId, direction: 'tail', limit: 40 },
-          MOBILE_CHAT_FIRST_READ_TIMEOUT_MS
-        ),
+      read: () => readMobileStructuredChatHistory(client, sessionId),
       apply: (result) => {
         if (!result.ok) {
           throw new Error('Chat history could not be read')

@@ -1,1 +1,1 @@
-export { MobileSelectionAwareText as MobileSelectableText } from './MobileSelectionAwareText'
+export { Text as MobileSelectableText } from 'react-native'

@@ -1,3 +1,4 @@
+import { registerChatDiagnosticClient } from '../diagnostics/chat-runtime-diagnostics'
 import { AppState, Platform } from 'react-native'
 import {
   registerChatCheckpointClient,
@@ -16,6 +17,7 @@ export function openHostLogicalClient(host: HostProfile, onLog: ConnectionLogSin
     connect(host.endpoint, host.deviceToken, host.publicKeyB64, { onLog }),
     directPathForEndpoint(host.endpoint)
   )
+  registerChatDiagnosticClient(logical, host.id)
   registerChatCheckpointClient(logical, host)
   if (Platform.OS === 'web') {
     return logical

@@ -1,3 +1,4 @@
+import { recordChatClientDiagnostic } from '../diagnostics/chat-runtime-diagnostics'
 import { useMobileNativeChatHistory } from './use-mobile-native-chat-history'
 import { useMobileChatCheckpoint } from './use-mobile-chat-checkpoint'
 import { createMobileNativeChatReadStream } from './mobile-native-chat-read-stream'
@@ -186,12 +187,22 @@ export function useMobileNativeChatSession(args: {
       return
     }
 
+    let firstDiagnosticFrame = true
     let finishFirstRead = (): void => {}
     const receive = (raw: unknown): void => {
       if (cancelled) {
         return
       }
       const frame = raw as MobileNativeChatStreamFrame
+      if (firstDiagnosticFrame || frame.type === 'error') {
+        firstDiagnosticFrame = false
+        recordChatClientDiagnostic(client, sessionId, 'transcript-frame', {
+          type: frame.type,
+          messages:
+            'messages' in frame && Array.isArray(frame.messages) ? frame.messages.length : 0,
+          pending: 'pending' in frame && !!frame.pending
+        })
+      }
       const applied = applyMobileNativeChatStreamFrame({
         merger: mergerRef.current,
         frame,

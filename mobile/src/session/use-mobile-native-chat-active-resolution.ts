@@ -1,3 +1,4 @@
+import { useChatRuntimeSnapshot } from '../diagnostics/use-chat-runtime-snapshot'
 import { useLayoutEffect, useRef, type MutableRefObject } from 'react'
 import { encodeNativeChatTranscriptIdentity } from '../../../src/shared/native-chat-transcript-retention'
 import { resolveMobileNativeChat, type MobileNativeChatTab } from './mobile-native-chat-eligibility'
@@ -64,6 +65,20 @@ export function useMobileNativeChatActiveResolution(args: {
   const providerSessionId = activeSessionTab?.agentStatus?.providerSession?.id ?? ''
   const streamScopeKey = `${routeKey}\0${activeChatSessionId ?? providerSessionId}\0${activeHandleRef.current ?? ''}`
 
+  useChatRuntimeSnapshot(
+    hostId,
+    activeChatSessionId ?? streamScopeKey,
+    {
+      renderer: 'app-session',
+      visible: showNativeChat,
+      lane: activeChatStructured ? 'structured' : 'transcript',
+      tabType: activeSessionTab?.type ?? 'none',
+      sessionResolved: activeChatSessionId !== null,
+      transcriptPathResolved: !!activeChatResolution?.transcriptPath,
+      transcriptReadable: nativeChatTranscriptIsLocalReadable
+    },
+    'chat-resolution'
+  )
   return {
     isTabChatView,
     toggleTabChatView,

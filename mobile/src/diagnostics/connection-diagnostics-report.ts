@@ -28,6 +28,7 @@ export function buildConnectionDiagnosticsReport(args: {
   entries: readonly ConnectionLogEntry[]
   activePath?: MobileConnectionDiagnosticPath
   pendingPath?: MobileConnectionDiagnosticPath | null
+  chatRuntimeLines?: readonly string[]
   nowMs?: number
 }): string {
   const now = args.nowMs ?? Date.now()
@@ -64,6 +65,13 @@ export function buildConnectionDiagnosticsReport(args: {
   lines.push(`Likely cause: ${diagnosis.likelyCause}`)
   lines.push(`Next step: ${diagnosis.nextStep}`)
   lines.push('')
+  lines.push(
+    'Connection verdict covers authentication only; Tailscale peer routing is not measured.'
+  )
+  lines.push(
+    ...(args.chatRuntimeLines ?? ['Chat runtime diagnostics: not captured by this report.']),
+    ''
+  )
   if (entries.length === 0) {
     lines.push('No connection events recorded.')
   } else {

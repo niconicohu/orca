@@ -1,3 +1,4 @@
+import { useChatRuntimeSnapshot } from '../diagnostics/use-chat-runtime-snapshot'
 import { useLayoutEffect, useRef, type MutableRefObject } from 'react'
 import type { RpcClient } from '../transport/rpc-client'
 import type { ConnectionState } from '../transport/types'
@@ -133,6 +134,12 @@ export function useMobileNativeChatController(args: {
     : activeTabAgentWorking
   const nativeChatAgentWorking =
     nativeChatStreamLive && (activeChatStructured || activeChatResolution != null)
+  useChatRuntimeSnapshot(hostId, activeChatSessionId ?? streamScopeKey, {
+    status: nativeChatSession.status,
+    messages: nativeChatSession.messages.length,
+    working: nativeChatAgentWorking,
+    connected: connState === 'connected'
+  })
   // Throttle the streaming bubble: OpenCode emits a status frame per streamed
   // part, and each one re-renders and re-parses the whole accumulated markdown.
   const nativeChatStreamingText = useThrottledLatestValue(

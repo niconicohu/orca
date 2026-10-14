@@ -203,3 +203,20 @@ describe('buildConnectionDiagnosticsReport', () => {
     }
   )
 })
+
+it('does not equate an authenticated connection with a healthy chat pipeline', () => {
+  const report = buildConnectionDiagnosticsReport({
+    hostName: 'melon',
+    endpoint: '100.88.98.6:6769',
+    state: 'connected',
+    reconnectAttempts: 0,
+    lastConnectedAt: NOW,
+    platform: 'android 35',
+    appVersion: '0.0.52-chat.3',
+    entries: [],
+    activePath: 'tailscale',
+    nowMs: NOW
+  })
+  expect(report).toContain('Chat runtime diagnostics')
+  expect(report).toContain('Tailscale peer routing is not measured')
+})

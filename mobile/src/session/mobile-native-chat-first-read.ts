@@ -1,3 +1,4 @@
+import { measureChatRead } from '../diagnostics/chat-runtime-diagnostics'
 import type { RpcClient } from '../transport/rpc-client'
 import { nativeChatSessionPageRead } from './mobile-session-read-operations'
 import {
@@ -15,15 +16,17 @@ export function startMobileNativeChatFirstRead(args: {
   const { client, agent, sessionId, transcriptPath, receive } = args
   return startMobileChatFirstRead({
     read: async () => {
-      const response = await nativeChatSessionPageRead.request(
-        client,
-        {
-          agent,
-          sessionId,
-          limit: 40,
-          ...(transcriptPath ? { transcriptPath } : {})
-        },
-        { timeoutMs: MOBILE_CHAT_FIRST_READ_TIMEOUT_MS, budgetSpansConnect: true }
+      const response = await measureChatRead(client, sessionId, 'nativeChat.readSession', () =>
+        nativeChatSessionPageRead.request(
+          client,
+          {
+            agent,
+            sessionId,
+            limit: 40,
+            ...(transcriptPath ? { transcriptPath } : {})
+          },
+          { timeoutMs: MOBILE_CHAT_FIRST_READ_TIMEOUT_MS, budgetSpansConnect: true }
+        )
       )
       const accepted = nativeChatSessionPageRead.interpret(response)
       if (!accepted.accepted) {

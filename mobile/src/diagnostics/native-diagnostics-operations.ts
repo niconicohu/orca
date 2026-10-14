@@ -1,3 +1,4 @@
+import { chatRuntimeDiagnosticLines } from './chat-runtime-diagnostics'
 import { Platform } from 'react-native'
 import Constants from 'expo-constants'
 import type { HostProfile } from '../transport/types'
@@ -23,6 +24,7 @@ export function createNativeDiagnosticsOperations(
       const snapshot = await readConnectionDiagnosticsSnapshot(context, connectionLogStore, host.id)
       return {
         report: buildConnectionDiagnosticsReport({
+          chatRuntimeLines: chatRuntimeDiagnosticLines(host.id),
           hostName: host.name,
           endpoint: host.endpoint,
           state: snapshot.state,
