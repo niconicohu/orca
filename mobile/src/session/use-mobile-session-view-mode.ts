@@ -22,6 +22,25 @@ type ViewOverridesRuntime = {
   currentOverrides: Map<string, MobileSessionView>
   mutationRevisions: Map<string, number>
 }
+const retainedOverrides = new Map<string, Map<string, MobileSessionView>>()
+let retainedDefault: MobileSessionView = 'terminal'
+
+function rememberOverrides(key: string, overrides: Map<string, MobileSessionView>): void {
+  retainedOverrides.delete(key)
+  retainedOverrides.set(key, overrides)
+  while (retainedOverrides.size > 20) {
+    const oldest = retainedOverrides.keys().next().value
+    if (oldest === undefined) {
+      break
+    }
+    retainedOverrides.delete(oldest)
+  }
+}
+
+export function resetMobileSessionViewCacheForTests(): void {
+  retainedOverrides.clear()
+  retainedDefault = 'terminal'
+}
 
 function isOverrideScope(state: ViewOverridesState, hostId: string, worktreeId: string): boolean {
   return state.hostId === hostId && state.worktreeId === worktreeId
@@ -52,11 +71,12 @@ export function useMobileSessionViewMode(args: {
   worktreeId: string
 }): MobileSessionViewModeController {
   const { hostId, worktreeId } = args
+  const scopeKey = JSON.stringify([hostId, worktreeId])
   const [viewOverridesState, setViewOverridesState] = useState<ViewOverridesState>(() => ({
     hostId,
     worktreeId,
-    overrides: new Map(),
-    loaded: false
+    overrides: retainedOverrides.get(scopeKey) ?? new Map(),
+    loaded: retainedOverrides.has(scopeKey)
   }))
   const viewOverridesStateRef = useRef(viewOverridesState)
   viewOverridesStateRef.current = viewOverridesState
@@ -83,7 +103,7 @@ export function useMobileSessionViewMode(args: {
     viewOverridesRuntimeRef.current = next
     return next
   }, [])
-  const [defaultView, setDefaultView] = useState<MobileSessionView>('terminal')
+  const [defaultView, setDefaultView] = useState<MobileSessionView>(retainedDefault)
   // Why: the toggle callback reads the live default without depending on it, so
   // its identity stays stable and it never captures a stale default.
   const defaultViewRef = useRef(defaultView)
@@ -103,6 +123,11 @@ export function useMobileSessionViewMode(args: {
       // Why: an unreadable override store cannot safely be treated as empty when
       // the default is chat; fail closed to terminal until a user toggles.
       const next = { hostId, worktreeId, overrides: merged, loaded: preference.loaded }
+      if (preference.loaded) {
+        rememberOverrides(JSON.stringify([hostId, worktreeId]), merged)
+      } else {
+        retainedOverrides.delete(JSON.stringify([hostId, worktreeId]))
+      }
       viewOverridesStateRef.current = next
       setViewOverridesState(next)
     })
@@ -117,6 +142,7 @@ export function useMobileSessionViewMode(args: {
       let active = true
       void loadDefaultSessionView().then((view) => {
         if (active) {
+          retainedDefault = view
           setDefaultView(view)
         }
       })
@@ -160,6 +186,7 @@ export function useMobileSessionViewMode(args: {
       const next = { ...currentScope, overrides }
       viewOverridesStateRef.current = next
       setViewOverridesState(next)
+      rememberOverrides(JSON.stringify([hostId, worktreeId]), overrides)
 
       const runtime = ensureViewOverridesRuntime(hostId, worktreeId)
       runtime.currentOverrides = overrides
@@ -197,6 +224,11 @@ export function useMobileSessionViewMode(args: {
           return
         }
         const reconciledState = { ...latest, overrides: reconciled, loaded: preference.loaded }
+        if (preference.loaded) {
+          rememberOverrides(JSON.stringify([hostId, worktreeId]), reconciled)
+        } else {
+          retainedOverrides.delete(JSON.stringify([hostId, worktreeId]))
+        }
         viewOverridesStateRef.current = reconciledState
         setViewOverridesState(reconciledState)
       })

@@ -9,6 +9,7 @@ import { isLogicalClientCutoverError } from './stable-logical-rpc-client'
 const CUTOVER_RETRY_DELAY_MS = 250
 const FAILURE_RETRY_BASE_DELAY_MS = 1_000
 const FAILURE_RETRY_MAX_DELAY_MS = 15_000
+const STATUS_READ_TIMEOUT_MS = 8000
 
 /**
  * Asks status.get until an answer lands, then delivers it once and stops. `null` is a host that
@@ -31,25 +32,30 @@ export function startRuntimeStatusProbe(
   let failureRetries = 0
 
   function attempt(): void {
-    void hostStatusProbe.request(client).then(
-      (reply) => {
-        if (cancelled) {
-          return
+    void hostStatusProbe
+      .request(client, undefined, {
+        timeoutMs: STATUS_READ_TIMEOUT_MS,
+        budgetSpansConnect: true
+      })
+      .then(
+        (reply) => {
+          if (cancelled) {
+            return
+          }
+          const landed = readProbedHostStatus(reply)
+          if (!landed) {
+            scheduleRetry(false)
+            return
+          }
+          onStatus(landed.status)
+        },
+        (error: unknown) => {
+          if (cancelled) {
+            return
+          }
+          scheduleRetry(isLogicalClientCutoverError(error))
         }
-        const landed = readProbedHostStatus(reply)
-        if (!landed) {
-          scheduleRetry(false)
-          return
-        }
-        onStatus(landed.status)
-      },
-      (error: unknown) => {
-        if (cancelled) {
-          return
-        }
-        scheduleRetry(isLogicalClientCutoverError(error))
-      }
-    )
+      )
   }
 
   function scheduleRetry(cutover: boolean): void {

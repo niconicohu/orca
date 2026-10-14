@@ -1,3 +1,13 @@
+import type {
+  MobileStructuredAgentStateArgs,
+  MobileStructuredAgentState
+} from './mobile-structured-agent-state-contract'
+import {
+  persistedStructuredChatRead,
+  validStructuredChatRead
+} from './mobile-chat-persisted-transcript'
+import { useMobileChatCheckpoint } from './use-mobile-chat-checkpoint'
+import { reduceMobileStructuredChatCheckpoint } from './mobile-structured-chat-checkpoint'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type {
   AgentSessionHistoryResult,
@@ -8,43 +18,23 @@ import { structuredAgentSessionHolderId } from '../../../src/shared/structured-a
 import {
   EMPTY_STRUCTURED_AGENT_SESSION,
   oldestStructuredAgentSessionCursor,
-  reduceStructuredAgentSession,
   type StructuredAgentSessionAction,
   type StructuredAgentSessionState
 } from '../../../src/shared/structured-agent-session-reducer'
-import type { RpcClient } from '../transport/rpc-client'
 import { callAgentSession } from './mobile-structured-agent-session-rpc'
+import { createMobileChatReadCache } from '../cache/mobile-chat-read-cache'
+import {
+  startMobileChatFirstRead,
+  MOBILE_CHAT_FIRST_READ_TIMEOUT_MS
+} from './mobile-chat-first-read'
 
 const MAX_RETAINED_SESSION_STATES = 32
 /** Bounded so a busy stream cannot turn one Load-earlier tap into an endless read chain. */
 const OLDER_PAGE_ANCHOR_ATTEMPTS = 3
-
-/**
- * Opens the transcript stream once the hold settles, either way: a refused hold is an older host
- * saying it could not start the agent — which the next send does — never a reason to hide the
- * transcript. Returns what ends the stream, opened or not yet. Outside the effect so its cleanup
- * rule can see the stream is owned.
- */
-function openTranscriptAfterHold(
-  client: RpcClient,
-  sessionId: string,
-  held: Promise<unknown>,
-  onFrame: (raw: unknown) => void
-): () => void {
-  let ended = false
-  let close = (): void => {}
-  void held
-    .catch(() => undefined)
-    .then(() => {
-      if (!ended) {
-        close = client.subscribe('agentSession.subscribe', { sessionId }, onFrame)
-      }
-    })
-  return () => {
-    ended = true
-    close()
-  }
-}
+const routeReads = createMobileChatReadCache<StructuredAgentSessionState>('structured-chat', {
+  valid: validStructuredChatRead,
+  compact: persistedStructuredChatRead
+})
 
 function isSubscribeEvent(value: unknown): value is AgentSessionSubscribeEvent {
   if (typeof value !== 'object' || value === null) {
@@ -54,29 +44,19 @@ function isSubscribeEvent(value: unknown): value is AgentSessionSubscribeEvent {
   return type === 'snapshot' || type === 'batch' || type === 'reset' || type === 'end'
 }
 
-export function useMobileStructuredAgentState(args: {
-  client: RpcClient | null
-  sessionId: string | null
-  sessionKey: string | null
-  enabled: boolean
-  /** Live transport only. The hold dies with the connection and has to be retaken,
-   *  but the transcript must survive the outage rather than blank out with it. */
-  connected: boolean
-}): {
-  state: StructuredAgentSessionState
-  stateRef: { readonly current: StructuredAgentSessionState }
-  loadingOlder: boolean
-  loadEarlier: () => void
-} {
+export function useMobileStructuredAgentState(
+  args: MobileStructuredAgentStateArgs
+): MobileStructuredAgentState {
   const { client, connected, enabled, sessionId, sessionKey } = args
+  const cached = client && sessionKey ? routeReads.get(client, sessionKey) : null
   // Keep a bounded cache so offline tab switches select the right transcript
   // synchronously without growing for the lifetime of the app.
   const [sessionStates, setSessionStates] = useState<Map<string, StructuredAgentSessionState>>(
-    () => new Map()
+    () => new Map(cached && sessionKey ? [[sessionKey, cached]] : [])
   )
   const state =
     enabled && sessionKey
-      ? (sessionStates.get(sessionKey) ?? EMPTY_STRUCTURED_AGENT_SESSION)
+      ? (sessionStates.get(sessionKey) ?? cached ?? EMPTY_STRUCTURED_AGENT_SESSION)
       : EMPTY_STRUCTURED_AGENT_SESSION
   const [loadingOlder, setLoadingOlder] = useState(false)
   const stateRef = useRef(state)
@@ -93,8 +73,12 @@ export function useMobileStructuredAgentState(args: {
         return
       }
       setSessionStates((current) => {
-        const previous = current.get(sessionKey) ?? EMPTY_STRUCTURED_AGENT_SESSION
-        const next = reduceStructuredAgentSession(previous, action, Date.now())
+        const previous =
+          current.get(sessionKey) ??
+          (client ? routeReads.get(client, sessionKey) : null) ??
+          EMPTY_STRUCTURED_AGENT_SESSION
+        const reading = action.type === 'loading' ? { ...previous, fence: null } : previous
+        const next = reduceMobileStructuredChatCheckpoint(reading, action, Date.now())
         if (next === previous) {
           return current
         }
@@ -111,8 +95,26 @@ export function useMobileStructuredAgentState(args: {
         return updated
       })
     },
-    [sessionKey]
+    [client, sessionKey]
   )
+
+  useMobileChatCheckpoint(() => {
+    if (
+      client &&
+      sessionKey &&
+      (stateRef.current.items.length > 0 || stateRef.current.status === 'ready')
+    ) {
+      const current = stateRef.current
+      routeReads.set(client, sessionKey, {
+        ...current,
+        fence: null,
+        status: 'loading',
+        backgroundTasks: null,
+        activity: null,
+        hostClock: undefined
+      })
+    }
+  })
 
   useEffect(() => {
     streamGenerationRef.current += 1
@@ -126,23 +128,125 @@ export function useMobileStructuredAgentState(args: {
       // session's transcript visible while another tab can be selected.
       return
     }
+    let ended = false
+    let liveCheckpoint = false
+    let hasBase = stateRef.current.epoch !== null
+    const pendingBatches: AgentSessionSubscribeEvent[] = []
+    const removedDuringRead = new Set<string>()
+    void routeReads.restore(client, sessionKey ?? '').then((restored) => {
+      if (ended || liveCheckpoint || !sessionKey || !restored || !Array.isArray(restored.items)) {
+        return
+      }
+      setSessionStates((current) =>
+        current.get(sessionKey)?.epoch
+          ? current
+          : new Map(current).set(sessionKey, { ...restored, fence: null, status: 'loading' })
+      )
+    })
     apply({ type: 'loading' })
     const holderId = structuredAgentSessionHolderId('mobile-chat')
     const held = callAgentSession(client, 'agentSession.hold', {
       sessionId,
       holderId
     })
-    const endStream = openTranscriptAfterHold(client, sessionId, held, (raw) => {
-      if (typeof raw === 'object' && raw !== null && 'type' in raw && raw.type === 'error') {
-        apply({ type: 'error', message: 'message' in raw ? String(raw.message ?? '') : '' })
-        return
-      }
-      if (isSubscribeEvent(raw)) {
-        apply({ type: 'event', event: raw })
+    void held.catch(() => undefined)
+    const finishFirstRead = startMobileChatFirstRead({
+      read: () =>
+        callAgentSession<AgentSessionHistoryResult>(
+          client,
+          'agentSession.history',
+          { sessionId, direction: 'tail', limit: 40 },
+          MOBILE_CHAT_FIRST_READ_TIMEOUT_MS
+        ),
+      apply: (result) => {
+        if (!result.ok) {
+          throw new Error('Chat history could not be read')
+        }
+        // A fallback page can display history; only the live stream grants write authority.
+        liveCheckpoint = true
+        const { fence: _fence, ...page } = result.page
+        apply({
+          type: 'history-page',
+          page: {
+            ...page,
+            removedItemIds: [...new Set([...page.removedItemIds, ...removedDuringRead])]
+          }
+        })
+        hasBase = true
+        for (const event of pendingBatches) {
+          apply({ type: 'event', event })
+        }
+        pendingBatches.length = 0
+        removedDuringRead.clear()
+      },
+      fail: (error) => {
+        liveCheckpoint = true
+        hasBase = true
+        pendingBatches.length = 0
+        removedDuringRead.clear()
+        apply({ type: 'error', message: error.message })
       }
     })
+    const endStream = client.subscribe(
+      'agentSession.subscribe',
+      { sessionId, ...(stateRef.current.cursor ? { cursor: stateRef.current.cursor } : {}) },
+      (raw) => {
+        if (typeof raw === 'object' && raw !== null && 'type' in raw && raw.type === 'error') {
+          apply({ type: 'error', message: 'message' in raw ? String(raw.message ?? '') : '' })
+          return
+        }
+        if (isSubscribeEvent(raw)) {
+          if (raw.type === 'batch') {
+            if (!liveCheckpoint) {
+              for (const id of raw.batch.removedItemIds) {
+                removedDuringRead.add(id)
+              }
+              for (const item of raw.batch.items) {
+                removedDuringRead.delete(item.itemId)
+              }
+            }
+            if (!hasBase) {
+              if (pendingBatches.length >= 128) {
+                pendingBatches.length = 0
+                removedDuringRead.clear()
+                liveCheckpoint = true
+                hasBase = true
+                finishFirstRead()
+                apply({
+                  type: 'error',
+                  message: 'Chat changed before history loaded. Reopen to retry.'
+                })
+              } else {
+                pendingBatches.push(raw)
+              }
+              return
+            }
+          }
+          if (raw.type === 'snapshot' || raw.type === 'reset') {
+            hasBase = true
+            pendingBatches.length = 0
+            liveCheckpoint = true
+            finishFirstRead()
+          }
+          apply({ type: 'event', event: raw })
+        }
+      }
+    )
     return () => {
+      ended = true
+      finishFirstRead()
       endStream()
+      const latest = stateRef.current
+      if (sessionKey && sessionKeyRef.current === sessionKey && latest.status === 'ready') {
+        routeReads.set(client, sessionKey, {
+          ...latest,
+          fence: null,
+          status: 'loading',
+          backgroundTasks: null,
+          activity: null,
+          hostClock: undefined
+        })
+      }
       void held
         .then(() =>
           callAgentSession(

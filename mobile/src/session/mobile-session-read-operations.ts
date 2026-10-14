@@ -111,6 +111,17 @@ export const sessionTabsListRead = bindDeferredRpcOperation(
   })
 )
 
+export function readMobileSessionTabs(
+  client: Parameters<typeof sessionTabsListRead.request>[0],
+  worktree: string
+) {
+  return sessionTabsListRead.request(
+    client,
+    { worktree },
+    { timeoutMs: 8000, budgetSpansConnect: true }
+  )
+}
+
 /**
  * The two ways native chat gets workspace paths. Both answer the same `relativePath` list, and
  * both refuse by leaving the suggestion list alone — the search's `method_not_found` is read raw

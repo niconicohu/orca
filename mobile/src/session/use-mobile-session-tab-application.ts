@@ -1,3 +1,5 @@
+import { cacheMobileSessionTabs } from './use-mobile-cached-session-tabs'
+import { reconcileMobileChatCheckpoints } from './mobile-chat-checkpoint-cleanup'
 import { useCallback } from 'react'
 import {
   getTerminalRecordsFromSessionTabs,
@@ -21,6 +23,7 @@ export function useMobileSessionTabApplication(scope: MobileSessionTerminalListM
     setTerminals,
     terminalsRef,
     setSessionTabs,
+    setSessionTabsLoadFailed,
     sessionTabsRef,
     appliedSnapshotMarkerRef,
     appliedSessionTabsRevisionRef,
@@ -52,12 +55,25 @@ export function useMobileSessionTabApplication(scope: MobileSessionTerminalListM
       if (!acceptSessionSnapshot(result, appliedSnapshotMarkerRef.current)) {
         return { accepted: false }
       }
+      if (scope.client) {
+        reconcileMobileChatCheckpoints(scope.client, scope.hostId, scope.worktreeId, result.tabs)
+      }
+      setSessionTabsLoadFailed(false)
       const applicationRevision = ++appliedSessionTabsRevisionRef.current
       let nextTabs = applyClosedTabTombstones(
         result.tabs,
         closedTabTombstonesRef.current,
         Date.now()
       )
+      if (scope.client) {
+        cacheMobileSessionTabs(
+          scope.client,
+          scope.hostId,
+          scope.worktreeId,
+          nextTabs,
+          result.activeTabId
+        )
+      }
       const presentTabIds = new Set(nextTabs.map((tab) => tab.id))
       const orphanedDraftTabs: MobileSessionTab[] = []
       const currentMarkdownDocs = markdownDocsRef.current

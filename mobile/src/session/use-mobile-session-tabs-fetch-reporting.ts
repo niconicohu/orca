@@ -9,20 +9,27 @@ type DiagnosticTabsSnapshot = Parameters<MobileTerminalDiagnostics['tabsFetchSuc
 export function useMobileSessionTabsFetchReporting<Result extends DiagnosticTabsSnapshot>(args: {
   worktreeId: string
   diagnosticsRef: MutableRefObject<MobileTerminalDiagnostics>
+  onUnavailable?: () => void
 }): {
   onFetchStarted: () => void
   onFetchSucceeded: (result: Result) => void
   onFetchFailed: (code: string) => void
   onFetchErrored: (error: unknown) => void
 } {
-  const { worktreeId, diagnosticsRef } = args
+  const { worktreeId, diagnosticsRef, onUnavailable } = args
   return useMemo(
     () => ({
       onFetchStarted: () => diagnosticsRef.current.tabsFetchStarted(worktreeId),
       onFetchSucceeded: (result: Result) => diagnosticsRef.current.tabsFetchSucceeded(result),
-      onFetchFailed: (code: string) => diagnosticsRef.current.tabsFetchFailed(code),
-      onFetchErrored: (error: unknown) => diagnosticsRef.current.tabsFetchErrored(error)
+      onFetchFailed: (code: string) => {
+        diagnosticsRef.current.tabsFetchFailed(code)
+        onUnavailable?.()
+      },
+      onFetchErrored: (error: unknown) => {
+        diagnosticsRef.current.tabsFetchErrored(error)
+        onUnavailable?.()
+      }
     }),
-    [diagnosticsRef, worktreeId]
+    [diagnosticsRef, worktreeId, onUnavailable]
   )
 }

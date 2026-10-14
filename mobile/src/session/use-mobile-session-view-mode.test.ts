@@ -9,6 +9,7 @@ import {
 } from '../storage/session-view-preferences'
 import {
   useMobileSessionViewMode,
+  resetMobileSessionViewCacheForTests,
   type MobileSessionViewModeController
 } from './use-mobile-session-view-mode'
 
@@ -52,6 +53,7 @@ describe('useMobileSessionViewMode', () => {
   let controller: MobileSessionViewModeController | null = null
 
   beforeEach(() => {
+    resetMobileSessionViewCacheForTests()
     vi.mocked(loadDefaultSessionView).mockReset().mockResolvedValue('terminal')
     vi.mocked(readSessionViewOverridesPreference)
       .mockReset()
@@ -93,6 +95,21 @@ describe('useMobileSessionViewMode', () => {
     act(() => renderer?.unmount())
     renderer = null
     await mount({ defaultView: 'chat' })
+    expect(controller?.isTabChatView('t1')).toBe(true)
+  })
+
+  it('restores Chat UI while the reopened route is still reading preferences', async () => {
+    await mount({ defaultView: 'chat' })
+    act(() => renderer?.unmount())
+    vi.mocked(loadDefaultSessionView).mockImplementation(() => new Promise(() => {}))
+    vi.mocked(readSessionViewOverridesPreference).mockImplementation(() => new Promise(() => {}))
+    function Harness(): null {
+      controller = useMobileSessionViewMode({ hostId: 'h', worktreeId: 'w' })
+      return null
+    }
+    await act(async () => {
+      renderer = create(createElement(Harness))
+    })
     expect(controller?.isTabChatView('t1')).toBe(true)
   })
 

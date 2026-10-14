@@ -797,11 +797,15 @@ describe('useMobileStructuredAgentSession', () => {
     })
     expect(hook?.session.messages).toHaveLength(1)
     expect(hook?.session.status).toBe('ready')
+    expect(hook?.writeReady).toBe(false)
 
     await act(async () => {
       renderer?.update(createElement(Harness, { connected: true }))
     })
     expect(hook?.session.messages).toHaveLength(1)
+    expect(hook?.writeReady).toBe(false)
+    act(() => listener?.(snapshotWithMessage()))
+    expect(hook?.writeReady).toBe(true)
   })
 
   it('restores the correct cached transcript when switching tabs offline', async () => {

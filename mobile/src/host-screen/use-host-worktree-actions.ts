@@ -1,3 +1,4 @@
+import { forgetWorkspaceChatCheckpoints } from '../session/mobile-chat-checkpoint-cleanup'
 import { useCallback } from 'react'
 import type { useRouter } from 'expo-router'
 import { floatingWorkspaceSessionPath } from '../session/floating-workspace'
@@ -132,6 +133,8 @@ export function useHostWorktreeActions(args: {
         if (!worktreeRemove.interpret(reply).accepted) {
           setWorktrees((prev) => [...prev, item])
           setLastKnownWorktrees((prev) => [...prev, item])
+        } else {
+          forgetWorkspaceChatCheckpoints(client, item.worktreeId)
         }
         void fetchWorktrees()
       } catch {

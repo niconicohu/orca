@@ -31,6 +31,7 @@ export function useMobileSessionScreenState(scope: MobileSessionFoundationModel)
   const [terminals, setTerminals] = useState<Terminal[]>([])
   const terminalsRef = useRef<Terminal[]>([])
   const [sessionTabs, setSessionTabs] = useState<MobileSessionTab[]>([])
+  const [sessionTabsLoadFailed, setSessionTabsLoadFailed] = useState(false)
   const sessionTabsRef = useRef<MobileSessionTab[]>([])
   // Why: track the last applied (epoch, version) so a late older snapshot can't overwrite a newer one and resurrect closed tabs (session-tab-snapshot-gate).
   const appliedSnapshotMarkerRef = useRef<AppliedSnapshotMarker>({ epoch: null, version: -1 })
@@ -132,6 +133,8 @@ export function useMobileSessionScreenState(scope: MobileSessionFoundationModel)
     terminalsRef,
     sessionTabs,
     setSessionTabs,
+    sessionTabsLoadFailed,
+    setSessionTabsLoadFailed,
     sessionTabsRef,
     appliedSnapshotMarkerRef,
     appliedSessionTabsRevisionRef,

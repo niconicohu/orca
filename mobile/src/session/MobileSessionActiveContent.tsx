@@ -74,6 +74,8 @@ export function MobileSessionActiveContent({
     isPendingTerminalRecoveryParked,
     retryPendingTerminalRecovery,
     showLoadingState,
+    sessionTabsLoadFailed,
+    fetchSessionTabs,
     showEmptyState,
     keyboardLift,
     activeTerminalKeyboardLift,
@@ -82,7 +84,20 @@ export function MobileSessionActiveContent({
   } = controller
   const content = showLoadingState ? (
     <View style={styles.emptyState}>
-      <ActivityIndicator size="small" color={colors.textSecondary} />
+      {sessionTabsLoadFailed ? (
+        <>
+          <Text style={styles.emptyText}>Could not load tabs</Text>
+          <Pressable
+            style={styles.createButton}
+            accessibilityRole="button"
+            onPress={() => void fetchSessionTabs()}
+          >
+            <Text style={styles.createButtonText}>Retry</Text>
+          </Pressable>
+        </>
+      ) : (
+        <ActivityIndicator size="small" color={colors.textSecondary} />
+      )}
     </View>
   ) : showEmptyState ? (
     <View style={styles.emptyState}>

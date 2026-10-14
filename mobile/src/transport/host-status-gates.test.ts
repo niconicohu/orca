@@ -3,6 +3,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RpcClient } from './rpc-client'
 import { useHostStatusGates, type HostStatusGates } from './host-status-gates'
+import { RpcClientRequestTracker } from './rpc-client-request-tracker'
 
 const recordHostAppVersionMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 
@@ -17,6 +18,43 @@ vi.mock('./host-descriptor-recorder', () => ({
 }))
 
 describe('useHostStatusGates', () => {
+  it('unblocks the first page with conservative gates after an eight-second unanswered status request', async () => {
+    vi.useFakeTimers()
+    let sequence = 0
+    const tracker = new RpcClientRequestTracker({
+      nextId: () => String(++sequence),
+      getState: () => 'connected',
+      waitForConnected: async () => {},
+      sendEncrypted: () => true,
+      deviceToken: 'test'
+    })
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: this gate only requires the request method, backed by the real deadline tracker.
+    const client = { sendRequest: tracker.sendRequest.bind(tracker) } as unknown as RpcClient
+    let gates: HostStatusGates | null = null
+    let renderer: ReactTestRenderer | null = null
+    function Probe(): null {
+      gates = useHostStatusGates({ hostId: 'host', client, connState: 'connected' })
+      return null
+    }
+    try {
+      await act(async () => {
+        renderer = create(createElement(Probe))
+      })
+      expect(gates).toMatchObject({ statusPending: true })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(8000)
+      })
+      expect(gates).toMatchObject({
+        statusPending: false,
+        statusReadable: false,
+        hostCapabilities: []
+      })
+    } finally {
+      act(() => renderer?.unmount())
+      tracker.rejectAll('test cleanup')
+      vi.useRealTimers()
+    }
+  })
   beforeEach(() => {
     recordDescriptorFromStatusMock.mockClear()
   })

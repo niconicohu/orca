@@ -169,13 +169,14 @@ describe('mobile session startup', () => {
     expect(startupEffect).toContain("showToast('Open Orca on the host to wake sleeping agents.'")
   })
 
-  it('fails runtime capability gates closed before probing a replacement client', () => {
+  it('fails gates closed before adopting the shared host capabilities', () => {
     const capabilityEffect = sliceBetween(
       'const hostQueryReplyInputSupportedRef = useRef(false)',
       'return {\n    consumeAcceptedSessionTabs',
       tabReconciliationSource
     )
-    const probeStart = capabilityEffect.indexOf('startRuntimeCapabilityProbe(client,')
+    const probeStart = capabilityEffect.indexOf('const capabilities = hostCapabilities')
+    expect(capabilityEffect).not.toContain('startRuntimeCapabilityProbe(')
 
     expect(probeStart).toBeGreaterThanOrEqual(0)
     for (const reset of [

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
-import { startRuntimeCapabilityProbe } from '../transport/runtime-capability-probe'
 import { supportsMobileQuickCommands } from '../terminal/quick-commands'
 import { MOBILE_AI_VAULT_CAPABILITY } from '../agent-history/agent-history-capability'
 import { TERMINAL_QUERY_REPLY_INPUT_RUNTIME_CAPABILITY } from '../../../src/shared/protocol-version'
@@ -18,6 +17,8 @@ export function useMobileSessionTabReconciliation(scope: MobileSessionMarkdownAc
     worktreeId,
     client,
     connState,
+    hostCapabilities,
+    setSessionTabsLoadFailed,
     sessionTabsRef,
     activeSessionTabIdRef,
     terminalsRef,
@@ -100,9 +101,14 @@ export function useMobileSessionTabReconciliation(scope: MobileSessionMarkdownAc
     [pendingTerminalRecoveryContextCache, sessionTabsRef, activeSessionTabIdRef]
   )
   const pendingTerminalRecoveryContextKey = getPendingTerminalRecoveryContextKey()
+  const reportTabsUnavailable = useCallback(
+    () => setSessionTabsLoadFailed(true),
+    [setSessionTabsLoadFailed]
+  )
   const sessionTabsFetchReporting = useMobileSessionTabsFetchReporting<SessionTabsResult>({
     worktreeId,
-    diagnosticsRef: terminalDiagnosticsRef
+    diagnosticsRef: terminalDiagnosticsRef,
+    onUnavailable: reportTabsUnavailable
   })
   const {
     fetchSessionTabs,
@@ -164,20 +170,18 @@ export function useMobileSessionTabReconciliation(scope: MobileSessionMarkdownAc
     setQuickCommandsSupported(null)
     setShowQuickCommands(false)
     hostQueryReplyInputSupportedRef.current = false
-    // Why: the probe retries — a relay→direct cutover or request timeout rejects
-    // status.get without changing connState, which used to latch these hidden.
-    return startRuntimeCapabilityProbe(client, (capabilities) => {
-      setBrowserScreencastSupported(capabilities.includes('browser.screencast.v1'))
-      setAgentSessionHistorySupported(capabilities.includes(MOBILE_AI_VAULT_CAPABILITY))
-      setAgentSessionHostSupport(structuredAgentSessionHostSupport(capabilities))
-      setQuickCommandsSupported(supportsMobileQuickCommands(capabilities))
-      // Why: hosts without this capability strip inputKind from terminal.send,
-      // so a forwarded xterm reply would become floor-stealing shell input.
-      hostQueryReplyInputSupportedRef.current = capabilities.includes(
-        TERMINAL_QUERY_REPLY_INPUT_RUNTIME_CAPABILITY
-      )
-    })
-  }, [client, connState])
+    // The parent protocol gate already retries status.get and shares its result.
+    const capabilities = hostCapabilities
+    setBrowserScreencastSupported(capabilities.includes('browser.screencast.v1'))
+    setAgentSessionHistorySupported(capabilities.includes(MOBILE_AI_VAULT_CAPABILITY))
+    setAgentSessionHostSupport(structuredAgentSessionHostSupport(capabilities))
+    setQuickCommandsSupported(supportsMobileQuickCommands(capabilities))
+    // Why: hosts without this capability strip inputKind from terminal.send,
+    // so a forwarded xterm reply would become floor-stealing shell input.
+    hostQueryReplyInputSupportedRef.current = capabilities.includes(
+      TERMINAL_QUERY_REPLY_INPUT_RUNTIME_CAPABILITY
+    )
+  }, [client, connState, hostCapabilities])
   return {
     consumeAcceptedSessionTabs,
     hasSessionTabsRecoveryNeed,

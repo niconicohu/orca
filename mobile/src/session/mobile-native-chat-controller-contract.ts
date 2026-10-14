@@ -20,6 +20,7 @@ export type MobileNativeChatController = {
   isTabChatView: (tabId: string) => boolean
   toggleTabChatView: (tabId: string) => void
   showNativeChat: boolean
+  nativeChatWriteReady: boolean
   showNativeChatRef: MutableRefObject<boolean>
   /** Resolved agent for the active chat tab (names the empty-state copy). */
   nativeChatAgent: string | null

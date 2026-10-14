@@ -1,3 +1,4 @@
+import { reconcileHostChatWorkspaces } from '../session/mobile-chat-checkpoint-cleanup'
 import { useCallback, useEffect } from 'react'
 import { useFocusEffect } from 'expo-router'
 import { setCachedWorktrees } from '../cache/worktree-cache'
@@ -85,6 +86,10 @@ export function useHostWorktreeCatalog(args: {
         // host truth over optimistic local edits regardless of payload size.
         const confirmed = worktreeCatalogRef.current.admit(fetched.pending)
         if (confirmed) {
+          reconcileHostChatWorkspaces(
+            requestClient,
+            confirmed.map((row) => row.worktreeId)
+          )
           setCatalogError(null)
           // A confirmed list is the host answering, which is the evidence a transient action
           // failure was about a moment that has passed.

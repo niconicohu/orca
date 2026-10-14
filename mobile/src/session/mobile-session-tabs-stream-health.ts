@@ -1,4 +1,4 @@
-import { sessionTabsListRead } from './mobile-session-read-operations'
+import { sessionTabsListRead, readMobileSessionTabs } from './mobile-session-read-operations'
 import type { RpcClient } from '../transport/rpc-client'
 import type { RpcFailure } from '../transport/types'
 
@@ -254,9 +254,7 @@ export class MobileSessionTabsStreamHealth<Result, Tab> {
   private async runRequest(owner: RequestOwner): Promise<boolean> {
     try {
       this.options.onFetchStarted?.()
-      const response = await sessionTabsListRead.request(this.options.client, {
-        worktree: this.options.scope
-      })
+      const response = await readMobileSessionTabs(this.options.client, this.options.scope)
       if (!this.isCurrentGeneration(owner.generation)) {
         return false
       }

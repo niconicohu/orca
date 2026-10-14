@@ -174,9 +174,13 @@ describe('pending-handle recovery through MobileSessionTabsStreamHealth', () => 
 
     expect(harness.controller.poll()).not.toBeNull()
     await settle()
-    expect(harness.sendRequest).toHaveBeenCalledWith('session.tabs.list', {
-      worktree: 'id:repo::worktree'
-    })
+    expect(harness.sendRequest).toHaveBeenCalledWith(
+      'session.tabs.list',
+      {
+        worktree: 'id:repo::worktree'
+      },
+      { timeoutMs: 8000, budgetSpansConnect: true }
+    )
   })
 
   it('parks the live poll after five pending-handle lists', async () => {

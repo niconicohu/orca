@@ -67,6 +67,23 @@ function controller(
 }
 
 describe('the terminal frame on the page', () => {
+  it('shows a retry instead of an endless spinner after the tab read fails', () => {
+    const retry = vi.fn(async () => {})
+    const scope = {
+      ...controller('loading', () => {}),
+      sessionTabsLoadFailed: true,
+      fetchSessionTabs: retry
+    }
+    let renderer: ReturnType<typeof create> | undefined
+    act(() => {
+      renderer = create(createElement(MobileSessionActiveContent, { controller: scope }))
+    })
+    expect(JSON.stringify(renderer?.toJSON())).toContain('Could not load tabs')
+    expect(renderer?.root.findAllByProps({ size: 'small' })).toHaveLength(0)
+    act(() => renderer?.root.findByProps({ accessibilityRole: 'button' }).props.onPress())
+    expect(retry).toHaveBeenCalledOnce()
+    act(() => renderer?.unmount())
+  })
   it('reports its height when the session opens from the loading state', () => {
     const heights: number[] = []
     const notify = (frame: { height: number }): void => {

@@ -49,6 +49,50 @@ describe('useMobileNativeChatSession', () => {
     })
   }
 
+  it('shows the last transcript immediately after leaving and reopening the route', async () => {
+    const subscribe = vi.fn((_method, _params, onData) => {
+      emit = onData
+      return () => {}
+    }) as RpcClient['subscribe']
+    const client = {
+      sendRequest: vi.fn(() => new Promise<never>(() => {})),
+      subscribe
+    } as unknown as RpcClient
+    await mount(client)
+    act(() => emit({ type: 'snapshot', messages: [message('cached')], hasMore: false }))
+    act(() => renderer?.unmount())
+    await mount(client)
+    // No network frame has arrived for the reopened screen.
+    expect(state?.messages.map((entry) => entry.id)).toEqual(['cached'])
+    expect(state?.transcriptLoading).toBe(true)
+  })
+
+  it('reads a bounded first page when the stream never delivers its snapshot', async () => {
+    vi.useFakeTimers()
+    try {
+      const sendRequest = vi.fn().mockResolvedValue({
+        ok: true,
+        result: { messages: [message('fallback')], hasMore: false }
+      })
+      const subscribe = vi.fn(() => () => {}) as RpcClient['subscribe']
+      await mount({ sendRequest, subscribe } as unknown as RpcClient)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000)
+      })
+      expect(sendRequest).toHaveBeenCalledWith(
+        'nativeChat.readSession',
+        { agent: 'claude', sessionId: 'session', limit: 40 },
+        expect.objectContaining({ timeoutMs: 8000, budgetSpansConnect: true })
+      )
+      expect(state?.messages.map((entry) => entry.id)).toEqual(['fallback'])
+      expect(state?.status).toBe('ready')
+    } finally {
+      act(() => renderer?.unmount())
+      renderer = null
+      vi.useRealTimers()
+    }
+  })
+
   it('drops an older-page response captured before transcript replacement', async () => {
     let resolveEarlier: (response: unknown) => void = () => {}
     const sendRequest = vi.fn(

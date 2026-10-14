@@ -50,6 +50,7 @@ type StructuredMobileAttachment = StructuredAgentSessionAttachment & {
 type StructuredMobileSession = ReturnType<typeof useMobileStructuredAgentOptions> &
   ReturnType<typeof useMobileStructuredAgentTurnTiming> & {
     session: MobileNativeChatSession
+    writeReady: boolean
     isWorking: boolean
     turnId: string | null
     /** What labels the live turn's one indicator row. */
@@ -272,7 +273,6 @@ export function useMobileStructuredAgentSession(args: {
     selectStructuredAgentTurnActivity(state.items, turnId, state.activity)?.text ?? null
   const thinking = isStructuredAgentSessionThinking(state.items)
   const turnIndicator = useMemo(() => ({ thinking, activityText }), [thinking, activityText])
-  const status = state.status === 'idle' ? 'idle' : state.status
   const approvalPrompt = useMemo(
     () => state.items.find(pendingStructuredApproval) ?? null,
     [state.items]
@@ -283,10 +283,11 @@ export function useMobileStructuredAgentSession(args: {
   )
   return {
     ...options,
+    writeReady: connected && state.fence !== null,
     session: {
       messages,
-      status,
-      transcriptLoading: status === 'loading',
+      status: state.status,
+      transcriptLoading: state.status === 'loading',
       error: state.error,
       hasMore: state.hasOlder,
       loadingEarlier: loadingOlder,

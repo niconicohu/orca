@@ -82,7 +82,9 @@ export function useMobileSessionNativeChatDictation(
   const nativeChatOverlayInputLockReason =
     activeSessionTab?.type === 'agent-session'
       ? connState === 'connected'
-        ? null
+        ? nativeChatController.nativeChatWriteReady
+          ? null
+          : 'waiting'
         : 'disconnected'
       : nativeChatInputLockReason
   const routeKey = nativeChatScopeKey ?? `${hostId}\0${worktreeId}`

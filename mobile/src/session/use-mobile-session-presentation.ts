@@ -16,6 +16,7 @@ export function useMobileSessionPresentation(scope: MobileSessionBulkCloseModel)
     reconnectAttempts,
     lastConnectedAt,
     terminalsLoaded,
+    sessionTabsLoadFailed,
     activeHandle,
     creating,
     creatingBrowser,
@@ -64,7 +65,9 @@ export function useMobileSessionPresentation(scope: MobileSessionBulkCloseModel)
   const terminalSummary =
     connState === 'connected'
       ? showLoadingState
-        ? 'Loading tabs'
+        ? sessionTabsLoadFailed
+          ? 'Tabs unavailable'
+          : 'Loading tabs'
         : visibleTabs.length === 1
           ? '1 tab'
           : `${visibleTabs.length} tabs`

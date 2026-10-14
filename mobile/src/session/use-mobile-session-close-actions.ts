@@ -1,3 +1,5 @@
+import { cacheMobileSessionTabs } from './use-mobile-cached-session-tabs'
+import { reconcileMobileChatCheckpoints } from './mobile-chat-checkpoint-cleanup'
 import {
   sessionTabClose,
   sessionTerminalClose,
@@ -123,6 +125,14 @@ export function useMobileSessionCloseActions(scope: MobileSessionContentCreateAc
           initializedHandlesRef.current.delete(terminalHandle)
           clearTerminalLiveInputDefault(terminalHandle)
         }
+        reconcileMobileChatCheckpoints(client, scope.hostId, worktreeId, remainingTabs)
+        cacheMobileSessionTabs(
+          client,
+          scope.hostId,
+          worktreeId,
+          remainingTabs,
+          activeSessionTabIdRef.current === tab.id ? null : activeSessionTabIdRef.current
+        )
         sessionTabsRef.current = remainingTabs
         setSessionTabs(remainingTabs)
         // Why: tombstone the closed tab and rely on the snapshot, not a blind refetch that often re-added the not-yet-closed tab.

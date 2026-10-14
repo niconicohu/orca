@@ -16,6 +16,7 @@ import { useMobileSessionTabReconciliation } from './use-mobile-session-tab-reco
 import { useMobileSessionLifecycle } from './use-mobile-session-lifecycle'
 import { useMobileSessionKeyboardState } from './use-mobile-session-keyboard-state'
 import { useMobileSessionStartup } from './use-mobile-session-startup'
+import { useMobileCachedSessionTabs } from './use-mobile-cached-session-tabs'
 import { useMobileSessionPreferenceFocus } from './use-mobile-session-preference-focus'
 import { useMobileSessionTabSwitching } from './use-mobile-session-tab-switching'
 import { useMobileSessionTerminalWebview } from './use-mobile-session-terminal-webview'
@@ -81,6 +82,7 @@ export function useMobileSessionController() {
   const lifecycle = Object.assign(tabReconciliation, useMobileSessionLifecycle(tabReconciliation))
   const keyboardState = Object.assign(lifecycle, useMobileSessionKeyboardState(lifecycle))
   useMobileSessionStartup(keyboardState)
+  useMobileCachedSessionTabs(keyboardState)
   useMobileSessionPreferenceFocus(keyboardState)
   const tabSwitching = Object.assign(keyboardState, useMobileSessionTabSwitching(keyboardState))
   useNotificationPaneNavigation(tabSwitching)
