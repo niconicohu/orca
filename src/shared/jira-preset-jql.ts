@@ -5,7 +5,7 @@ export function buildJiraPresetJql(
   filter: JiraIssueFilter,
   filters?: JiraIssueListFilters
 ): string {
-  const clauses = []
+  const clauses: string[] = []
   if (filter === 'assigned' || filter === 'done') {
     clauses.push('assignee = currentUser()')
   } else if (filter === 'reported') {
@@ -16,6 +16,9 @@ export function buildJiraPresetJql(
   if (statuses.length > 0) {
     const names = statuses.map((name) => `"${name.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`)
     clauses.push(`status in (${names.join(', ')})`)
+  }
+  if (filters?.currentSprint) {
+    clauses.push('sprint in openSprints()')
   }
   return `${clauses.join(' AND ')} ORDER BY updated DESC`
 }

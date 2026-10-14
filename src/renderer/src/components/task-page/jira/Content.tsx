@@ -7,6 +7,8 @@ import { TaskPageJiraSortControls } from '../../task-page-jira-sort-controls'
 import { TaskPageJiraErrorBanner } from '../../task-page-linear-jira-list-model'
 import { TaskPageJiraTextFallbackNotice } from '../../task-page-jira-text-fallback-notice'
 import { TaskPageJiraIssueList } from '@/components/task-page-jira-issue-list'
+import { TaskPageJiraBoardView } from '@/components/task-page-jira-board-view'
+import { TaskPageJiraViewControls } from '@/components/task-page-jira-view-controls'
 import { formatRelativeTime } from '../../task-page-source-context'
 import { getJiraStatusTone } from '@/components/task-page-jira-status-tone'
 import JiraIssueWorkspace from '@/components/JiraIssueWorkspace'
@@ -41,7 +43,14 @@ export function TaskPageJiraContent({
     displayedJiraStatusOrder,
     sortedJiraIssues,
     setJiraConnectOpen,
-    handleUseJiraItem
+    handleUseJiraItem,
+    jiraViewMode,
+    setJiraViewMode,
+    jiraCurrentSprint,
+    setJiraCurrentSprint,
+    jiraTaskSourceContext,
+    jiraTaskSourceScopeKey,
+    setJiraRefreshNonce
   } = model
   return taskSource === 'jira' ? (
     !jiraStatusReady ? (
@@ -71,20 +80,28 @@ export function TaskPageJiraContent({
       </div>
     ) : (
       <div className="flex min-h-0 max-h-full flex-col overflow-hidden rounded-md rounded-t-none border border-t-0 border-border/50 bg-background shadow-sm">
-        <div className="flex h-10 flex-none items-center justify-between gap-3 border-b border-border/50 bg-muted/35 px-3">
+        <div className="flex min-h-10 flex-none flex-wrap items-center justify-between gap-3 border-b border-border/50 bg-muted/35 px-3 py-1">
           <div className="min-w-0 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             {translate('auto.components.TaskPage.63b2abd3aa', 'Jira issues')}
           </div>
+          <TaskPageJiraViewControls
+            mode={jiraViewMode}
+            onModeChange={setJiraViewMode}
+            currentSprint={jiraCurrentSprint}
+            onCurrentSprintChange={setJiraCurrentSprint}
+          />
           <div className="shrink-0 text-[11px] text-muted-foreground">
             {displayedJiraIssues.length} {translate('auto.components.TaskPage.b7bae28b6a', 'shown')}
           </div>
         </div>
 
-        <TaskPageJiraSortControls
-          direction={jiraOrderDirection}
-          onSort={handleJiraSort}
-          orderBy={jiraOrderBy}
-        />
+        {jiraViewMode === 'list' ? (
+          <TaskPageJiraSortControls
+            direction={jiraOrderDirection}
+            onSort={handleJiraSort}
+            orderBy={jiraOrderBy}
+          />
+        ) : null}
 
         <div
           className="min-h-0 flex-1 overflow-y-auto scrollbar-sleek"
@@ -140,17 +157,33 @@ export function TaskPageJiraContent({
             </div>
           ) : null}
 
-          <TaskPageJiraIssueList
-            formatUpdatedAt={formatRelativeTime}
-            getStatusTone={getJiraStatusTone}
-            issues={sortedJiraIssues}
-            onOpenIssue={openJiraDetailPage}
-            onStartWorkspace={handleUseJiraItem}
-            selectedIssue={selectedJiraIssue}
-            showSiteContext={selectedJiraSiteId === 'all'}
-            statusDirection={jiraOrderBy === 'status' ? jiraOrderDirection : 'asc'}
-            statusOrder={displayedJiraStatusOrder}
-          />
+          {jiraViewMode === 'board' ? (
+            <TaskPageJiraBoardView
+              key={`${jiraTaskSourceScopeKey}:${selectedJiraSiteId}`}
+              issues={sortedJiraIssues}
+              statusOrder={displayedJiraStatusOrder}
+              selectedIssue={selectedJiraIssue}
+              sourceContext={jiraTaskSourceContext}
+              scopeKey={jiraTaskSourceScopeKey}
+              onOpenIssue={openJiraDetailPage}
+              onStartWorkspace={handleUseJiraItem}
+              showSiteContext={selectedJiraSiteId === 'all'}
+              loading={jiraLoading}
+              onRefresh={() => setJiraRefreshNonce((value) => value + 1)}
+            />
+          ) : (
+            <TaskPageJiraIssueList
+              formatUpdatedAt={formatRelativeTime}
+              getStatusTone={getJiraStatusTone}
+              issues={sortedJiraIssues}
+              onOpenIssue={openJiraDetailPage}
+              onStartWorkspace={handleUseJiraItem}
+              selectedIssue={selectedJiraIssue}
+              showSiteContext={selectedJiraSiteId === 'all'}
+              statusDirection={jiraOrderBy === 'status' ? jiraOrderDirection : 'asc'}
+              statusOrder={displayedJiraStatusOrder}
+            />
+          )}
         </div>
         <JiraIssueWorkspace
           issue={selectedJiraIssue}

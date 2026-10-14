@@ -35,6 +35,8 @@ export function useTaskPageJiraListState(model: TaskPageLinearViewStateModel) {
     items: JiraStatusCatalogItem[]
   } | null>(null)
   const [activeJiraPreset, setActiveJiraPreset] = useState<JiraPresetId>('assigned')
+  const [jiraViewMode, setJiraViewMode] = useState<'list' | 'board'>('list')
+  const [jiraCurrentSprint, setJiraCurrentSprint] = useState(false)
   const [jiraRefreshNonce, setJiraRefreshNonce] = useState(0)
   const [jiraProjectStatusOrder, setJiraProjectStatusOrder] = useState<{
     order: JiraProjectStatusOrder
@@ -119,6 +121,10 @@ export function useTaskPageJiraListState(model: TaskPageLinearViewStateModel) {
     setAppliedJiraSearch,
     activeJiraPreset,
     setActiveJiraPreset,
+    jiraViewMode,
+    setJiraViewMode,
+    jiraCurrentSprint,
+    setJiraCurrentSprint,
     jiraRefreshNonce,
     setJiraRefreshNonce,
     jiraProjectStatusOrder,

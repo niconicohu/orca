@@ -1,3 +1,6 @@
+import { translate } from '@/i18n/i18n'
+import { isRuntimeProviderSearchQueryWithinLimit } from '@/runtime/runtime-provider-search-bounds'
+import { withCurrentSprintClause } from '../../../shared/jira-jql-predicate'
 import { buildJiraStatusCatalog } from './task-page-jira-status-catalog'
 import type { TaskPageLinearCollectionEffectsModel } from './use-task-page-linear-collection-effects'
 import { useEffect, useRef } from 'react'
@@ -36,6 +39,7 @@ export function useTaskPageJiraListEffects(model: TaskPageLinearCollectionEffect
     appliedJiraSearch,
     setAppliedJiraSearch,
     activeJiraPreset,
+    jiraCurrentSprint,
     jiraRefreshNonce,
     jiraActiveSavedFilterId,
     jiraSavedFilters,
@@ -81,6 +85,7 @@ export function useTaskPageJiraListEffects(model: TaskPageLinearCollectionEffect
     const force = previousJiraRefreshNonceRef.current !== jiraRefreshNonce
     previousJiraRefreshNonceRef.current = jiraRefreshNonce
     let cancelled = false
+    let sprintQueryTooLong = false
     setJiraLoading(true)
     setJiraError(null)
     setJiraJqlRejection(null)
@@ -92,17 +97,30 @@ export function useTaskPageJiraListEffects(model: TaskPageLinearCollectionEffect
       trimmed.length > 0
         ? searchTaskPageJiraIssues(
             trimmed,
-            (jql) =>
-              searchJiraIssues(jql, JIRA_ITEM_LIMIT, {
+            async (jql) => {
+              const query = jiraCurrentSprint ? withCurrentSprintClause(jql) : jql
+              if (jiraCurrentSprint && !isRuntimeProviderSearchQueryWithinLimit(query)) {
+                sprintQueryTooLong = true
+                throw new Error('Query exceeds the request limit after sprint filtering.')
+              }
+              return searchJiraIssues(query, JIRA_ITEM_LIMIT, {
                 sourceContext: jiraTaskSourceContext,
                 force
-              }),
+              })
+            },
             exactSavedJql ? 'jql' : 'input'
           )
         : listJiraIssues(activeJiraPreset, JIRA_ITEM_LIMIT, {
             sourceContext: jiraTaskSourceContext,
             force,
-            ...(selectedJiraStatuses.length ? { filters: { statuses: selectedJiraStatuses } } : {})
+            ...(selectedJiraStatuses.length || jiraCurrentSprint
+              ? {
+                  filters: {
+                    ...(selectedJiraStatuses.length ? { statuses: selectedJiraStatuses } : {}),
+                    ...(jiraCurrentSprint ? { currentSprint: true } : {})
+                  }
+                }
+              : {})
           }).then((issues) => ({ issues, jqlRejection: null }))
     void request
       .then(({ issues, jqlRejection }) => {
@@ -145,7 +163,17 @@ export function useTaskPageJiraListEffects(model: TaskPageLinearCollectionEffect
         }
         const failureState = createTaskPageJiraLoadFailureState(err)
         setJiraIssues(failureState.issues)
-        setJiraError(failureState.error)
+        setJiraError(
+          sprintQueryTooLong
+            ? {
+                title: translate(
+                  'jira.board.queryTooLong',
+                  'The Jira query is too long with Current sprint selected. Shorten the query or turn off Current sprint.'
+                ),
+                details: null
+              }
+            : failureState.error
+        )
         setJiraLoading(false)
       })
     return () => {
@@ -158,6 +186,7 @@ export function useTaskPageJiraListEffects(model: TaskPageLinearCollectionEffect
     selectedJiraSiteId,
     appliedJiraSearch,
     activeJiraPreset,
+    jiraCurrentSprint,
     jiraRefreshNonce,
     jiraActiveSavedFilterId,
     jiraSavedFilters,

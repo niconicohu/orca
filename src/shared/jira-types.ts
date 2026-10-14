@@ -94,6 +94,7 @@ export type JiraStatus = {
 
 export type JiraProjectStatusOrder = {
   statusIdsByColumn: string[][]
+  columns?: { name: string; statusIds: string[] }[]
 }
 
 export type JiraTransition = {
@@ -141,8 +142,7 @@ export type JiraIssueUpdate = {
 }
 
 export type JiraIssueFilter = 'assigned' | 'reported' | 'all' | 'done'
-
-export type JiraIssueListFilters = { statuses?: string[] }
+export type JiraIssueListFilters = { statuses?: string[]; currentSprint?: boolean }
 
 export type JiraConnectArgs = {
   siteUrl: string

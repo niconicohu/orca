@@ -268,7 +268,7 @@ describe('JiraIssueWorkspace optimistic edits', () => {
     render(<StoreBackedWorkspace initial={jiraIssue('Old title')} />)
     await flushPromises()
 
-    fireEvent.click(screen.getByRole('button', { name: 'To Do' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Change status: {{status}}' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Start progress' }))
     await flushPromises()
 
@@ -278,7 +278,7 @@ describe('JiraIssueWorkspace optimistic edits', () => {
       { transitionId: '11' },
       'site-1'
     )
-    // The menu stays open after picking a transition, so it must now list the new ones.
+    fireEvent.click(screen.getByRole('button', { name: 'Change status: {{status}}' }))
     expect(screen.queryByRole('button', { name: 'Start progress' })).toBeNull()
     expect(await screen.findByRole('button', { name: 'Finish' })).toBeDefined()
   })

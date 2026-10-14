@@ -27,7 +27,10 @@ import { isRuntimeProviderSearchQueryWithinLimit } from './runtime-provider-sear
 import { readRuntimeJiraPayload } from './runtime-jira-payload-stream'
 import { getJiraRuntimeTarget, type RuntimeJiraSettings } from './runtime-jira-target'
 import { parseJiraConnectionStatus } from './runtime-jira-connection-status'
-import { JIRA_TRANSITION_FIELDS_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
+import {
+  JIRA_CURRENT_SPRINT_RUNTIME_CAPABILITY,
+  JIRA_TRANSITION_FIELDS_RUNTIME_CAPABILITY
+} from '../../../shared/protocol-version'
 
 export { jiraLookupIssueSummary, jiraReadStatus } from './runtime-jira-summary-client'
 export {
@@ -150,6 +153,13 @@ export async function jiraListIssues(
   const target = getJiraRuntimeTarget(settings)
   const args = { filter, limit, siteId: siteId ?? undefined, ...(filters ? { filters } : {}) }
   if (target.kind === 'environment') {
+    if (filters?.currentSprint) {
+      await assertRuntimeEnvironmentCapability(
+        target.environmentId,
+        JIRA_CURRENT_SPRINT_RUNTIME_CAPABILITY,
+        'Update the remote Orca server to filter preset issues by current sprint.'
+      )
+    }
     if (filters?.statuses?.length) {
       await assertRuntimeEnvironmentCapability(
         target.environmentId,
