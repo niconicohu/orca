@@ -59,19 +59,44 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   const userScrollActiveRef = useRef(false)
   const userScrollSettleFrameRef = useRef<number | null>(null)
 
+  const positionsRef = useRef(new Map<string, { following: boolean; offset: number }>())
+  const measuredHeightRef = useRef<number | null>(null)
+  const offsetRef = useRef(0)
+  const restoringOffsetRef = useRef<number | null>(null)
+  const scopeGenerationRef = useRef(0)
   const [scopeKey, setScopeKey] = useState(args.scopeKey)
   if (scopeKey !== args.scopeKey) {
+    if (scopeKey) {
+      positionsRef.current.delete(scopeKey)
+      positionsRef.current.set(scopeKey, {
+        following: followingRef.current || (userScrollActiveRef.current && atTailRef.current),
+        offset: offsetRef.current
+      })
+      if (positionsRef.current.size > 16) {
+        const oldest = positionsRef.current.keys().next().value
+        if (oldest !== undefined) {
+          positionsRef.current.delete(oldest)
+        }
+      }
+    }
+    const saved = args.scopeKey ? positionsRef.current.get(args.scopeKey) : undefined
+    scopeGenerationRef.current += 1
+    measuredHeightRef.current = null
+    offsetRef.current = saved?.offset ?? 0
+    restoringOffsetRef.current = saved && !saved.following ? saved.offset : null
     setScopeKey(args.scopeKey)
     if (userScrollSettleFrameRef.current !== null) {
       cancelAnimationFrame(userScrollSettleFrameRef.current)
       userScrollSettleFrameRef.current = null
     }
-    followingRef.current = true
-    atTailRef.current = true
+    followingRef.current = saved?.following ?? true
+    atTailRef.current = followingRef.current
     userScrollActiveRef.current = false
-    setFollowingFlag(true)
-    setAtTailFlag(true)
+    setFollowingFlag(followingRef.current)
+    setAtTailFlag(atTailRef.current)
   }
+
+  const scopeGeneration = scopeGenerationRef.current
 
   // Single writer, so the event-time ref and the render flag cannot disagree.
   const setFollowing = useCallback((next: boolean) => {
@@ -91,20 +116,32 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   }, [])
 
   const pinToTail = useCallback(() => {
-    if (!followingRef.current || !hasItems) {
+    if (scopeGenerationRef.current !== scopeGeneration || !followingRef.current || !hasItems) {
       return
     }
-    listRef.current?.scrollToEnd({ animated: false })
-  }, [hasItems])
+    if (measuredHeightRef.current !== null) {
+      listRef.current?.scrollToOffset({ animated: false, offset: measuredHeightRef.current })
+    } else {
+      listRef.current?.scrollToEnd({ animated: false })
+    }
+  }, [hasItems, scopeGeneration])
 
   const pinToTailAfterContentResize = useCallback(
     (_width: number, height: number) => {
-      if (!followingRef.current || !hasItems) {
+      if (scopeGenerationRef.current !== scopeGeneration) {
         return
       }
-      listRef.current?.scrollToOffset({ animated: false, offset: height })
+      measuredHeightRef.current = height
+      if (!hasItems) {
+        return
+      }
+      if (followingRef.current) {
+        listRef.current?.scrollToOffset({ animated: false, offset: height })
+      } else if (restoringOffsetRef.current !== null) {
+        listRef.current?.scrollToOffset({ animated: false, offset: restoringOffsetRef.current })
+      }
     },
-    [hasItems]
+    [hasItems, scopeGeneration]
   )
 
   const clearUserScrollSettle = useCallback(() => {
@@ -115,27 +152,41 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   }, [])
 
   const recordScrollMetrics = useCallback(
-    (event: NativeScrollEvent) => setAtTail(isAtTail(event)),
-    [setAtTail]
+    (event: NativeScrollEvent) => {
+      if (scopeGenerationRef.current !== scopeGeneration) {
+        return
+      }
+      offsetRef.current = event.contentOffset.y
+      setAtTail(isAtTail(event))
+    },
+    [setAtTail, scopeGeneration]
   )
 
   const jumpToTail = useCallback(() => {
+    if (scopeGenerationRef.current !== scopeGeneration) {
+      return
+    }
+    restoringOffsetRef.current = null
     clearUserScrollSettle()
     userScrollActiveRef.current = false
     setAtTail(true)
     setFollowing(true)
     pinToTail()
-  }, [clearUserScrollSettle, pinToTail, setAtTail, setFollowing])
+  }, [clearUserScrollSettle, pinToTail, setAtTail, setFollowing, scopeGeneration])
 
   const beginUserScroll = useCallback(() => {
+    if (scopeGenerationRef.current !== scopeGeneration) {
+      return
+    }
+    restoringOffsetRef.current = null
     clearUserScrollSettle()
     userScrollActiveRef.current = true
     setFollowing(false)
-  }, [clearUserScrollSettle, setFollowing])
+  }, [clearUserScrollSettle, setFollowing, scopeGeneration])
 
   const finishUserScroll = useCallback(
     (finishedAtTail: boolean) => {
-      if (!userScrollActiveRef.current) {
+      if (scopeGenerationRef.current !== scopeGeneration || !userScrollActiveRef.current) {
         return
       }
       clearUserScrollSettle()
@@ -146,29 +197,34 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
         pinToTail()
       }
     },
-    [clearUserScrollSettle, pinToTail, setAtTail, setFollowing]
+    [clearUserScrollSettle, pinToTail, setAtTail, setFollowing, scopeGeneration]
   )
 
   const endUserDrag = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (!userScrollActiveRef.current) {
+      if (scopeGenerationRef.current !== scopeGeneration || !userScrollActiveRef.current) {
         return
       }
       clearUserScrollSettle()
       const releasedAtTail = isAtTail(event.nativeEvent)
+      offsetRef.current = event.nativeEvent.contentOffset.y
+      setAtTail(releasedAtTail)
       userScrollSettleFrameRef.current = requestAnimationFrame(() => {
         userScrollSettleFrameRef.current = null
         finishUserScroll(releasedAtTail)
       })
     },
-    [clearUserScrollSettle, finishUserScroll]
+    [clearUserScrollSettle, finishUserScroll, scopeGeneration, setAtTail]
   )
 
   const beginMomentum = useCallback(() => {
+    if (scopeGenerationRef.current !== scopeGeneration) {
+      return
+    }
     if (userScrollActiveRef.current) {
       clearUserScrollSettle()
     }
-  }, [clearUserScrollSettle])
+  }, [clearUserScrollSettle, scopeGeneration])
 
   const endMomentum = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) =>
@@ -177,13 +233,17 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   )
 
   const detachFromTail = useCallback(() => {
+    if (scopeGenerationRef.current !== scopeGeneration) {
+      return
+    }
+    restoringOffsetRef.current = null
     clearUserScrollSettle()
     userScrollActiveRef.current = false
     setAtTail(false)
     setFollowing(false)
-  }, [clearUserScrollSettle, setAtTail, setFollowing])
+  }, [clearUserScrollSettle, setAtTail, setFollowing, scopeGeneration])
 
-  useEffect(() => clearUserScrollSettle, [clearUserScrollSettle])
+  useEffect(() => clearUserScrollSettle, [clearUserScrollSettle, scopeGeneration])
 
   return {
     listRef,

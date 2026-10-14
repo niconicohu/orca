@@ -57,4 +57,81 @@ describe('restored native chat surface', () => {
     act(() => list().props.onLayout())
     expect(scrollToEnd).toHaveBeenCalledWith({ animated: false })
   })
+  it('does not overwrite the measured tail with an estimated scrollToEnd on a later layout', async () => {
+    await render({ folded: [assistantTurn('a', 'A')], sendSurfaceId: 'a' })
+    act(() => list().props.onContentSizeChange(320, 1200))
+    scrollToEnd.mockClear()
+    act(() => list().props.onLayout())
+    expect(scrollToEnd).not.toHaveBeenCalled()
+    expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 1200 })
+  })
+
+  it('ignores a delayed content-size event from the tab that was switched away from', async () => {
+    await render({ folded: [assistantTurn('a', 'A')], sendSurfaceId: 'a' })
+    const delayedA = list().props.onContentSizeChange
+    await act(async () =>
+      renderer!.update(chatViewElement({ folded: [assistantTurn('b', 'B')], sendSurfaceId: 'b' }))
+    )
+    act(() => list().props.onContentSizeChange(320, 1800))
+    scrollToOffset.mockClear()
+    act(() => delayedA(320, 900))
+    expect(scrollToOffset).not.toHaveBeenCalled()
+  })
+
+  it('restores a reading position when switching A to B and back to A', async () => {
+    await render({ folded: [assistantTurn('a', 'A')], sendSurfaceId: 'a' })
+    act(() => {
+      list().props.onScrollBeginDrag()
+      list().props.onScroll({
+        nativeEvent: {
+          contentOffset: { y: 350 },
+          contentSize: { height: 1200 },
+          layoutMeasurement: { height: 500 }
+        }
+      })
+      list().props.onMomentumScrollEnd({
+        nativeEvent: {
+          contentOffset: { y: 350 },
+          contentSize: { height: 1200 },
+          layoutMeasurement: { height: 500 }
+        }
+      })
+    })
+    await act(async () =>
+      renderer!.update(chatViewElement({ folded: [assistantTurn('b', 'B')], sendSurfaceId: 'b' }))
+    )
+    await act(async () =>
+      renderer!.update(chatViewElement({ folded: [assistantTurn('a', 'A')], sendSurfaceId: 'a' }))
+    )
+    act(() => list().props.onContentSizeChange(320, 1200))
+    expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 350 })
+  })
+  it('keeps following A after a tail drag, a tab switch, a late old callback and newer history', async () => {
+    await render({ folded: [assistantTurn('a', 'A')], sendSurfaceId: 'a' })
+    const oldAContent = list().props.onContentSizeChange
+    act(() => {
+      list().props.onScrollBeginDrag()
+      list().props.onScrollEndDrag({
+        nativeEvent: {
+          contentOffset: { y: 700 },
+          contentSize: { height: 1200 },
+          layoutMeasurement: { height: 500 }
+        }
+      })
+    })
+    await act(async () =>
+      renderer!.update(chatViewElement({ folded: [assistantTurn('b', 'B')], sendSurfaceId: 'b' }))
+    )
+    await act(async () =>
+      renderer!.update(chatViewElement({ folded: [assistantTurn('a', 'A')], sendSurfaceId: 'a' }))
+    )
+    act(() => list().props.onContentSizeChange(320, 1500))
+    scrollToEnd.mockClear()
+    act(() => {
+      oldAContent(320, 900)
+      list().props.onLayout()
+    })
+    expect(scrollToEnd).not.toHaveBeenCalled()
+    expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 1500 })
+  })
 })

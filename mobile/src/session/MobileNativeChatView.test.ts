@@ -269,7 +269,7 @@ describe('MobileNativeChatView', () => {
         })
         list().props.onContentSizeChange(320, 1_350)
       })
-      expect(scrollToEnd).toHaveBeenCalledOnce()
+      expect(scrollToEnd).not.toHaveBeenCalled()
       expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 1_350 })
     } finally {
       vi.useRealTimers()
@@ -377,8 +377,8 @@ describe('MobileNativeChatView', () => {
         vi.runOnlyPendingTimers()
       })
 
-      expect(scrollToEnd).toHaveBeenCalledOnce()
-      expect(scrollToEnd).toHaveBeenLastCalledWith({ animated: false })
+      expect(scrollToEnd).not.toHaveBeenCalled()
+      expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 1_250 })
       expect(
         renderer!.root.findAll((node) => node.props.accessibilityLabel === 'Scroll to latest')
       ).toHaveLength(0)
