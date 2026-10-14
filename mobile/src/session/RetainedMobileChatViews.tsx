@@ -1,4 +1,5 @@
-import { useRef, type ReactElement } from 'react'
+import { focusedChatInput, blurLeavingChatInput } from './retained-chat-input-focus'
+import { useLayoutEffect, useRef, type ReactElement } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 const MAX_RETAINED_VIEWS = 4
@@ -15,6 +16,15 @@ export function RetainedMobileChatViews({
   liveKeys?: readonly string[]
 }) {
   const views = useRef(new Map<string, ReactElement>())
+  const leavingInput = useRef<unknown>(null)
+  useLayoutEffect(() => {
+    const previous = leavingInput.current
+    leavingInput.current = null
+    blurLeavingChatInput(previous)
+    return () => {
+      leavingInput.current = focusedChatInput()
+    }
+  }, [activeKey])
   if (liveKeys) {
     const live = new Set(liveKeys)
     for (const key of views.current.keys()) {

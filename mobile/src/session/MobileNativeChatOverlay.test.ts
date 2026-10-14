@@ -5,9 +5,12 @@ import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { MobileNativeChatOverlay } from './MobileNativeChatOverlay'
 import type { MobileNativeChatController } from './use-mobile-native-chat-controller'
 
+const inputFocus = vi.hoisted(() => ({ get: vi.fn(), blur: vi.fn() }))
+
 vi.mock('react-native', () => ({
   StyleSheet: { create: (styles: unknown) => styles, absoluteFillObject: {} },
-  View: 'View'
+  View: 'View',
+  TextInput: { State: { currentlyFocusedInput: inputFocus.get, blurTextInput: inputFocus.blur } }
 }))
 
 vi.mock('./MobileNativeChatView', () => ({ MobileNativeChatView: 'ChatView' }))
@@ -68,6 +71,8 @@ describe('MobileNativeChatOverlay streaming gate', () => {
   afterEach(() => {
     act(() => renderer?.unmount())
     renderer = null
+    inputFocus.get.mockReset()
+    inputFocus.blur.mockReset()
   })
 
   async function render(tick: Tick): Promise<void> {
@@ -198,7 +203,9 @@ describe('MobileNativeChatOverlay streaming gate', () => {
   })
   it('releases closed tabs and bounds retained native lists', async () => {
     await render({ identity: 'a' })
-    for (const id of ['b', 'c', 'd', 'e']) await update({ identity: id })
+    for (const id of ['b', 'c', 'd', 'e']) {
+      await update({ identity: id })
+    }
     expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(4)
     expect(
       renderer!.root.findAll((node) => node.type === 'ChatView' && node.props.sendSurfaceId === 'a')
@@ -207,5 +214,16 @@ describe('MobileNativeChatOverlay streaming gate', () => {
     expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(1)
     await update({ show: false, liveKeys: [] })
     expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(0)
+  })
+  it('blurs an input left in the hidden tab without blurring a newly focused input', async () => {
+    await render({ identity: 'a' })
+    const oldInput = { id: 'old', blur: inputFocus.blur }
+    inputFocus.get.mockReturnValue(oldInput)
+    await update({ identity: 'b' })
+    expect(inputFocus.blur).toHaveBeenCalledOnce()
+    inputFocus.blur.mockClear()
+    inputFocus.get.mockReturnValueOnce(oldInput).mockReturnValueOnce({ id: 'new' })
+    await update({ identity: 'a' })
+    expect(inputFocus.blur).not.toHaveBeenCalled()
   })
 })
