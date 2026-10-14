@@ -19929,5 +19929,16 @@
     "browser": "Browser",
     "editor": "Editor",
     "terminal": "Terminal"
+  },
+  "jira": {
+    "workspace": {
+      "open": "Open workspace linked to {{key}}",
+      "count": "{{count}} workspaces linked to {{key}}",
+      "startAnother": "Start new workspace",
+      "empty": "Link a Jira issue to a workspace, or choose another view.",
+      "openFailed": "Unable to open the workspace linked to this Jira issue.",
+      "mode": "Has Workspace",
+      "search": "Search linked issues"
+    }
   }
 }
