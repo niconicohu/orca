@@ -89,7 +89,9 @@ export const JIRA_METHODS = [
     permission: 'workspace',
     params: ListIssues,
     handler: async (params, { runtime }) =>
-      runtime.jiraListIssues(params?.filter, params?.limit, params?.siteId)
+      params?.filters
+        ? runtime.jiraListIssues(params.filter, params.limit, params.siteId, params.filters)
+        : runtime.jiraListIssues(params?.filter, params?.limit, params?.siteId)
   }),
   defineMethod({
     name: 'jira.getIssue',
