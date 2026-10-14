@@ -156,10 +156,23 @@ describe('MobileNativeChatView', () => {
     try {
       const folded = [assistantTurn('a1', 'Starting')]
       await render({ folded })
+      act(() => {
+        list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
+        list().props.onContentSizeChange(320, 800)
+        list().props.onViewableItemsChanged({ viewableItems: [{ isViewable: true, index: 0 }] })
+        list().props.onScroll({
+          nativeEvent: {
+            contentOffset: { y: 300 },
+            contentSize: { height: 800 },
+            layoutMeasurement: { height: 500 }
+          }
+        })
+      })
       await act(async () => {
-        vi.runOnlyPendingTimers()
+        vi.advanceTimersByTime(160)
       })
       scrollToEnd.mockClear()
+      scrollToOffset.mockClear()
 
       await update({ folded, streaming: 'Streaming output' })
       act(() => list().props.onContentSizeChange(320, 900))
@@ -587,10 +600,10 @@ describe('MobileNativeChatView', () => {
     function footerProps(): Record<string, unknown> | null {
       const list = renderer!.root.find((node) => node.type === 'FlatList')
       const footer = list.props.ListFooterComponent as
-        | { props: Record<string, unknown> }
+        | { props: { children: [{ props: Record<string, unknown> } | null] } }
         | null
         | undefined
-      return footer?.props ?? null
+      return footer?.props.children[0]?.props ?? null
     }
 
     function workingIndicators(): ReactTestInstance[] {

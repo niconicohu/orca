@@ -318,6 +318,10 @@ describe('mobile + Codex tab creation routing', () => {
     expect(scope.setCreateError).toHaveBeenCalledWith(
       'Your system cannot allocate any more pty devices.'
     )
+    expect(scope.showToast).toHaveBeenCalledWith(
+      'Your system cannot allocate any more pty devices.',
+      2400
+    )
   })
 
   it('falls back to the generic message when the host gives no reason', async () => {

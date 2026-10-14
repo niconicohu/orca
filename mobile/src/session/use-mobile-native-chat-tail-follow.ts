@@ -51,6 +51,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   hasItems: boolean
   itemCount?: number
   scopeKey?: string
+  measurePosition?: Parameters<typeof useMobileChatInitialPosition>[3]['measurePosition']
 }): MobileNativeChatTailFollow<TItem> {
   const { hasItems } = args
   const listRef = useRef<FlatList<TItem> | null>(null)
@@ -153,6 +154,22 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
       userScrollSettleFrameRef.current = null
     }
   }, [])
+  const pinToMeasuredPosition = useCallback(
+    (height: number, viewport: number, offset: number | null) => {
+      if (
+        scopeGenerationRef.current !== scopeGeneration ||
+        viewport <= 0 ||
+        !hasItems ||
+        userScrollActiveRef.current
+      ) {
+        return
+      }
+      const tailOffset = Math.max(0, height - viewport)
+      const target = offset === null ? tailOffset : Math.min(offset, tailOffset)
+      listRef.current?.scrollToOffset({ animated: false, offset: target })
+    },
+    [hasItems, scopeGeneration]
+  )
 
   const recordScrollMetrics = useCallback(
     (event: NativeScrollEvent) => {
@@ -250,7 +267,13 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     args.scopeKey ?? '',
     hasItems,
     restoringOffsetRef.current,
-    { pinToTail, pinToTailAfterContentResize, lastItemIndex: (args.itemCount ?? 1) - 1 }
+    {
+      pinToTail,
+      pinToTailAfterContentResize,
+      pinToMeasuredPosition,
+      measurePosition: args.measurePosition,
+      lastItemIndex: (args.itemCount ?? 1) - 1
+    }
   )
 
   useEffect(() => clearUserScrollSettle, [clearUserScrollSettle, scopeGeneration])

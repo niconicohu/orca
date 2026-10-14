@@ -1,5 +1,5 @@
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   chatViewElement,
   assistantTurn,
@@ -8,6 +8,12 @@ import {
   type Overrides
 } from './mobile-native-chat-view.test-fixture'
 let renderer: ReactTestRenderer | null = null
+beforeEach(() => {
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+    setTimeout(() => callback(Date.now()), 16)
+  )
+  vi.stubGlobal('cancelAnimationFrame', clearTimeout)
+})
 const list = () => renderer!.root.findByType('FlatList' as never)
 const render = async (props: Overrides) => {
   await act(async () => {
@@ -23,6 +29,16 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 describe('restored native chat surface', () => {
+  it('uses the measured viewport to retry the real tail offset after native layout commits', async () => {
+    vi.useFakeTimers()
+    await render({ folded: [assistantTurn('cached', 'Cached')], sendSurfaceId: 'cached' })
+    act(() => {
+      list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
+      list().props.onContentSizeChange(320, 1200)
+    })
+    await act(async () => vi.advanceTimersByTime(60))
+    expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 700 })
+  })
   it('does not page older history during the initial programmatic layout scroll', async () => {
     const onLoadEarlier = vi.fn()
     await render({ folded: [assistantTurn('cached', 'Restored')], hasMore: true, onLoadEarlier })
@@ -147,7 +163,10 @@ describe('restored native chat surface', () => {
     )
     vi.stubGlobal('cancelAnimationFrame', clearTimeout)
     await render({ folded: [assistantTurn('a', 'A')], sendSurfaceId: 'a' })
-    expect(list().props.style).toContainEqual({ opacity: 0 })
+    expect(list().props.pointerEvents).toBe('none')
+    expect(
+      renderer!.root.findAll((node) => node.props.testID === 'chat-initial-position-loading')
+    ).toHaveLength(1)
     act(() => {
       list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
       list().props.onContentSizeChange(320, 1200)
@@ -160,9 +179,12 @@ describe('restored native chat surface', () => {
         }
       })
     })
-    expect(list().props.style).toContainEqual({ opacity: 0 })
-    await act(async () => vi.advanceTimersByTime(32))
-    expect(list().props.style).not.toContainEqual({ opacity: 0 })
+    expect(list().props.pointerEvents).toBe('none')
+    await act(async () => vi.advanceTimersByTime(160))
+    expect(list().props.pointerEvents).toBe('auto')
+    expect(
+      renderer!.root.findAll((node) => node.props.testID === 'chat-initial-position-loading')
+    ).toHaveLength(0)
     vi.useRealTimers()
   })
   it('reveals short histories after measurement without requiring a scroll event', async () => {
@@ -177,10 +199,10 @@ describe('restored native chat surface', () => {
       list().props.onContentSizeChange(320, 400)
       list().props.onViewableItemsChanged({ viewableItems: [{ isViewable: true, index: 0 }] })
     })
-    await act(async () => vi.advanceTimersByTime(32))
-    expect(list().props.style).not.toContainEqual({ opacity: 0 })
+    await act(async () => vi.advanceTimersByTime(160))
+    expect(list().props.pointerEvents).toBe('auto')
   })
-  it('does not keep cached messages hidden indefinitely when native visibility acknowledgement is late', async () => {
+  it('retries positioning under the cover until the delayed native acknowledgement arrives', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
       setTimeout(() => callback(Date.now()), 16)
@@ -192,7 +214,19 @@ describe('restored native chat surface', () => {
       list().props.onContentSizeChange(320, 1200)
     })
     await act(async () => vi.advanceTimersByTime(300))
-    expect(list().props.style).not.toContainEqual({ opacity: 0 })
-    expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 1200 })
+    expect(list().props.pointerEvents).toBe('none')
+    expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 700 })
+    act(() => {
+      list().props.onViewableItemsChanged({ viewableItems: [{ isViewable: true, index: 0 }] })
+      list().props.onScroll({
+        nativeEvent: {
+          contentOffset: { y: 700 },
+          contentSize: { height: 1200 },
+          layoutMeasurement: { height: 500 }
+        }
+      })
+    })
+    await act(async () => vi.advanceTimersByTime(160))
+    expect(list().props.pointerEvents).toBe('auto')
   })
 })

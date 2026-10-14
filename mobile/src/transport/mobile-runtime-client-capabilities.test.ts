@@ -16,6 +16,14 @@ const HOST_CAPABILITY_LIMIT = 64
 const HOST_CAPABILITY_NAME_LIMIT = 128
 
 describe('mobile runtime client capabilities', () => {
+  it('opts into client-owned launch mode on newer hosts without changing their global default', () => {
+    // Captured host admission: a paired client without this claim requires the host Chat default.
+    const clientNeedsHostDefault = !MOBILE_RUNTIME_CLIENT_CAPABILITIES.includes(
+      'agent-session.structured.client-launch-mode.v1'
+    )
+    const hostChatDefault = false
+    expect(clientNeedsHostDefault && !hostChatDefault).toBe(false)
+  })
   it('advertises structured agent sessions, the Claude lane, and the turn item', () => {
     expect(MOBILE_RUNTIME_CLIENT_CAPABILITIES).toEqual(
       expect.arrayContaining([

@@ -1,4 +1,7 @@
-import { recordChatClientDiagnostic } from '../diagnostics/chat-runtime-diagnostics'
+import {
+  measureChatRead,
+  recordChatClientDiagnostic
+} from '../diagnostics/chat-runtime-diagnostics'
 import type { AgentSessionHandleProvider } from '../../../src/shared/agent-session-provider-handle'
 import type {
   AgentSessionAttachResult,
@@ -88,7 +91,12 @@ export async function createMobileStructuredAgentSession(
   let supportResponse
   for (let attempt = 0; ; attempt += 1) {
     try {
-      supportResponse = await structuredAgentSupportProbe.request(client, { worktree, agent })
+      supportResponse = await measureChatRead(
+        client,
+        worktreeId,
+        'agentSession.createSupport',
+        () => structuredAgentSupportProbe.request(client, { worktree, agent })
+      )
     } catch (error) {
       const retryDelayMs = CREATE_SUPPORT_RETRY_DELAYS_MS[attempt]
       if (
@@ -124,19 +132,20 @@ export async function createMobileStructuredAgentSession(
   }
 
   const params = createParamsFor(agent, worktree)
-  let response
-  try {
-    response = await structuredAgentSessionCreate.request(client, params, {
-      timeoutMs: 15_000,
-      budgetSpansConnect: true
-    })
-  } catch {
-    // Replay the durable envelope once so a lost acknowledgement cannot create a sibling.
-    try {
-      response = await structuredAgentSessionCreate.request(client, params, {
+  const sendCreate = () =>
+    measureChatRead(client, worktreeId, 'agentSession.create', () =>
+      structuredAgentSessionCreate.request(client, params, {
         timeoutMs: 15_000,
         budgetSpansConnect: true
       })
+    )
+  let response
+  try {
+    response = await sendCreate()
+  } catch {
+    // Replay the durable envelope once so a lost acknowledgement cannot create a sibling.
+    try {
+      response = await sendCreate()
     } catch (retryError) {
       // A second transport error cannot disprove the first attempt committed.
       return unknownCreateResult(agent, retryError)

@@ -1,3 +1,4 @@
+import { MobileNativeChatToolbar } from './MobileNativeChatToolbar'
 import { MobileChatPositioningCover } from './MobileChatPositioningCover'
 import { useCallback, useMemo, useState } from 'react'
 import {
@@ -11,7 +12,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
-import { ArrowDown, ChevronsDownUp, ChevronsUpDown, Square } from 'lucide-react-native'
+import { ArrowDown } from 'lucide-react-native'
 import type { AskAnswerSelection, AskPrompt } from '../../../src/shared/native-chat-ask'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import {
@@ -30,6 +31,7 @@ import {
   type MobileNativeChatPendingItem
 } from './mobile-native-chat-render-data'
 import { useMobileNativeChatPinchGesture } from './use-mobile-native-chat-pinch-gesture'
+import { useMobileChatNativeLayout } from './use-mobile-chat-native-layout'
 import { useMobileNativeChatTailFollow } from './use-mobile-native-chat-tail-follow'
 import { useMobileNativeChatTurnDisclosure } from './use-mobile-native-chat-turn-disclosure'
 import { useSettledMobileNativeChatInputLock } from './use-mobile-native-chat-input-lease'
@@ -213,6 +215,7 @@ export function MobileNativeChatView({
       }),
     [messages, folded, streaming, pending, imagePreviewsByMessageId]
   )
+  const nativeLayout = useMobileChatNativeLayout(sendSurfaceId, data.length - 1)
   const subagentLabels = useMemo(() => nativeChatSubagentLabels(messages), [messages])
   const {
     listRef,
@@ -230,7 +233,8 @@ export function MobileNativeChatView({
   } = useMobileNativeChatTailFollow<NativeChatMessage>({
     hasItems: data.length > 0,
     itemCount: data.length,
-    scopeKey: sendSurfaceId
+    scopeKey: sendSurfaceId,
+    measurePosition: nativeLayout.measurePosition
   })
 
   const handleSend = useCallback(
@@ -287,6 +291,8 @@ export function MobileNativeChatView({
     ({ item, index }: { item: NativeChatMessage; index: number }) => (
       <MobileNativeChatMessage
         message={item}
+        nativeRowRef={index === data.length - 1 ? nativeLayout.rowRef : undefined}
+        onNativeRowLayout={index === data.length - 1 ? nativeLayout.onLastRowLayout : undefined}
         toolsExpanded={toolsExpanded}
         fontScale={fontScale}
         onOpenFile={onOpenFile}
@@ -296,7 +302,17 @@ export function MobileNativeChatView({
         {...turns.resolveRow(index, item)}
       />
     ),
-    [toolsExpanded, fontScale, onOpenFile, structuredActivityUi, subagentLabels, turns]
+    [
+      toolsExpanded,
+      fontScale,
+      onOpenFile,
+      structuredActivityUi,
+      subagentLabels,
+      turns,
+      data.length,
+      nativeLayout.rowRef,
+      nativeLayout.onLastRowLayout
+    ]
   )
 
   const emptyState = mobileNativeChatEmptyState(status, agent ?? null, error)
@@ -312,71 +328,78 @@ export function MobileNativeChatView({
         </View>
       ) : (
         <GestureHandlerRootView style={styles.listWrap}>
-          <GestureDetector gesture={pinchGesture}>
-            <FlatList
-              key={sendSurfaceId}
-              {...initialPosition.listProps}
-              maintainVisibleContentPosition={followingTail ? undefined : { minIndexForVisible: 0 }}
-              ref={listRef}
-              data={data}
-              keyExtractor={(item) => item.id}
-              renderItem={renderItem}
-              contentContainerStyle={styles.listContent}
-              // Let link/file taps land while the composer keyboard is up
-              // instead of being swallowed by the dismiss gesture.
-              keyboardShouldPersistTaps="handled"
-              onScroll={onScroll}
-              onScrollBeginDrag={beginUserScroll}
-              onScrollEndDrag={endUserDrag}
-              onMomentumScrollBegin={beginMomentum}
-              onMomentumScrollEnd={endMomentum}
-              scrollEventThrottle={32}
-              ListHeaderComponent={
-                hasMore ? (
-                  <Pressable
-                    style={styles.loadEarlier}
-                    onPress={loadEarlier}
-                    disabled={loadingEarlier}
-                  >
-                    {loadingEarlier ? (
-                      <ActivityIndicator size="small" color={colors.textMuted} />
-                    ) : (
-                      <Text style={styles.loadEarlierText}>Load earlier messages</Text>
-                    )}
-                  </Pressable>
-                ) : null
-              }
-              ListFooterComponent={
-                agentWorking &&
-                (!structuredActivityUi || turns.active) &&
-                !hasPendingStructuredInteraction ? (
-                  <MobileNativeChatTurnActivity
-                    thinking={turns.active?.thinking ?? turnIndicator?.thinking ?? false}
-                    activityText={turns.activeActivityText}
-                  />
-                ) : null
-              }
-              ListEmptyComponent={
-                emptyState ? (
-                  <View style={styles.center}>
-                    <Text style={styles.emptyTitle}>{emptyState.title}</Text>
-                    <Text style={styles.emptySubtitle}>{emptyState.subtitle}</Text>
+          <View ref={nativeLayout.viewportRef} style={styles.listWrap} collapsable={false}>
+            <GestureDetector gesture={pinchGesture}>
+              <FlatList
+                key={sendSurfaceId}
+                {...initialPosition.listProps}
+                maintainVisibleContentPosition={
+                  followingTail ? undefined : { minIndexForVisible: 0 }
+                }
+                ref={listRef}
+                data={data}
+                keyExtractor={(item) => item.id}
+                renderItem={renderItem}
+                contentContainerStyle={styles.listContent}
+                // Let link/file taps land while the composer keyboard is up
+                // instead of being swallowed by the dismiss gesture.
+                keyboardShouldPersistTaps="handled"
+                onScroll={onScroll}
+                onScrollBeginDrag={beginUserScroll}
+                onScrollEndDrag={endUserDrag}
+                onMomentumScrollBegin={beginMomentum}
+                onMomentumScrollEnd={endMomentum}
+                scrollEventThrottle={32}
+                ListHeaderComponent={
+                  hasMore ? (
+                    <Pressable
+                      style={styles.loadEarlier}
+                      onPress={loadEarlier}
+                      disabled={loadingEarlier}
+                    >
+                      {loadingEarlier ? (
+                        <ActivityIndicator size="small" color={colors.textMuted} />
+                      ) : (
+                        <Text style={styles.loadEarlierText}>Load earlier messages</Text>
+                      )}
+                    </Pressable>
+                  ) : null
+                }
+                ListFooterComponent={
+                  <View>
+                    {agentWorking &&
+                    (!structuredActivityUi || turns.active) &&
+                    !hasPendingStructuredInteraction ? (
+                      <MobileNativeChatTurnActivity
+                        thinking={turns.active?.thinking ?? turnIndicator?.thinking ?? false}
+                        activityText={turns.activeActivityText}
+                      />
+                    ) : null}
+                    <View ref={nativeLayout.footerRef} collapsable={false} />
                   </View>
-                ) : null
-              }
-            />
-          </GestureDetector>
-          <MobileChatPositioningCover ready={initialPosition.ready} />
-          {/* Jump-to-latest control. */}
-          {showJumpToTail ? (
-            <Pressable
-              accessibilityLabel="Scroll to latest"
-              style={[styles.fab, styles.fabBottom]}
-              onPress={jumpToTail}
-            >
-              <ArrowDown size={18} color={colors.textPrimary} strokeWidth={2.2} />
-            </Pressable>
-          ) : null}
+                }
+                ListEmptyComponent={
+                  emptyState ? (
+                    <View style={styles.center}>
+                      <Text style={styles.emptyTitle}>{emptyState.title}</Text>
+                      <Text style={styles.emptySubtitle}>{emptyState.subtitle}</Text>
+                    </View>
+                  ) : null
+                }
+              />
+            </GestureDetector>
+            <MobileChatPositioningCover ready={initialPosition.ready} />
+            {/* Jump-to-latest control. */}
+            {showJumpToTail ? (
+              <Pressable
+                accessibilityLabel="Scroll to latest"
+                style={[styles.fab, styles.fabBottom]}
+                onPress={jumpToTail}
+              >
+                <ArrowDown size={18} color={colors.textPrimary} strokeWidth={2.2} />
+              </Pressable>
+            ) : null}
+          </View>
         </GestureHandlerRootView>
       )}
       <MobileNativeChatPromptCard
@@ -391,33 +414,12 @@ export function MobileNativeChatView({
         question={question}
         onAnswerQuestion={onAnswerQuestion}
       />
-      <View style={styles.chromeRow}>
-        <View style={styles.chromeLeft}>
-          <Pressable
-            style={({ pressed }) => [styles.chromeToggle, pressed && styles.pressed]}
-            onPress={() => setToolsExpanded((v) => !v)}
-            hitSlop={8}
-          >
-            {toolsExpanded ? (
-              <ChevronsDownUp size={14} color={colors.textMuted} strokeWidth={2} />
-            ) : (
-              <ChevronsUpDown size={14} color={colors.textMuted} strokeWidth={2} />
-            )}
-            <Text style={styles.chromeToggleLabel}>{toolsExpanded ? 'Collapse' : 'Tools'}</Text>
-          </Pressable>
-        </View>
-        {canStop ? (
-          <Pressable
-            style={({ pressed }) => [styles.stopButton, pressed && styles.pressed]}
-            onPress={onStop}
-            hitSlop={8}
-            accessibilityLabel="Stop the agent"
-          >
-            <Square size={13} color={colors.statusRed} strokeWidth={2.4} fill={colors.statusRed} />
-            <Text style={styles.stopLabel}>Stop</Text>
-          </Pressable>
-        ) : null}
-      </View>
+      <MobileNativeChatToolbar
+        toolsExpanded={toolsExpanded}
+        onToggleTools={() => setToolsExpanded((v) => !v)}
+        canStop={canStop}
+        onStop={onStop}
+      />
       {sendErrorMessage ? (
         // This banner is the only channel for a send failure — announce it.
         <View

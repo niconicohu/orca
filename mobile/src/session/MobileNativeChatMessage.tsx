@@ -1,6 +1,6 @@
 import { MobileSelectableText as Text } from '../components/MobileSelectableText'
-import { memo } from 'react'
-import { Image, Text as NativeText, View } from 'react-native'
+import { memo, type RefObject } from 'react'
+import { Image, Text as NativeText, View, type LayoutChangeEvent } from 'react-native'
 import { splitNativeChatBlocks } from '../../../src/shared/native-chat-tool-fold'
 import { selectActiveToolCall } from '../../../src/shared/native-chat-tool-activity'
 import { isImageRefBlock, isTextBlock } from '../../../src/shared/native-chat-types'
@@ -78,9 +78,13 @@ function MobileNativeChatMessageImpl({
   onToggleTurn,
   activeTurnIsWorking,
   structuredActivityUi = false,
-  subagentLabel
+  subagentLabel,
+  nativeRowRef,
+  onNativeRowLayout
 }: {
   message: NativeChatMessage
+  nativeRowRef?: RefObject<View | null>
+  onNativeRowLayout?: (event: LayoutChangeEvent) => void
   toolsExpanded?: boolean
   /** Multiplies all chat text sizes for pinch-to-zoom (1 = no change). */
   fontScale?: number
@@ -129,7 +133,12 @@ function MobileNativeChatMessageImpl({
 
   return (
     <>
-      <View style={[styles.row, isUser && styles.rowUser]}>
+      <View
+        style={[styles.row, isUser && styles.rowUser]}
+        ref={nativeRowRef}
+        onLayout={onNativeRowLayout}
+        collapsable={nativeRowRef ? false : undefined}
+      >
         <View
           style={[
             styles.content,

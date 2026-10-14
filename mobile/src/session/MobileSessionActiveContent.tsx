@@ -134,11 +134,6 @@ export function MobileSessionActiveContent({
         onDiscard={() => discardMarkdownLocalContent(activeMarkdownTab)}
         keyboardLift={keyboardLift}
       />
-      {toastMessage && (
-        <Animated.View pointerEvents="none" style={[styles.toast, toastAnimatedStyle]}>
-          <Text style={styles.toastText}>{toastMessage}</Text>
-        </Animated.View>
-      )}
     </View>
   ) : activeFileTab ? (
     <View style={styles.markdownFrame}>
@@ -160,11 +155,6 @@ export function MobileSessionActiveContent({
             : undefined
         }
       />
-      {toastMessage && (
-        <Animated.View pointerEvents="none" style={[styles.toast, toastAnimatedStyle]}>
-          <Text style={styles.toastText}>{toastMessage}</Text>
-        </Animated.View>
-      )}
     </View>
   ) : activeBrowserTab ? (
     <View style={styles.browserFrame}>
@@ -179,11 +169,6 @@ export function MobileSessionActiveContent({
         bottomInset={insets.bottom}
         onToast={showToast}
       />
-      {toastMessage && (
-        <Animated.View pointerEvents="none" style={[styles.toast, toastAnimatedStyle]}>
-          <Text style={styles.toastText}>{toastMessage}</Text>
-        </Animated.View>
-      )}
     </View>
   ) : activePendingTerminalTab ? (
     <View style={styles.emptyState}>
@@ -237,11 +222,6 @@ export function MobileSessionActiveContent({
           onOpenUrl={handleTerminalOpenUrl}
         />
       ))}
-      {toastMessage && (
-        <Animated.View pointerEvents="none" style={[styles.toast, toastAnimatedStyle]}>
-          <Text style={styles.toastText}>{toastMessage}</Text>
-        </Animated.View>
-      )}
     </View>
   )
   return (
@@ -273,6 +253,11 @@ export function MobileSessionActiveContent({
         getSendCompletionGeneration={controller.getSendCompletionGeneration}
         keyboardInset={keyboardLift}
       />
+      {toastMessage && (
+        <Animated.View pointerEvents="none" style={[styles.toast, toastAnimatedStyle]}>
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </Animated.View>
+      )}
     </View>
   )
 }

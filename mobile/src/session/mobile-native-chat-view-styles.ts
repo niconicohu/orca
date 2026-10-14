@@ -58,7 +58,6 @@ export const styles = StyleSheet.create({
     flex: 1,
     position: 'relative'
   },
-  positioningList: { opacity: 0 },
   positioningCover: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',

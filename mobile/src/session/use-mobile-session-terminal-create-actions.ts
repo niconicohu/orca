@@ -72,11 +72,10 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
     // collapsing every failure to 'Failed to create terminal' left the phone undiagnosable.
     function reportCreateFailure(hostReason: string): void {
       const reason = hostReason.trim()
-      setCreateError(reason || options?.errorToast || 'Failed to create terminal')
-      if (options?.errorToast) {
-        triggerError()
-        showToast(options.errorToast, 1800)
-      }
+      const message = reason || options?.errorToast || 'Failed to create terminal'
+      setCreateError(message)
+      triggerError()
+      showToast(options?.errorToast ?? message, options?.errorToast ? 1800 : 2400)
     }
 
     try {
@@ -107,8 +106,6 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
         }
         if (structured.kind === 'failed') {
           reportCreateFailure(structured.message)
-          triggerError()
-          showToast(structured.message, 1800)
           return
         }
         if (structured.kind === 'unknown') {
@@ -122,8 +119,6 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
           const message =
             'This host cannot create structured Chat here. Enable Chat on the host or choose Terminal view.'
           reportCreateFailure(message)
-          triggerError()
-          showToast(message, 2400)
           return
         }
       }
