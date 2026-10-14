@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022]
+        os: [windows-2022, windows-11-arm]
     env:
       ORCA_BACKGROUND_LAUNCH: '1'
     steps:
@@ -41,3 +41,6 @@ jobs:
           cache-electron-package: 'true'
       - name: Diagnose taskkill tree outcomes
         run: pnpm exec vitest run --config config/vitest.config.ts src/main/ipc/zz-diag-taskkill.win32.test.ts --reporter=verbose
+      - name: Diagnose stop-test root removal
+        if: always()
+        run: pnpm exec vitest run --config config/vitest.config.ts src/main/orcad/zz-diag-stop-rm.win32.test.ts --reporter=verbose
