@@ -32,7 +32,7 @@ import { translate } from '@/i18n/i18n'
 import { JiraIssueMetadataBar, JiraIssueWorkspaceHeader } from './jira-issue-workspace-chrome'
 import { JiraIssueCommentComposer, JiraIssueWorkspaceContent } from './jira-issue-workspace-content'
 import { getJiraIssueWorkspaceActions } from './jira-issue-workspace-actions'
-import { defaultScopeSource } from '@/lib/default-creation-host'
+import { defaultScopeHost, defaultScopeSource } from '@/lib/default-creation-host'
 import { getTaskSourceCacheScope } from '../../../shared/task-source-context'
 import {
   editedJiraIssueFields,
@@ -92,6 +92,11 @@ export default function JiraIssueWorkspace({
     : null
   const loadedRequestKeyRef = useRef<string | null>(null)
   const editedFieldsRef = useRef(new Set<EditableJiraIssueField>())
+  const metadataKey = JSON.stringify([
+    sourceContext ? getTaskSourceCacheScope(sourceContext) : defaultScopeHost(settings),
+    siteId,
+    displayed?.key
+  ])
 
   const loadComments = useCallback(
     async (targetIssue: JiraIssue, requestId: number): Promise<void> => {
@@ -426,6 +431,7 @@ export default function JiraIssueWorkspace({
             />
 
             <JiraIssueMetadataBar
+              key={metadataKey}
               displayed={displayed}
               pendingField={pendingField}
               transitions={transitions}
