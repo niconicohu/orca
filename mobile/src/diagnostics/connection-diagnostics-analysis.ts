@@ -26,8 +26,8 @@ type DiagnoseConnectionArgs = {
 export function diagnoseConnection(args: DiagnoseConnectionArgs): ConnectionDiagnosis {
   if (args.state === 'connected') {
     return {
-      likelyCause: `Connection is healthy${args.activePath ? ` via ${formatPath(args.activePath)}` : ''}.`,
-      nextStep: 'No action needed.',
+      likelyCause: `Authenticated connection is open${args.activePath ? ` via ${formatPath(args.activePath)}` : ''}. Chat loading has not been assessed.`,
+      nextStep: 'If chat is slow or empty, inspect Chat runtime diagnostics.',
       reportability: 'none'
     }
   }
@@ -275,5 +275,5 @@ function formatPath(path: MobileConnectionDiagnosticPath): string {
   if (path === 'relay') {
     return 'Relay'
   }
-  return path === 'tailscale' ? 'Tailscale/direct' : 'LAN/direct'
+  return path === 'tailscale' ? 'Tailscale endpoint (peer route unknown)' : 'LAN/direct'
 }

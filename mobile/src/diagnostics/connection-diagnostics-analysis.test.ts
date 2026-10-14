@@ -19,8 +19,9 @@ describe('diagnoseConnection', () => {
         entries: [event('WebSocket connect timeout')]
       })
     ).toEqual({
-      likelyCause: 'Connection is healthy via Relay.',
-      nextStep: 'No action needed.',
+      likelyCause:
+        'Authenticated connection is open via Relay. Chat loading has not been assessed.',
+      nextStep: 'If chat is slow or empty, inspect Chat runtime diagnostics.',
       reportability: 'none'
     })
   })

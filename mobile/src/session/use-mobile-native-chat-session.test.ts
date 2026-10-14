@@ -499,6 +499,10 @@ describe('useMobileNativeChatSession transcriptLoading', () => {
     agent?: string | null
     sourceIdentity?: string
   }): null {
+    // Subscription-only fixtures leave the independent history read pending.
+    if (client && typeof client.sendRequest !== 'function') {
+      client.sendRequest = () => new Promise<never>(() => {})
+    }
     const session = useMobileNativeChatSession({
       client,
       sourceIdentity,

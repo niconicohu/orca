@@ -229,6 +229,7 @@ export function MobileNativeChatView({
     canPageFromScroll
   } = useMobileNativeChatTailFollow<NativeChatMessage>({
     hasItems: data.length > 0,
+    itemCount: data.length,
     scopeKey: sendSurfaceId
   })
 

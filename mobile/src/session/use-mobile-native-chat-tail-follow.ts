@@ -49,6 +49,7 @@ export type MobileNativeChatTailFollow<TItem> = {
 export function useMobileNativeChatTailFollow<TItem>(args: {
   /** Guards `scrollToEnd` against an empty list. */
   hasItems: boolean
+  itemCount?: number
   scopeKey?: string
 }): MobileNativeChatTailFollow<TItem> {
   const { hasItems } = args
@@ -249,7 +250,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     args.scopeKey ?? '',
     hasItems,
     restoringOffsetRef.current,
-    { pinToTail, pinToTailAfterContentResize }
+    { pinToTail, pinToTailAfterContentResize, lastItemIndex: (args.itemCount ?? 1) - 1 }
   )
 
   useEffect(() => clearUserScrollSettle, [clearUserScrollSettle, scopeGeneration])

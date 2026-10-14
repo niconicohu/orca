@@ -151,6 +151,7 @@ describe('restored native chat surface', () => {
     act(() => {
       list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
       list().props.onContentSizeChange(320, 1200)
+      list().props.onViewableItemsChanged({ viewableItems: [{ isViewable: true, index: 0 }] })
       list().props.onScroll({
         nativeEvent: {
           contentOffset: { y: 700 },
@@ -174,6 +175,7 @@ describe('restored native chat surface', () => {
     act(() => {
       list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
       list().props.onContentSizeChange(320, 400)
+      list().props.onViewableItemsChanged({ viewableItems: [{ isViewable: true, index: 0 }] })
     })
     await act(async () => vi.advanceTimersByTime(32))
     expect(list().props.style).not.toContainEqual({ opacity: 0 })

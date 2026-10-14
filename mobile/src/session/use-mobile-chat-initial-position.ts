@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import type { NativeScrollEvent, LayoutChangeEvent } from 'react-native'
+import { recordChatDiagnostic } from '../diagnostics/chat-runtime-diagnostics'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { NativeScrollEvent, LayoutChangeEvent, ViewToken } from 'react-native'
 import { styles } from './mobile-native-chat-view-styles'
+
+const INITIAL_POSITION_VIEWABILITY = { itemVisiblePercentThreshold: 1 }
 
 /** Keep measuring offscreen until native scrolling acknowledges the intended position. */
 export function useMobileChatInitialPosition(
@@ -8,6 +11,7 @@ export function useMobileChatInitialPosition(
   hasItems: boolean,
   offset: number | null,
   scroll: {
+    lastItemIndex?: number
     pinToTail: () => void
     pinToTailAfterContentResize: (width: number, height: number) => void
   }
@@ -15,7 +19,14 @@ export function useMobileChatInitialPosition(
   const scope = useRef(scopeKey)
   const generation = useRef(0)
   const frame = useRef<number | null>(null)
-  const measurements = useRef({ height: 0, viewport: 0, aligned: false, version: 0 })
+  const measurements = useRef({
+    height: 0,
+    viewport: 0,
+    aligned: false,
+    visible: false,
+    version: 0
+  })
+  const shown = useRef(-1)
   const [shownGeneration, setShownGeneration] = useState(-1)
   const cancel = () => {
     if (frame.current !== null) {
@@ -27,12 +38,21 @@ export function useMobileChatInitialPosition(
     cancel()
     scope.current = scopeKey
     generation.current += 1
-    measurements.current = { height: 0, viewport: 0, aligned: false, version: 0 }
+    measurements.current = { height: 0, viewport: 0, aligned: false, visible: false, version: 0 }
   }
+  const lastItemIndex = useRef(scroll.lastItemIndex ?? 0)
+  lastItemIndex.current = scroll.lastItemIndex ?? 0
+  const targetOffset = useRef(offset)
+  targetOffset.current = offset
   const current = generation.current
   const ready = shownGeneration === current
   const settle = () => {
-    if (ready || frame.current !== null || !measurements.current.aligned) {
+    if (
+      shown.current === current ||
+      frame.current !== null ||
+      !measurements.current.aligned ||
+      !measurements.current.visible
+    ) {
       return
     }
     let version = measurements.current.version
@@ -44,9 +64,15 @@ export function useMobileChatInitialPosition(
         return
       }
       const latest = measurements.current
-      stableFrames = latest.version === version && latest.aligned ? stableFrames + 1 : 0
+      stableFrames =
+        latest.version === version && latest.aligned && latest.visible ? stableFrames + 1 : 0
       version = latest.version
-      if (latest.aligned && (stableFrames >= 2 || Date.now() - startedAt >= 400)) {
+      if (
+        latest.aligned &&
+        latest.visible &&
+        (stableFrames >= 2 || Date.now() - startedAt >= 400)
+      ) {
+        shown.current = current
         setShownGeneration(current)
       } else if (Date.now() - startedAt < 400) {
         frame.current = requestAnimationFrame(check)
@@ -66,8 +92,22 @@ export function useMobileChatInitialPosition(
     }
     settle()
   }
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (generation.current !== current || shown.current === current) {
+        return
+      }
+      measurements.current.visible = viewableItems.some(
+        (item) =>
+          item.isViewable && (targetOffset.current !== null || item.index === lastItemIndex.current)
+      )
+      settle()
+    },
+    [current]
+  )
   useEffect(() => {
     if (!hasItems) {
+      shown.current = -1
       setShownGeneration(-1)
     }
     return () => {
@@ -76,9 +116,23 @@ export function useMobileChatInitialPosition(
       }
     }
   }, [hasItems, current])
+  useEffect(() => {
+    const hostId = scopeKey.split('\0')[0]
+    if (hostId) {
+      recordChatDiagnostic(hostId, scopeKey, 'chat-position', {
+        shown: !hasItems || ready,
+        height: measurements.current.height,
+        viewport: measurements.current.viewport,
+        positionAck: measurements.current.aligned,
+        targetRowVisible: measurements.current.visible
+      })
+    }
+  }, [scopeKey, hasItems, ready])
   return {
     ready: !hasItems || ready,
     listProps: {
+      onViewableItemsChanged,
+      viewabilityConfig: INITIAL_POSITION_VIEWABILITY,
       style: [hasItems && !ready && styles.positioningList],
       pointerEvents: hasItems && !ready ? ('none' as const) : ('auto' as const),
       accessibilityElementsHidden: hasItems && !ready,
