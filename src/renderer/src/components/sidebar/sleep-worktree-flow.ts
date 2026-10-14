@@ -8,7 +8,12 @@ import {
 import { VIRTUALIZED_SCROLL_ANCHOR_RECORD_EVENT } from '@/hooks/useVirtualizedScrollAnchor'
 import { translate } from '@/i18n/i18n'
 import { AGENT_SESSION_SLEEP_UNSUPPORTED } from '@/runtime/structured-agent-session-close'
-import { resolveWorkspaceChatSleeps, sleepWorkspaceChats } from './sleep-workspace-chats'
+import {
+  preflightWorkspaceChatSleep,
+  resolveWorkspaceChatSleeps,
+  sleepWorkspaceChats,
+  type WorkspaceSleepTarget
+} from './sleep-workspace-chats'
 
 /**
  * Shared "sleep worktree" flow (close all panels to free memory / CPU)
@@ -143,10 +148,18 @@ function describeSleepFailure(error: unknown): string {
   )
 }
 
-export async function runSleepWorktrees(worktreeIds: readonly string[]): Promise<void> {
-  if (worktreeIds.length === 0) {
+function describeChatStopFailure(): string {
+  return translate(
+    'auto.components.sidebar.sleep.worktree.flow.chat.partial',
+    'The host could not confirm the chat stopped. Other panels may have closed; check the connection and try again.'
+  )
+}
+
+export async function runSleepWorktrees(targets: readonly WorkspaceSleepTarget[]): Promise<void> {
+  if (targets.length === 0) {
     return
   }
+  const worktreeIds = targets.map((target) => (typeof target === 'string' ? target : target.id))
   const state = useAppStore.getState()
   const {
     activeWorktreeId,
@@ -154,9 +167,10 @@ export async function runSleepWorktrees(worktreeIds: readonly string[]): Promise
     shutdownWorktreeBrowsers,
     shutdownWorktreeTerminals
   } = state
-  const chatsByWorktreeId = new Map(
-    worktreeIds.map((worktreeId) => [worktreeId, resolveWorkspaceChatSleeps(state, worktreeId)])
-  )
+  const sleepTargets = targets.map((target) => ({
+    worktreeId: typeof target === 'string' ? target : target.id,
+    chats: resolveWorkspaceChatSleeps(state, target)
+  }))
   const sleptActiveWorktreeId =
     activeWorktreeId && worktreeIds.includes(activeWorktreeId) ? activeWorktreeId : null
   if (sleptActiveWorktreeId) {
@@ -169,14 +183,38 @@ export async function runSleepWorktrees(worktreeIds: readonly string[]): Promise
     setActiveWorktree(null)
     restoreSidebarPosition()
   }
+  const reactivatedWorktreeIds = new Set<string>()
+  const wasReactivated = (worktreeId: string): boolean =>
+    reactivatedWorktreeIds.has(worktreeId) || useAppStore.getState().activeWorktreeId === worktreeId
+  const unsubscribe = useAppStore.subscribe((next, previous) => {
+    if (
+      next.activeWorktreeId &&
+      (next.activeWorktreeId !== previous.activeWorktreeId ||
+        next.activeWorkspaceExecutionHostId !== previous.activeWorkspaceExecutionHostId)
+    ) {
+      reactivatedWorktreeIds.add(next.activeWorktreeId)
+    }
+  })
   const errors: string[] = []
   const failedWorktreeIds = new Set<string>()
   try {
-    for (const worktreeId of worktreeIds) {
+    for (const { worktreeId, chats } of sleepTargets) {
       // Why: the marker outlives teardown so the panes left mounted stay cold
       // until an explicit wake (#10205); mark per workspace so an earlier
       // slow teardown never leaves a later, still-awake one marked.
       markWorktreeSleepIntent(worktreeId)
+      try {
+        await preflightWorkspaceChatSleep(chats)
+      } catch (err) {
+        console.error('[sleep-worktree] chat sleep preflight failed', { worktreeId, error: err })
+        failedWorktreeIds.add(worktreeId)
+        errors.push(describeSleepFailure(err))
+        continue
+      }
+      if (wasReactivated(worktreeId)) {
+        clearWorktreeSleepIntent(worktreeId)
+        continue
+      }
       try {
         // Why: sleep mirrors removeWorktree's shutdown sequence — browsers first
         // so destroyPersistentWebview unregisters the Chromium guests before any
@@ -190,6 +228,11 @@ export async function runSleepWorktrees(worktreeIds: readonly string[]): Promise
         errors.push(describeSleepFailure(err))
         continue
       }
+      if (wasReactivated(worktreeId)) {
+        clearWorktreeSleepIntent(worktreeId)
+        continue
+      }
+      let chatStopFailed = false
       try {
         // Why: sleep is reversible — the tab record stays in tabsByWorktree, the
         // layout stays in terminalLayoutsByTabId, only the live PTY processes are
@@ -200,8 +243,19 @@ export async function runSleepWorktrees(worktreeIds: readonly string[]): Promise
         // scrollback. See DESIGN_DOC_TERMINAL_HISTORY_FIX_V2.md §3.3.c.
         await withWorktreeSleepTeardown(worktreeId, async () => {
           await shutdownWorktreeTerminals(worktreeId, { keepIdentifiers: true })
+          if (wasReactivated(worktreeId)) {
+            return
+          }
           // Each chat keeps its tab and transcript; its next send starts a new agent.
-          await sleepWorkspaceChats(chatsByWorktreeId.get(worktreeId) ?? [])
+          try {
+            await sleepWorkspaceChats(chats)
+          } catch (error) {
+            chatStopFailed = true
+            throw error
+          }
+          if (wasReactivated(worktreeId)) {
+            return
+          }
           if (typeof window !== 'undefined' && window.api?.ephemeralVm?.suspendWorkspace) {
             await window.api.ephemeralVm.suspendWorkspace({ workspaceId: worktreeId })
           }
@@ -216,10 +270,11 @@ export async function runSleepWorktrees(worktreeIds: readonly string[]): Promise
           error: err
         })
         failedWorktreeIds.add(worktreeId)
-        errors.push(describeSleepFailure(err))
+        errors.push(chatStopFailed ? describeChatStopFailure() : describeSleepFailure(err))
       }
     }
   } finally {
+    unsubscribe()
     // Why: a failed sleep leaves the workspace awake and retryable.
     for (const worktreeId of failedWorktreeIds) {
       clearWorktreeSleepIntent(worktreeId)
