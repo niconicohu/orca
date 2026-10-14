@@ -337,32 +337,16 @@ describe('mobile structured agent-session launch', () => {
   )
 })
 
-it('uses the host unified launch path for new Codex tabs when replay is supported', async () => {
-  const client = clientReturning({
-    ok: true,
-    result: {
-      agent: 'codex',
-      worktreeId: 'workspace-1',
-      receipt: {
-        mode: 'structured',
-        preferred: 'structured',
-        reason: 'user_default',
-        detail: 'Started chat.'
-      },
-      outcome: {
-        kind: 'structured',
-        handle: 'agent-session:codex_unified',
-        sessionId: 'codex_unified',
-        tabId: 'host-tab'
-      }
-    }
-  })
-  const result = await createMobileStructuredAgentSession(client, 'workspace-1', 'codex', [
-    'agent.launch.v2',
-    'agent.launch.replay.v1',
-    'agent.launch.replay-required.v1'
-  ])
-  expect(result).toMatchObject({ kind: 'created', sessionId: 'codex_unified', tabId: 'host-tab' })
-  expect(client.sendRequest).toHaveBeenCalledOnce()
-  expect(client.sendRequest.mock.calls[0]?.[0]).toBe('agent.launchReplay')
+it('creates the requested structured Chat even when the host supports mode-deciding launches', async () => {
+  const client = clientReturning(
+    { ok: true, result: { supported: true } },
+    { ok: true, result: { ok: true, value: { sessionId: 'codex_explicit_chat' } } }
+  )
+  const result = await createMobileStructuredAgentSession(client, 'workspace-1', 'codex')
+  expect(result).toMatchObject({ kind: 'created', sessionId: 'codex_explicit_chat' })
+  expect(client.sendRequest).toHaveBeenCalledTimes(2)
+  expect(client.sendRequest.mock.calls[1]?.[0]).toBe('agentSession.create')
+  expect(client.sendRequest.mock.calls.some(([method]) => method === 'agent.launchReplay')).toBe(
+    false
+  )
 })

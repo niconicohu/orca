@@ -1,10 +1,13 @@
 import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RpcClient } from '../transport/rpc-client'
 import { markRpcDeliveryUnknown } from '../transport/rpc-delivery-ambiguity'
 import { useMobileSessionTerminalCreateActions } from './use-mobile-session-terminal-create-actions'
 import { SESSION_TABS_SPLIT_GROUP_PLACEMENT_RUNTIME_CAPABILITY } from '../../../src/shared/protocol-version'
+import { loadDefaultSessionView } from '../storage/session-view-preferences'
+
+vi.mock('../storage/session-view-preferences', () => ({ loadDefaultSessionView: vi.fn() }))
 
 type PlacementTab = { id: string; parentTabId?: string }
 type PlacementUpdater = (previous: PlacementTab[]) => PlacementTab[]
@@ -71,6 +74,7 @@ function createScope(client: RpcClient) {
 
 describe('mobile + Codex tab creation routing', () => {
   let renderer: ReactTestRenderer | undefined
+  beforeEach(() => vi.mocked(loadDefaultSessionView).mockResolvedValue('chat'))
   afterEach(() => renderer?.unmount())
 
   it('uses the structured agent-session path for a bare Codex launch', async () => {
@@ -85,6 +89,11 @@ describe('mobile + Codex tab creation routing', () => {
       }
     )
     const scope = createScope(client)
+    scope.hostCapabilities = [
+      'agent.launch.v2',
+      'agent.launch.replay.v1',
+      'agent.launch.replay-required.v1'
+    ]
     let actions: ReturnType<typeof useMobileSessionTerminalCreateActions> | undefined
     function Harness() {
       actions = useMobileSessionTerminalCreateActions(scope as never)
@@ -116,7 +125,7 @@ describe('mobile + Codex tab creation routing', () => {
     expect(scope.unsubscribeTerminal).toHaveBeenCalledWith('existing-terminal')
   })
 
-  it('keeps the legacy terminal path when structured support is disabled', async () => {
+  it('reports unavailable Chat without silently creating a terminal', async () => {
     const client = clientReturning(
       { ok: false, error: { code: 'structured_agent_session_unsupported', message: 'off' } },
       terminalCreateResponse()
@@ -134,8 +143,28 @@ describe('mobile + Codex tab creation routing', () => {
       await actions?.handleCreateTerminal('codex')
     })
 
-    expect(client.sendRequest).toHaveBeenNthCalledWith(
-      2,
+    expect(client.sendRequest).toHaveBeenCalledTimes(1)
+    expect(scope.setCreateError).toHaveBeenCalledWith(expect.stringContaining('structured Chat'))
+    expect(scope.setActiveSessionTabId).not.toHaveBeenCalled()
+  })
+
+  it('creates a terminal directly when the phone default is Terminal', async () => {
+    vi.mocked(loadDefaultSessionView).mockResolvedValue('terminal')
+    const client = clientReturning(terminalCreateResponse())
+    const scope = createScope(client)
+    let actions: ReturnType<typeof useMobileSessionTerminalCreateActions> | undefined
+    function Harness() {
+      actions = useMobileSessionTerminalCreateActions(scope as never)
+      return null
+    }
+    await act(async () => {
+      renderer = create(createElement(Harness))
+    })
+    await act(async () => {
+      await actions?.handleCreateTerminal('codex')
+    })
+    expect(client.sendRequest).toHaveBeenCalledOnce()
+    expect(client.sendRequest).toHaveBeenCalledWith(
       'session.tabs.createTerminal',
       expect.objectContaining({ worktree: 'id:workspace-1', agent: 'codex' })
     )

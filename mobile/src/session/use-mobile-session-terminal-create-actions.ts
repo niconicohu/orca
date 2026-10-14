@@ -1,4 +1,4 @@
-import { focusCreatedMobileAgentTerminal } from './focus-created-mobile-agent-terminal'
+import { loadDefaultSessionView } from '../storage/session-view-preferences'
 import {
   buildMobileQuickCommandLaunch,
   type MobileQuickCommandLaunch
@@ -80,14 +80,13 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
     }
 
     try {
-      // Bare structured-provider launches follow host createSupport; prompted launches keep their startup semantics.
-      if (isAgentSessionHandleProvider(agent) && options === undefined) {
-        const structured = await createMobileStructuredAgentSession(
-          client,
-          worktreeId,
-          agent,
-          hostCapabilities
-        )
+      // Explicit device view selects the execution surface, not just its renderer.
+      if (
+        isAgentSessionHandleProvider(agent) &&
+        options === undefined &&
+        (await loadDefaultSessionView()) === 'chat'
+      ) {
+        const structured = await createMobileStructuredAgentSession(client, worktreeId, agent)
         if (structured.kind === 'created') {
           const previous = activeHandleRef.current
           if (previous) {
@@ -106,10 +105,6 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
           scheduleDelayedAction(() => void fetchSessionTabs(), 500)
           return
         }
-        if (structured.kind === 'terminal-created') {
-          focusCreatedMobileAgentTerminal(scope, structured.handle)
-          return
-        }
         if (structured.kind === 'failed') {
           reportCreateFailure(structured.message)
           triggerError()
@@ -121,6 +116,14 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
           setCreateError(structured.message)
           triggerError()
           showToast(structured.message, 1800)
+          return
+        }
+        if (structured.kind === 'unsupported') {
+          const message =
+            'This host cannot create structured Chat here. Enable Chat on the host or choose Terminal view.'
+          reportCreateFailure(message)
+          triggerError()
+          showToast(message, 2400)
           return
         }
       }

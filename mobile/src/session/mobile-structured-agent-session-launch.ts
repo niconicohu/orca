@@ -1,8 +1,4 @@
 import { recordChatClientDiagnostic } from '../diagnostics/chat-runtime-diagnostics'
-import {
-  launchAgentInExistingWorkspace,
-  supportsMobileExistingAgentLaunch
-} from './mobile-existing-agent-launch'
 import type { AgentSessionHandleProvider } from '../../../src/shared/agent-session-provider-handle'
 import type {
   AgentSessionAttachResult,
@@ -37,7 +33,6 @@ function delay(ms: number): Promise<void> {
 
 export type MobileStructuredAgentLaunchResult =
   | { kind: 'created'; sessionId: string; tabId?: string }
-  | { kind: 'terminal-created'; handle: string }
   | { kind: 'unsupported'; reason?: StructuredCreateSupport['reason'] }
   | { kind: 'failed'; message: string }
   | { kind: 'unknown'; message: string }
@@ -86,40 +81,9 @@ function classifyCreateRefusal(
 export async function createMobileStructuredAgentSession(
   client: RpcClient,
   worktreeId: string,
-  agent: AgentSessionHandleProvider,
-  hostCapabilities?: readonly string[]
+  agent: AgentSessionHandleProvider
 ): Promise<MobileStructuredAgentLaunchResult> {
-  if (supportsMobileExistingAgentLaunch(hostCapabilities)) {
-    const launched = await launchAgentInExistingWorkspace({
-      client,
-      hostCapabilities,
-      worktreeId,
-      agent,
-      launchSource: 'mobile-new-tab'
-    })
-    if (launched.kind === 'launched') {
-      const outcome = launched.result.outcome
-      recordChatClientDiagnostic(client, worktreeId, 'agent-launch-result', {
-        mode: launched.result.receipt.mode,
-        kind: outcome.kind,
-        sessionResolved: outcome.kind === 'structured'
-      })
-      return outcome.kind === 'structured'
-        ? {
-            kind: 'created',
-            sessionId: outcome.sessionId,
-            ...(outcome.tabId ? { tabId: outcome.tabId } : {})
-          }
-        : { kind: 'terminal-created', handle: outcome.handle }
-    }
-    if (launched.kind === 'unknown' || launched.kind === 'failed') {
-      return launched
-    }
-    return {
-      kind: 'failed',
-      message: 'The host could not confirm agent launch support. Reconnect and retry.'
-    }
-  }
+  recordChatClientDiagnostic(client, worktreeId, 'agent-launch-intent', { mode: 'structured' })
   const worktree = `id:${worktreeId}`
   let supportResponse
   for (let attempt = 0; ; attempt += 1) {
@@ -218,5 +182,10 @@ export async function createMobileStructuredAgentSession(
   ) {
     return unknownCreateResult(agent, new Error(unconfirmedMessage(agent)))
   }
+  recordChatClientDiagnostic(client, worktreeId, 'agent-launch-result', {
+    mode: 'structured',
+    kind: 'structured',
+    sessionResolved: true
+  })
   return { kind: 'created', sessionId: result.value.sessionId }
 }

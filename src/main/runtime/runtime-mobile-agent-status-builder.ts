@@ -15,7 +15,8 @@ import type { RuntimeAgentRowSnapshot } from './runtime-worktree-agent-rows'
 import {
   classifyAgentTitle,
   getLatestAgentCandidateTitle,
-  getLatestPtyTitle
+  getLatestPtyTitle,
+  terminalTitleBlocksExplicitAgentStatus
 } from './runtime-worktree-status-projection'
 
 type RuntimeMobileAgentStatusHost = {
@@ -65,8 +66,8 @@ export function buildRuntimeMobileAgentStatus(
       : null
   const ptyTitleClassification = classifyAgentTitle(ptyTitle)
   const nonAgentTitle = ptyTitle !== null && ptyTitleClassification !== 'agent'
-  if (nonAgentTitle) {
-    // Why: non-agent title = shell reclaimed the pane; suppress to clear stuck spinners (#1437), though a live hook signal survives.
+  if (nonAgentTitle && terminalTitleBlocksExplicitAgentStatus(ptyTitle)) {
+    // Shell/management titles release the pane; generated conversation titles do not.
     const hasLiveHookSignal =
       retained?.payload.interactivePrompt != null ||
       retained?.payload.toolName != null ||
@@ -135,6 +136,7 @@ export function buildRuntimeMobileAgentStatus(
   // every output byte, so a paired client's live status could never outrank it.
   const evidenceAt = pty?.lastOscTitleEpochMs ?? hookRow.providerSessionReceivedAt ?? Date.now()
   const agentType = ownerAgent ?? undefined
+  const reportedModel = hookRow.live?.payload.model
   return {
     agentStatus: {
       state:
@@ -149,6 +151,7 @@ export function buildRuntimeMobileAgentStatus(
       paneKey,
       ...(terminalHandle ? { terminalHandle } : {}),
       ...(agentType ? { agentType } : {}),
+      ...(reportedModel ? { model: reportedModel } : {}),
       ...(pty?.worktreeId ? { worktreeId: pty.worktreeId } : {}),
       tabId: tab.parentTabId,
       terminalTitle,
