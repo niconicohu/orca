@@ -267,9 +267,7 @@ async function startOrcadRuntime(
   // same call `--serve` makes, and it threads the store through. Without the store the
   // handlers install fine and every terminal.create then fails at persistence time.
   //
-  // Codex-home and Claude-auth preparation are left unset: both are desktop account
-  // flows. A launch that needs one fails with its own message rather than silently
-  // spawning an unauthenticated agent.
+  // Account selection stays unset; headless registration prepares system-home Codex hooks.
   await registerHeadlessPtyRuntime(
     runtime,
     undefined,
