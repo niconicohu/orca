@@ -1,6 +1,7 @@
 // DIAGNOSTIC ONLY (never merged): why does removing an orcad stop-test root hit EPERM on Windows?
 import { mkdtempSync, openSync, closeSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { cpus, tmpdir } from 'node:os'
+import { spawn } from 'node:child_process'
 import { join } from 'node:path'
 import { describe, it, vi } from 'vitest'
 import type * as WindowsAcl from '../../shared/secure-path-windows-acl'
@@ -103,10 +104,27 @@ describe.runIf(process.platform === 'win32')('diag stop root removal', () => {
   it('repeats the cancellation test setup and teardown', async () => {
     const rows: string[] = []
     let clean = 0
-    for (let i = 0; i < 120; i++) {
+    // Load like a parallel vitest run: CPU burners plus file churn in the same temp tree.
+    const load = Array.from({ length: cpus().length * 2 }, (_, n) =>
+      spawn(
+        process.execPath,
+        [
+          '-e',
+          n % 2
+            ? 'for(;;){}'
+            : `const fs=require('fs'),p=require('path'),os=require('os');const d=fs.mkdtempSync(p.join(os.tmpdir(),'churn-'));let i=0;setInterval(()=>{for(let k=0;k<50;k++){fs.writeFileSync(p.join(d,'f'+(i++%500)),'x'.repeat(4096))}},5)`
+        ],
+        { stdio: 'ignore', windowsHide: true }
+      )
+    )
+    try {
+    for (let i = 0; i < 200; i++) {
       const row = await once(i, i % 2 ? 'claim' : 'cancel')
       if (row) rows.push(row)
       else clean++
+    }
+    } finally {
+      for (const b of load) b.kill()
     }
     console.log(`clean=${clean}\n${rows.join('\n')}`)
   }, 900_000)

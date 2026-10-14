@@ -40,9 +40,13 @@ jobs:
           native-runtime: node
           cache-electron-package: 'true'
       - name: Diagnose barrier with the current 2 s taskkill cap
+        if: false
         run: pnpm exec vitest run --config config/vitest.config.ts src/main/ipc/zz-diag-taskkill.win32.test.ts --reporter=verbose
       - name: Diagnose barrier with a 15 s taskkill cap
-        if: always()
+        if: false
         env:
           ORCA_DIAG_TASKKILL_MS: '15000'
         run: pnpm exec vitest run --config config/vitest.config.ts src/main/ipc/zz-diag-taskkill.win32.test.ts --reporter=verbose
+      - name: Diagnose stop-test root removal under load
+        if: always()
+        run: pnpm exec vitest run --config config/vitest.config.ts src/main/orcad/zz-diag-stop-rm.win32.test.ts --reporter=verbose
