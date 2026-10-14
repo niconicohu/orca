@@ -33,6 +33,7 @@ type Props = {
   fallback?: string
   /** Enables iOS range selection for native-chat transcript prose. */
   rangeSelectable?: boolean
+  disableSelection?: boolean
   /** Multiplier for prose font size (paragraphs, lists, quotes). Defaults to 1;
    *  the chat view passes >1 so agent prose reads larger than the compact base. */
   textScale?: number
@@ -212,6 +213,7 @@ function MobileMarkdownContent({
   content,
   fallback = '',
   rangeSelectable = false,
+  disableSelection = false,
   textScale = 1,
   onOpenFile
 }: Props) {
@@ -225,7 +227,7 @@ function MobileMarkdownContent({
   const listScale = scaled(14)
   if (!text) {
     return fallback ? (
-      <MarkdownText selectable={rangeSelectable} style={styles.paragraph}>
+      <MarkdownText selectable={rangeSelectable && !disableSelection} style={styles.paragraph}>
         {fallback}
       </MarkdownText>
     ) : null
@@ -240,7 +242,7 @@ function MobileMarkdownContent({
           return (
             <MarkdownText
               key={index}
-              selectable
+              selectable={!disableSelection}
               style={[styles.heading, block.level <= 2 ? styles.headingLarge : null]}
             >
               {renderInline(block.text, onOpenFile)}
@@ -250,7 +252,7 @@ function MobileMarkdownContent({
         if (block.type === 'quote') {
           return (
             <View key={index} style={styles.quote}>
-              <MarkdownText selectable style={styles.quoteText}>
+              <MarkdownText selectable={!disableSelection} style={styles.quoteText}>
                 {renderInline(block.text, onOpenFile)}
               </MarkdownText>
             </View>
@@ -276,7 +278,7 @@ function MobileMarkdownContent({
               {block.language ? (
                 <NativeText style={styles.codeLanguage}>{block.language}</NativeText>
               ) : null}
-              <MarkdownText selectable style={styles.codeText}>
+              <MarkdownText selectable={!disableSelection} style={styles.codeText}>
                 {block.text}
               </MarkdownText>
             </View>
@@ -308,7 +310,7 @@ function MobileMarkdownContent({
                   {visibleHeaders.map((header, cellIndex) => (
                     <MarkdownText
                       key={cellIndex}
-                      selectable
+                      selectable={!disableSelection}
                       style={[styles.tableCell, styles.tableHeader]}
                     >
                       {renderInline(header, onOpenFile)}
@@ -318,7 +320,11 @@ function MobileMarkdownContent({
                 {visibleRows.map((row, rowIndex) => (
                   <View key={rowIndex} style={styles.tableRow}>
                     {visibleHeaders.map((_, cellIndex) => (
-                      <MarkdownText key={cellIndex} selectable style={styles.tableCell}>
+                      <MarkdownText
+                        key={cellIndex}
+                        selectable={!disableSelection}
+                        style={styles.tableCell}
+                      >
                         {renderInline(row[cellIndex] ?? '', onOpenFile)}
                       </MarkdownText>
                     ))}
@@ -349,7 +355,7 @@ function MobileMarkdownContent({
                         ? '[x]'
                         : '[ ]'}
                   </NativeText>
-                  <MarkdownText selectable style={[styles.listText, listScale]}>
+                  <MarkdownText selectable={!disableSelection} style={[styles.listText, listScale]}>
                     {renderInline(item.text, onOpenFile)}
                   </MarkdownText>
                 </View>
@@ -363,7 +369,7 @@ function MobileMarkdownContent({
         return (
           <MarkdownText
             key={index}
-            selectable={rangeSelectable}
+            selectable={rangeSelectable && !disableSelection}
             style={[styles.paragraph, proseScale]}
           >
             {block.text.split('\n').map((line, lineIndex) => (

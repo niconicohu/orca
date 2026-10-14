@@ -1,6 +1,8 @@
+import { MobileTextSelectionContext } from '../components/mobile-text-selection-context'
+import { MobileNativeChatTextActions } from './MobileNativeChatTextActions'
 import { MobileSelectableText as Text } from '../components/MobileSelectableText'
-import { memo } from 'react'
-import { Image, Text as NativeText, View } from 'react-native'
+import { memo, useState } from 'react'
+import { Image, Platform, Text as NativeText, View } from 'react-native'
 import { splitNativeChatBlocks } from '../../../src/shared/native-chat-tool-fold'
 import { selectActiveToolCall } from '../../../src/shared/native-chat-tool-activity'
 import { isImageRefBlock, isTextBlock } from '../../../src/shared/native-chat-types'
@@ -18,9 +20,11 @@ function Prose({
   block,
   invert,
   fontScale,
-  onOpenFile
+  onOpenFile,
+  selectable
 }: {
   block: NativeChatBlock
+  selectable: boolean
   invert?: boolean
   fontScale: number
   onOpenFile?: (relativePath: string) => void
@@ -30,7 +34,10 @@ function Prose({
     // markdown renderer's light-on-dark palette.
     if (invert) {
       return (
-        <Text selectable style={[styles.userText, { fontSize: TEXT_SIZE * fontScale }]}>
+        <Text
+          selectable={selectable}
+          style={[styles.userText, { fontSize: TEXT_SIZE * fontScale }]}
+        >
           {block.text}
         </Text>
       )
@@ -38,7 +45,8 @@ function Prose({
     return (
       <MobileMarkdown
         content={block.text}
-        rangeSelectable
+        rangeSelectable={selectable}
+        disableSelection={!selectable}
         textScale={1.25 * fontScale}
         onOpenFile={onOpenFile}
       />
@@ -105,6 +113,13 @@ function MobileNativeChatMessageImpl({
   // Separate the agent's words from its tool activity: prose renders first, the
   // tool calls fold into a collapsible run beneath. The user's own messages get
   // an inverted (filled accent) bubble so they stand apart from agent prose.
+  const android = Platform.OS === 'android'
+  const [selecting, setSelecting] = useState(false)
+  const selectable = !android || selecting
+  const proseText = message.blocks
+    .filter(isTextBlock)
+    .map((block) => block.text)
+    .join('\n\n')
   const { prose, tools } = splitNativeChatBlocks(message.blocks)
   const activeCall = structuredActivityUi
     ? selectActiveToolCall(tools, { activeTurnIsWorking })
@@ -128,7 +143,7 @@ function MobileNativeChatMessageImpl({
       : (subagentLabel ?? NATIVE_CHAT_SUBAGENT_ATTRIBUTION_COPY.unnamed)
 
   return (
-    <>
+    <MobileTextSelectionContext.Provider value={selectable}>
       <View style={[styles.row, isUser && styles.rowUser]}>
         <View
           style={[
@@ -161,6 +176,7 @@ function MobileNativeChatMessageImpl({
               invert={isUser}
               fontScale={fontScale}
               onOpenFile={onOpenFile}
+              selectable={selectable}
             />
           ))}
           {showToolRun ? (
@@ -177,6 +193,13 @@ function MobileNativeChatMessageImpl({
           ) : null}
         </View>
       </View>
+      {android && proseText ? (
+        <MobileNativeChatTextActions
+          text={proseText}
+          selecting={selecting}
+          onToggle={() => setSelecting((value) => !value)}
+        />
+      ) : null}
       {turnStatus ? (
         <MobileNativeChatTurnStatus
           startedAt={turnStatus.startedAt}
@@ -185,7 +208,7 @@ function MobileNativeChatMessageImpl({
           onToggleExpanded={turnKey && onToggleTurn ? () => onToggleTurn(turnKey) : undefined}
         />
       ) : null}
-    </>
+    </MobileTextSelectionContext.Provider>
   )
 }
 

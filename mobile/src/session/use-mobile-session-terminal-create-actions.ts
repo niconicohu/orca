@@ -1,3 +1,4 @@
+import { focusCreatedMobileAgentTerminal } from './focus-created-mobile-agent-terminal'
 import {
   buildMobileQuickCommandLaunch,
   type MobileQuickCommandLaunch
@@ -81,14 +82,19 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
     try {
       // Bare structured-provider launches follow host createSupport; prompted launches keep their startup semantics.
       if (isAgentSessionHandleProvider(agent) && options === undefined) {
-        const structured = await createMobileStructuredAgentSession(client, worktreeId, agent)
+        const structured = await createMobileStructuredAgentSession(
+          client,
+          worktreeId,
+          agent,
+          hostCapabilities
+        )
         if (structured.kind === 'created') {
           const previous = activeHandleRef.current
           if (previous) {
             unsubscribeTerminal(previous)
             initializedHandlesRef.current.delete(previous)
           }
-          const tabId = `agent-session:${structured.sessionId}`
+          const tabId = structured.tabId ?? `agent-session:${structured.sessionId}`
           pendingActiveSessionTabIdRef.current = tabId
           pendingActiveTerminalHandleRef.current = null
           activeSessionTabTypeRef.current = 'agent-session'
@@ -98,6 +104,16 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
           setActiveHandle(null)
           // Refresh if the create response beats its published tab frame.
           scheduleDelayedAction(() => void fetchSessionTabs(), 500)
+          return
+        }
+        if (structured.kind === 'terminal-created') {
+          focusCreatedMobileAgentTerminal(scope, structured.handle)
+          return
+        }
+        if (structured.kind === 'failed') {
+          reportCreateFailure(structured.message)
+          triggerError()
+          showToast(structured.message, 1800)
           return
         }
         if (structured.kind === 'unknown') {

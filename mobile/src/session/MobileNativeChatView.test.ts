@@ -1,119 +1,13 @@
-import { createElement } from 'react'
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
-import { MobileNativeChatView } from './MobileNativeChatView'
-
-const scrollToEnd = vi.hoisted(() => vi.fn())
-const scrollToOffset = vi.hoisted(() => vi.fn())
-
-vi.mock('react-native', async () => {
-  const React = await import('react')
-  return {
-    ActivityIndicator: 'ActivityIndicator',
-    FlatList: React.forwardRef((props, ref) => {
-      React.useImperativeHandle(ref, () => ({ scrollToEnd, scrollToOffset }), [])
-      return React.createElement('FlatList', props)
-    }),
-    Pressable: 'Pressable',
-    StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 },
-    Text: 'Text',
-    View: 'View'
-  }
-})
-
-vi.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 })
-}))
-
-vi.mock('react-native-gesture-handler', () => {
-  const chain = {
-    runOnJS: () => chain,
-    onStart: () => chain,
-    onUpdate: () => chain
-  }
-  return {
-    Gesture: { Simultaneous: () => ({}), Native: () => ({}), Pinch: () => chain },
-    GestureDetector: 'GestureDetector',
-    GestureHandlerRootView: 'GestureHandlerRootView'
-  }
-})
-
-vi.mock('lucide-react-native', () => ({
-  ArrowDown: 'ArrowDown',
-  ChevronsDownUp: 'ChevronsDownUp',
-  ChevronsUpDown: 'ChevronsUpDown',
-  Square: 'Square'
-}))
-
-vi.mock('./MobileNativeChatMessage', () => ({ MobileNativeChatMessage: 'ChatMessage' }))
-vi.mock('./MobileNativeChatAsk', () => ({ MobileNativeChatAsk: 'ChatAsk' }))
-vi.mock('./MobileNativeChatPermission', () => ({ MobileNativeChatPermission: 'ChatPermission' }))
-vi.mock('./MobileNativeChatQuestion', () => ({ MobileNativeChatQuestion: 'ChatQuestion' }))
-vi.mock('./MobileAgentWorkingIndicator', () => ({
-  MobileAgentWorkingIndicator: 'WorkingIndicator'
-}))
-
-// Stand-in composer: exposes the view's `handleSend` through a pressable, which is
-// the only composer behaviour these banner tests exercise.
-vi.mock('./MobileNativeChatComposer', async () => {
-  const React = await import('react')
-  return {
-    MobileNativeChatComposer: (props: {
-      onSend: (text: string) => Promise<boolean>
-      disabled?: boolean
-      placeholder?: string
-    }) =>
-      React.createElement('Composer', {
-        ...props,
-        accessibilityLabel: 'Send message',
-        onPress: () => props.onSend('hi')
-      })
-  }
-})
-
-type Overrides = {
-  messages?: Parameters<typeof MobileNativeChatView>[0]['messages']
-  folded?: Parameters<typeof MobileNativeChatView>[0]['folded']
-  streaming?: string | null
-  sendErrorMessage?: string | null
-  onClearSendError?: () => void
-  inputLockReason?: 'disconnected' | 'waiting' | null
-  onSend?: (text: string) => Promise<boolean>
-  pending?: Parameters<typeof MobileNativeChatView>[0]['pending']
-  structuredActivityUi?: boolean
-  turnIndicator?: Parameters<typeof MobileNativeChatView>[0]['turnIndicator']
-  agentWorking?: boolean
-  canStop?: boolean
-  ask?: Parameters<typeof MobileNativeChatView>[0]['ask']
-  question?: Parameters<typeof MobileNativeChatView>[0]['question']
-  permission?: Parameters<typeof MobileNativeChatView>[0]['permission']
-  sendSurfaceId?: string
-  keyboardInset?: number
-  hasMore?: boolean
-  onLoadEarlier?: () => void
-}
-
-function assistantTurn(id: string, text: string): NativeChatMessage {
-  return { id, role: 'assistant', blocks: [{ type: 'text', text }], timestamp: 0, source: 'hook' }
-}
-
-function chatViewElement(overrides: Overrides): ReturnType<typeof createElement> {
-  return createElement(MobileNativeChatView, {
-    messages: [],
-    folded: [],
-    status: 'ready',
-    streaming: null,
-    onSend: vi.fn().mockResolvedValue(true),
-    sendSurfaceId: 'tab-a',
-    getSendCompletionGeneration: () => 0,
-    pending: [],
-    composerText: '',
-    onComposerTextChange: vi.fn(),
-    ...overrides
-  })
-}
-
+import {
+  chatViewElement,
+  assistantTurn,
+  scrollToEnd,
+  scrollToOffset,
+  type Overrides
+} from './mobile-native-chat-view.test-fixture'
 describe('MobileNativeChatView', () => {
   let renderer: ReactTestRenderer | null = null
 
@@ -824,15 +718,15 @@ describe('MobileNativeChatView', () => {
       expect(footerProps()).toMatchObject({ activityText: 'Running pnpm test' })
     })
 
-    it('keeps the bridge lane on the three-dot indicator with no turn status', async () => {
+    it('shows a bridge activity footer without structured turn timing', async () => {
       const folded = [userTurn('u1', 'go')]
       await render({ messages: folded, folded, agentWorking: true })
       const props = rowProps('u1')
       expect(props.structuredActivityUi).toBe(false)
       expect(props.turnStatus).toBeNull()
       expect(props.activeTurnIsWorking).toBe(false)
-      expect(footerProps()).toBeNull()
-      expect(workingIndicators()).toHaveLength(1)
+      expect(footerProps()).toMatchObject({ thinking: false, activityText: null })
+      expect(workingIndicators()).toHaveLength(0)
     })
 
     it('settles the finished turn to a tappable duration', async () => {

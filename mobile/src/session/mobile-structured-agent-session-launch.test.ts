@@ -336,3 +336,33 @@ describe('mobile structured agent-session launch', () => {
     }
   )
 })
+
+it('uses the host unified launch path for new Codex tabs when replay is supported', async () => {
+  const client = clientReturning({
+    ok: true,
+    result: {
+      agent: 'codex',
+      worktreeId: 'workspace-1',
+      receipt: {
+        mode: 'structured',
+        preferred: 'structured',
+        reason: 'user_default',
+        detail: 'Started chat.'
+      },
+      outcome: {
+        kind: 'structured',
+        handle: 'agent-session:codex_unified',
+        sessionId: 'codex_unified',
+        tabId: 'host-tab'
+      }
+    }
+  })
+  const result = await createMobileStructuredAgentSession(client, 'workspace-1', 'codex', [
+    'agent.launch.v2',
+    'agent.launch.replay.v1',
+    'agent.launch.replay-required.v1'
+  ])
+  expect(result).toMatchObject({ kind: 'created', sessionId: 'codex_unified', tabId: 'host-tab' })
+  expect(client.sendRequest).toHaveBeenCalledOnce()
+  expect(client.sendRequest.mock.calls[0]?.[0]).toBe('agent.launchReplay')
+})

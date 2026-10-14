@@ -14,6 +14,7 @@ export type MobileNativeChatTailFollow<TItem> = {
   listRef: RefObject<FlatList<TItem> | null>
   /** Render flag for the jump-to-latest control. */
   showJumpToTail: boolean
+  followingTail: boolean
   /** Passive maintenance: re-pin after the viewport resizes. */
   pinToTail: () => void
   /** Content-size maintenance using the list's authoritative measured height. */
@@ -27,6 +28,7 @@ export type MobileNativeChatTailFollow<TItem> = {
   /** Leave the tail deliberately, e.g. before prepending older history. */
   detachFromTail: () => void
   recordScrollMetrics: (event: NativeScrollEvent) => void
+  canPageFromScroll: () => boolean
 }
 
 /** Sole owner of transcript scroll position.
@@ -45,6 +47,7 @@ export type MobileNativeChatTailFollow<TItem> = {
 export function useMobileNativeChatTailFollow<TItem>(args: {
   /** Guards `scrollToEnd` against an empty list. */
   hasItems: boolean
+  scopeKey?: string
 }): MobileNativeChatTailFollow<TItem> {
   const { hasItems } = args
   const listRef = useRef<FlatList<TItem> | null>(null)
@@ -55,6 +58,20 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   const atTailRef = useRef(true)
   const userScrollActiveRef = useRef(false)
   const userScrollSettleFrameRef = useRef<number | null>(null)
+
+  const [scopeKey, setScopeKey] = useState(args.scopeKey)
+  if (scopeKey !== args.scopeKey) {
+    setScopeKey(args.scopeKey)
+    if (userScrollSettleFrameRef.current !== null) {
+      cancelAnimationFrame(userScrollSettleFrameRef.current)
+      userScrollSettleFrameRef.current = null
+    }
+    followingRef.current = true
+    atTailRef.current = true
+    userScrollActiveRef.current = false
+    setFollowingFlag(true)
+    setAtTailFlag(true)
+  }
 
   // Single writer, so the event-time ref and the render flag cannot disagree.
   const setFollowing = useCallback((next: boolean) => {
@@ -171,6 +188,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   return {
     listRef,
     showJumpToTail: !following && !atTail,
+    followingTail: following,
     pinToTail,
     pinToTailAfterContentResize,
     jumpToTail,
@@ -179,6 +197,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     beginMomentum,
     endMomentum,
     detachFromTail,
-    recordScrollMetrics
+    recordScrollMetrics,
+    canPageFromScroll: () => userScrollActiveRef.current && !followingRef.current
   }
 }

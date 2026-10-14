@@ -1,4 +1,5 @@
 import { createElement } from 'react'
+import { Platform } from 'react-native'
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MAX_TOOL_DETAIL_LENGTH } from '../../../src/shared/native-chat-tool-summary'
@@ -19,6 +20,7 @@ vi.mock('react-native', async () => {
       sequence: () => ({ start: vi.fn(), stop: vi.fn() }),
       timing: () => ({ start: vi.fn(), stop: vi.fn() })
     },
+    Platform: { OS: 'ios' },
     Image: 'Image',
     Pressable: 'Pressable',
     Text,
@@ -53,6 +55,7 @@ describe('MobileNativeChatMessage', () => {
   let renderer: ReactTestRenderer | null = null
 
   afterEach(() => {
+    Platform.OS = 'ios'
     act(() => renderer?.unmount())
     renderer = null
   })
@@ -120,6 +123,23 @@ describe('MobileNativeChatMessage', () => {
     const markdown = tree.root.findByType('MobileMarkdown' as never)
     expect(markdown.props.content).toBe('Agent reply prose')
     expect(markdown.props.rangeSelectable).toBe(true)
+  })
+
+  it('requires explicit selection mode on Android and keeps Copy available', () => {
+    Platform.OS = 'android'
+    const tree = render(toolMessage([{ type: 'text', text: 'Scrollable reply' }]))
+    const markdown = () => tree.root.findByType('MobileMarkdown' as never)
+    expect(markdown().props.rangeSelectable).toBe(false)
+    expect(markdown().props.disableSelection).toBe(true)
+    expect(
+      tree.root.findAll((node) => node.props.accessibilityLabel === 'Copy message').length
+    ).toBeGreaterThan(0)
+    const select = tree.root.findAll(
+      (node) => node.props.accessibilityLabel === 'Select message text' && node.props.onPress
+    )[0]
+    act(() => select?.props.onPress())
+    expect(markdown().props.rangeSelectable).toBe(true)
+    expect(markdown().props.disableSelection).toBe(false)
   })
 
   it('labels a tool row with the target path instead of raw input JSON', () => {

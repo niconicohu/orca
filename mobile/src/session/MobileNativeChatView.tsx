@@ -33,7 +33,6 @@ import { useMobileNativeChatTailFollow } from './use-mobile-native-chat-tail-fol
 import { useMobileNativeChatTurnDisclosure } from './use-mobile-native-chat-turn-disclosure'
 import { useSettledMobileNativeChatInputLock } from './use-mobile-native-chat-input-lease'
 import { MobileNativeChatTurnActivity } from './MobileNativeChatTurnStatus'
-import { MobileAgentWorkingIndicator } from './MobileAgentWorkingIndicator'
 import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
 import { MobileNativeChatComposer } from './MobileNativeChatComposer'
 import { MobileNativeChatPromptCard } from './MobileNativeChatPromptCard'
@@ -217,6 +216,7 @@ export function MobileNativeChatView({
   const {
     listRef,
     showJumpToTail,
+    followingTail,
     pinToTail,
     pinToTailAfterContentResize,
     jumpToTail,
@@ -225,8 +225,12 @@ export function MobileNativeChatView({
     beginMomentum,
     endMomentum,
     detachFromTail,
-    recordScrollMetrics
-  } = useMobileNativeChatTailFollow<NativeChatMessage>({ hasItems: data.length > 0 })
+    recordScrollMetrics,
+    canPageFromScroll
+  } = useMobileNativeChatTailFollow<NativeChatMessage>({
+    hasItems: data.length > 0,
+    scopeKey: sendSurfaceId
+  })
 
   const handleSend = useCallback(
     async (text: string): Promise<boolean> => {
@@ -254,11 +258,11 @@ export function MobileNativeChatView({
       const { contentOffset } = e.nativeEvent
       recordScrollMetrics(e.nativeEvent)
       // Near the top — page in older history.
-      if (contentOffset.y < 60 && hasMore && !loadingEarlier) {
+      if (canPageFromScroll() && contentOffset.y < 60 && hasMore && !loadingEarlier) {
         loadEarlier()
       }
     },
-    [hasMore, loadingEarlier, loadEarlier, recordScrollMetrics]
+    [hasMore, loadingEarlier, loadEarlier, recordScrollMetrics, canPageFromScroll]
   )
 
   // Per-turn status rows: one live indicator while the turn runs, then a settled
@@ -308,6 +312,8 @@ export function MobileNativeChatView({
         <GestureHandlerRootView style={styles.listWrap}>
           <GestureDetector gesture={pinchGesture}>
             <FlatList
+              key={sendSurfaceId}
+              maintainVisibleContentPosition={followingTail ? undefined : { minIndexForVisible: 0 }}
               ref={listRef}
               data={data}
               keyExtractor={(item) => item.id}
@@ -340,12 +346,11 @@ export function MobileNativeChatView({
                 ) : null
               }
               ListFooterComponent={
-                structuredActivityUi &&
                 agentWorking &&
-                !hasPendingStructuredInteraction &&
-                turns.active ? (
+                (!structuredActivityUi || turns.active) &&
+                !hasPendingStructuredInteraction ? (
                   <MobileNativeChatTurnActivity
-                    thinking={turns.active.thinking}
+                    thinking={turns.active?.thinking ?? turnIndicator?.thinking ?? false}
                     activityText={turns.activeActivityText}
                   />
                 ) : null
@@ -386,7 +391,6 @@ export function MobileNativeChatView({
       />
       <View style={styles.chromeRow}>
         <View style={styles.chromeLeft}>
-          {agentWorking && !structuredActivityUi ? <MobileAgentWorkingIndicator /> : null}
           <Pressable
             style={({ pressed }) => [styles.chromeToggle, pressed && styles.pressed]}
             onPress={() => setToolsExpanded((v) => !v)}
