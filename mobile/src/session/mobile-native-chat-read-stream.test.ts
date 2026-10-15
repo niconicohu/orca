@@ -17,6 +17,7 @@ it('overlays live updates on late history without duplicate rows or stale text',
       // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: test only supplies valid frames.
       applyMobileNativeChatStreamFrame({
         merger,
+        // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the frames below are valid snapshot and append fixtures passed through the actual read-stream merger.
         frame: raw as Parameters<typeof applyMobileNativeChatStreamFrame>[0]['frame'],
         limit: 40,
         replaceSnapshot: false

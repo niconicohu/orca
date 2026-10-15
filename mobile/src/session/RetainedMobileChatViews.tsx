@@ -1,5 +1,5 @@
 import { focusedChatInput, blurLeavingChatInput } from './retained-chat-input-focus'
-import { useLayoutEffect, useRef, type ReactElement } from 'react'
+import { isValidElement, useLayoutEffect, useRef, type ReactElement } from 'react'
 import { StyleSheet, View } from 'react-native'
 
 const MAX_RETAINED_VIEWS = 4
@@ -13,6 +13,14 @@ function transcriptBytes(element: ReactElement): number {
     !('messages' in props) ||
     !Array.isArray(props.messages)
   ) {
+    if (
+      props &&
+      typeof props === 'object' &&
+      'children' in props &&
+      isValidElement(props.children)
+    ) {
+      return transcriptBytes(props.children)
+    }
     return 0
   }
   let size = transcriptSizes.get(props.messages)

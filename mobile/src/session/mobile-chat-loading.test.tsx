@@ -99,11 +99,7 @@ it('does not leave the transcript behind a hold that never completes', async () 
     expect.objectContaining({ timeoutMs: 8000 })
   )
   expect(value?.state.items).toHaveLength(1)
-  expect(client.subscribe).toHaveBeenCalledWith(
-    'agentSession.subscribe',
-    { sessionId: 'session' },
-    expect.any(Function)
-  )
+  expect(client.subscribe).not.toHaveBeenCalled()
   // History fallback is for reading; a live subscribe must establish write authority.
   expect(value?.state.fence).toBeNull()
 })
@@ -121,7 +117,7 @@ it('merges a live batch arriving before the recent read and keeps its newest rev
       ? new Promise((r) => {
           resolve = r
         })
-      : new Promise<never>(() => {})
+      : Promise.resolve({ ok: true, result: {} })
   )
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: supplied RPC members cover the hook.
   const client = { sendRequest, subscribe } as unknown as RpcClient

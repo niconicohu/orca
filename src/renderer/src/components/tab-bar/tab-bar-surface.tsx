@@ -1,3 +1,8 @@
+import { AgentLaunchFeedbackTabs } from './AgentLaunchFeedbackTabs'
+import {
+  desktopAgentLaunchFeedback,
+  desktopAgentLaunchFeedbackScope
+} from '@/lib/agent-launch-feedback'
 import React from 'react'
 import { SortableContext } from '@dnd-kit/sortable'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
@@ -13,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { QuickLaunchAgentMenuItems } from './QuickLaunchButton'
 import TabBarCreateEntry from './TabBarCreateEntry'
 import { TabStripScrollIndicator } from './TabStripScrollIndicator'
+import { TabStripTooltipProvider } from './TabStripTooltipProvider'
 import { getTabStripScrollMaskClassName } from './tab-strip-scroll-metrics'
 import type { useTabStripOverflowNavigation } from './tab-strip-overflow-navigation'
 import type { useTabStripDragScrollHandlers } from './tab-strip-drag-scroll'
@@ -20,7 +26,7 @@ import type { TabBarProps } from './tab-bar-props'
 import type { TabBarRuntimeModel } from './use-tab-bar-runtime-model'
 import type { TabBarCreateMenuController } from './use-tab-bar-create-menu-controller'
 import type { TabBarItemProjection } from './use-tab-bar-item-projection'
-import type { TabBarItem } from './tab-bar-item-model'
+import type { TabBarItemActions } from './use-tab-bar-item-actions'
 import { renderTabBarItems } from './tab-bar-item-surface'
 import { TabBarStaticCreateMenu } from './tab-bar-static-create-menu'
 import ClientHostedBrowserTabRows from './ClientHostedBrowserTabRows'
@@ -30,22 +36,26 @@ const EMPTY_CLIENT_HOSTED_ROWS: readonly ClientHostedBrowserRow[] = []
 
 export function renderTabBarSurface({
   props,
+  launchFeedbackSelected = false,
   runtime,
   createMenu,
   itemProjection,
   tabStripNavigation,
   tabStripDragScroll,
   activeClientHostedBrowserRowId,
-  togglePinned
+  itemActions,
+  surfaceRef
 }: {
   props: TabBarProps
+  launchFeedbackSelected?: boolean
   runtime: TabBarRuntimeModel
   createMenu: TabBarCreateMenuController
   itemProjection: TabBarItemProjection
   tabStripNavigation: ReturnType<typeof useTabStripOverflowNavigation>
   tabStripDragScroll: ReturnType<typeof useTabStripDragScrollHandlers>
   activeClientHostedBrowserRowId: string | null
-  togglePinned: (item: TabBarItem) => void
+  itemActions: TabBarItemActions
+  surfaceRef: (node: HTMLDivElement | null) => void
 }): React.JSX.Element {
   const {
     worktreeId,
@@ -80,7 +90,6 @@ export function renderTabBarSurface({
     handleSelectCreateMenuOption,
     launchAgentFromNewTabEntry,
     runPendingNewTabMenuFocusAfterClose,
-    clearPendingNewTabMenuFocusOnUnmount,
     queueNewActiveTerminalFocusAfterNewTabMenuClose,
     queueTerminalTabFocusAfterNewTabMenuClose,
     queueFocusAfterNewTabMenuClose,
@@ -88,24 +97,47 @@ export function renderTabBarSurface({
   } = createMenu
   const { orderedItems, sortableIds, dropIndicatorByVisibleId } = itemProjection
   const clientHostedBrowserRows = props.clientHostedBrowserRows ?? EMPTY_CLIENT_HOSTED_ROWS
-  const { tabStripRef, tabStripOverflowState, scrollTabStrip } = tabStripNavigation
+  const {
+    tabStripRef,
+    tabStripOverflowState,
+    activeTabDockSide,
+    scrollTabStrip,
+    subscribeToStripResize
+  } = tabStripNavigation
   const includeTopTabBorder = tabStripChrome !== 'floating-panel'
   const renderedItems = renderTabBarItems({
     items: orderedItems,
-    props,
+    props: launchFeedbackSelected
+      ? {
+          ...props,
+          activeTabId: null,
+          activeFileId: null,
+          activeBrowserTabId: null,
+          activeSimulatorTabId: null
+        }
+      : props,
     runtime,
+    actions: itemActions,
     dropIndicatorByVisibleId,
     includeTopTabBorder,
-    activeClientHostedBrowserRowId,
-    togglePinned
+    activeClientHostedBrowserRowId: launchFeedbackSelected ? null : activeClientHostedBrowserRowId
   })
 
   return (
     <div
-      ref={clearPendingNewTabMenuFocusOnUnmount}
+      ref={surfaceRef}
       className="flex items-stretch h-full overflow-hidden flex-1 min-w-0"
-      // Why: preload routes native OS drops by this marker — only the tab strip opens files in the editor, not terminal panes.
-      data-native-file-drop-target="editor"
+      onPointerDownCapture={(event) => {
+        if (
+          event.target instanceof Element &&
+          !event.target.closest('[data-agent-launch-feedback]')
+        ) {
+          desktopAgentLaunchFeedback.select(
+            desktopAgentLaunchFeedbackScope(worktreeId, resolvedGroupId),
+            null
+          )
+        }
+      }}
     >
       {tabStripOverflowState.hasOverflow ? (
         <Tooltip>
@@ -144,28 +176,33 @@ export function renderTabBarSurface({
         >
           <div
             ref={tabStripRef}
+            data-active-tab-docked={activeTabDockSide ?? undefined}
             // Why: only `border-r` here — a strip-level `border-l` would render a heavier L-corner than the first tab's own `border-l`.
             className={[
               'terminal-tab-strip flex h-full min-w-0 max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden border-r border-border/70',
-              getTabStripScrollMaskClassName(tabStripOverflowState)
+              getTabStripScrollMaskClassName(tabStripOverflowState, activeTabDockSide)
             ]
               .filter(Boolean)
               .join(' ')}
           >
-            {renderedItems}
-            {clientHostedBrowserRows.length > 0 ? (
-              <ClientHostedBrowserTabRows
-                rows={clientHostedBrowserRows}
-                worktreeId={worktreeId}
-                groupId={resolvedGroupId}
-                groupActiveTabId={props.groupActiveTabId ?? null}
-                includeTopTabBorder={includeTopTabBorder}
-              />
-            ) : null}
+            <TabStripTooltipProvider>
+              {renderedItems}
+              <AgentLaunchFeedbackTabs worktreeId={worktreeId} groupId={resolvedGroupId} />
+              {clientHostedBrowserRows.length > 0 ? (
+                <ClientHostedBrowserTabRows
+                  rows={clientHostedBrowserRows}
+                  worktreeId={worktreeId}
+                  groupId={resolvedGroupId}
+                  groupActiveTabId={props.groupActiveTabId ?? null}
+                  includeTopTabBorder={includeTopTabBorder}
+                />
+              ) : null}
+            </TabStripTooltipProvider>
           </div>
           <TabStripScrollIndicator
-            metrics={tabStripOverflowState}
+            hasOverflow={tabStripOverflowState.hasOverflow}
             scrollContainerRef={tabStripRef}
+            subscribeToStripResize={subscribeToStripResize}
             disabled={tabStripDragScroll.isTabDragActive}
           />
         </div>

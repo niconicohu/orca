@@ -1,16 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { expandNode } from './tab-bar-dropdown-menu-item-probe'
-import { stubHeadlessReact, stubShallowSelector } from './tab-bar-windows-shell-launch-render-stubs'
+import {
+  stubHeadlessReact,
+  stubShallowSelector,
+  stubTooltip
+} from './tab-bar-windows-shell-launch-render-stubs'
 
 const appStoreSnapshot: {
   activeTabId: string | null
   activeTabType: 'terminal' | 'editor' | 'browser' | 'simulator' | null
   unifiedTabsByWorktree: Record<string, unknown[]>
+  groupsByWorktree: Record<string, { id: string; activeTabId: string | null }[]>
   activeGroupIdByWorktree: Record<string, string>
 } = {
   activeTabId: 'old-terminal',
   activeTabType: 'terminal',
   unifiedTabsByWorktree: {},
+  groupsByWorktree: {},
   activeGroupIdByWorktree: {}
 }
 const pinTabMock: (tabId: string) => void = vi.fn()
@@ -25,6 +31,7 @@ const useAppStoreMock = vi.fn(
       repos: never[]
       worktreesByRepo: Record<string, never[]>
       unifiedTabsByWorktree: Record<string, unknown[]>
+      groupsByWorktree: Record<string, { id: string; activeTabId: string | null }[]>
       activeGroupIdByWorktree: Record<string, string>
       pinTab: typeof pinTabMock
       unpinTab: typeof unpinTabMock
@@ -41,6 +48,7 @@ const useAppStoreMock = vi.fn(
       repos: [],
       worktreesByRepo: {},
       unifiedTabsByWorktree: appStoreSnapshot.unifiedTabsByWorktree,
+      groupsByWorktree: {},
       activeGroupIdByWorktree: appStoreSnapshot.activeGroupIdByWorktree,
       pinTab: pinTabMock,
       unpinTab: unpinTabMock,
@@ -53,6 +61,11 @@ const useAppStoreMock = vi.fn(
 
 vi.mock('react', async () => await stubHeadlessReact())
 vi.mock('zustand/react/shallow', () => stubShallowSelector())
+// The headless React stub has no dispatcher for the hook each tab row subscribes to language changes with.
+vi.mock('react-i18next', async () => ({
+  ...(await vi.importActual<Record<string, unknown>>('react-i18next')),
+  useTranslation: () => ({})
+}))
 
 vi.mock('lucide-react', async () => (await import('./lucide-icon-stub-fixture')).stubEveryIcon())
 
@@ -80,6 +93,7 @@ useAppStoreExport.getState = vi.fn(() => ({
   repos: [],
   worktreesByRepo: {},
   unifiedTabsByWorktree: appStoreSnapshot.unifiedTabsByWorktree,
+  groupsByWorktree: {},
   activeGroupIdByWorktree: appStoreSnapshot.activeGroupIdByWorktree,
   pinTab: pinTabMock,
   unpinTab: unpinTabMock,
@@ -106,6 +120,12 @@ vi.mock('@/components/editor/editor-labels', () => ({
 }))
 
 vi.mock('./SortableTab', () => ({
+  default: function SortableTab(props: Record<string, unknown>) {
+    return { type: 'SortableTab', props }
+  }
+}))
+
+vi.mock('./TerminalSortableTab', () => ({
   default: function SortableTab(props: Record<string, unknown>) {
     return { type: 'SortableTab', props }
   }
@@ -176,11 +196,7 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   }
 }))
 
-vi.mock('@/components/ui/tooltip', () => ({
-  Tooltip: 'Tooltip',
-  TooltipContent: 'TooltipContent',
-  TooltipTrigger: 'TooltipTrigger'
-}))
+vi.mock('@/components/ui/tooltip', () => stubTooltip())
 
 type ReactElementLike = {
   type: unknown

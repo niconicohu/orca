@@ -1,19 +1,13 @@
 {
+  "goldenFormatVersion": 6,
   "operation": "transport.capability-probe",
   "family": "transport.capability-probe",
   "namedDeltas": [],
-  "runnerVersion": 1,
-  "baseline": "03995ae29d28dd39bd2546423831987db68985de",
-  "lockfileSha256": "9317f3a98ab047f9f96fe26fd8531b8a632ac5954064b322f41a904148cbf6bb",
-  "recorderSha256": "0317fe2aebe4743ce5e7ae194531aa91b4fe0a84df457640851fe6dfdb9362af",
-  "adapterSha256": "34b382b13fe75e8ef4002325287c95b3c4db62eeaaf3762af7fbaf6f836c2fa1",
-  "scenarioSha256": "2ba1e1d70c98e2fd0d2d2dce6f68c11a186756f05207747e156375fc613940d7",
-  "platform": "darwin",
-  "scenarioVersion": 1,
-  "projectionVersion": 2,
-  "goldenFormatVersion": 5,
   "values": {
-    "20578a5e9a12": {
+    "2c76473bef66": {
+      "published": []
+    },
+    "5513c4f509da": {
       "name": "status.get#2",
       "ordinal": 3,
       "args": [
@@ -24,13 +18,14 @@
         {
           "name": "params",
           "value": {
-            "$rpc": "absent"
+            "$rpc": "undefined"
           }
         },
         {
           "name": "options",
           "value": {
-            "$rpc": "absent"
+            "budgetSpansConnect": true,
+            "timeoutMs": 8000
           }
         }
       ],
@@ -47,10 +42,7 @@
         }
       }
     },
-    "2c76473bef66": {
-      "published": []
-    },
-    "905661513589": {
+    "64cac3caa824": {
       "name": "status.get#1",
       "ordinal": 1,
       "args": [
@@ -61,13 +53,14 @@
         {
           "name": "params",
           "value": {
-            "$rpc": "absent"
+            "$rpc": "undefined"
           }
         },
         {
           "name": "options",
           "value": {
-            "$rpc": "absent"
+            "budgetSpansConnect": true,
+            "timeoutMs": 8000
           }
         }
       ],
@@ -113,7 +106,7 @@
       {
         "id": "backing-off",
         "observation": {
-          "sender": ["905661513589"],
+          "sender": ["64cac3caa824"],
           "payloads": ["d08f74d65ee6"],
           "settlements": {
             "start": "eb79a9b3682a"
@@ -125,7 +118,7 @@
       {
         "id": "published-after-backoff",
         "observation": {
-          "sender": ["905661513589", "20578a5e9a12"],
+          "sender": ["64cac3caa824", "5513c4f509da"],
           "payloads": ["d08f74d65ee6", "f1834177e593"],
           "settlements": {
             "start": "eb79a9b3682a"

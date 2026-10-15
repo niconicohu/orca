@@ -1,4 +1,9 @@
 import { useMobileTheme } from '../../../../../src/theme/use-mobile-theme'
+import { withWorkspaceRoute } from '../../../../../src/navigation/workspace-route'
+import {
+  useWorkspaceExecutionHost,
+  workspaceRouteParams
+} from '../../../../../src/navigation/workspace-execution-host'
 import { useLocalSearchParams } from 'expo-router'
 import { MobileFilePreviewScreen } from '../../../../../src/files/MobileFilePreviewScreen'
 import {
@@ -10,8 +15,7 @@ import {
   shellScreenRouteKey
 } from '../../../../../src/mobile-web-shell/shell-screen-route'
 import { MobileWebShellScreen } from '../../../../../src/mobile-web-shell/MobileWebShellScreen'
-import { ShellSwitchPendingScreen } from '../../../../../src/mobile-web-shell/ShellSwitchPendingScreen'
-import { useShellSwitchDecision } from '../../../../../src/mobile-web-shell/shell-switch-decision'
+import { shellSwitchDecision } from '../../../../../src/mobile-web-shell/shell-switch-decision'
 
 /**
  * The file preview, from the desktop's bundle or from this app.
@@ -24,7 +28,7 @@ import { useShellSwitchDecision } from '../../../../../src/mobile-web-shell/shel
  * them — is a param, which is what keeps a `/`, a space or a `..` out of the segment vocabulary the
  * bridge holds a route to.
  */
-export default function MobileFilePreviewRoute() {
+export default withWorkspaceRoute(function MobileFilePreviewRoute() {
   useMobileTheme()
 
   const params = useLocalSearchParams<{
@@ -46,21 +50,22 @@ export default function MobileFilePreviewRoute() {
   }>()
   const route = normalizeMobileFilePreviewRouteParams(params)
   const native = <MobileFilePreviewScreen route={route} />
+  const executionHost = useWorkspaceExecutionHost()
 
   const shellRoute = route.ok
     ? shellScreenRoute({
         pathname: `/h/${encodeURIComponent(route.params.hostId)}/files/preview/${encodeURIComponent(
           route.params.worktreeId
         )}`,
-        params: mobileFilePreviewShellParams(route.params)
+        params: {
+          ...mobileFilePreviewShellParams(route.params),
+          ...workspaceRouteParams(executionHost)
+        }
       })
     : null
 
-  const decision = useShellSwitchDecision(shellRoute)
+  const decision = shellSwitchDecision(shellRoute)
 
-  if (decision.kind === 'pending') {
-    return <ShellSwitchPendingScreen />
-  }
   // `route.ok` again for the compiler: `shellRoute` is built only on the ok branch, so a `shell`
   // decision already implies it.
   if (decision.kind === 'native' || !route.ok) {
@@ -79,4 +84,4 @@ export default function MobileFilePreviewRoute() {
       fallback={native}
     />
   )
-}
+})

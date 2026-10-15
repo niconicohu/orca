@@ -10,6 +10,7 @@ export const scrollToOffset = scrollMocks.offset
 vi.mock('react-native', async () => {
   const React = await import('react')
   return {
+    Platform: { OS: 'ios' },
     ActivityIndicator: 'ActivityIndicator',
     FlatList: React.forwardRef((props, ref) => {
       React.useImperativeHandle(
@@ -50,6 +51,8 @@ vi.mock('lucide-react-native', () => ({
   Square: 'Square'
 }))
 
+vi.mock('./MobileNativeChatLiveLine', () => ({ MobileNativeChatLiveLine: 'LiveStatus' }))
+vi.mock('../components/ActionSheetModal', () => ({ ActionSheetModal: 'ActionSheetModal' }))
 vi.mock('./MobileNativeChatMessage', () => ({ MobileNativeChatMessage: 'ChatMessage' }))
 vi.mock('./MobileNativeChatAsk', () => ({ MobileNativeChatAsk: 'ChatAsk' }))
 vi.mock('./MobileNativeChatPermission', () => ({ MobileNativeChatPermission: 'ChatPermission' }))

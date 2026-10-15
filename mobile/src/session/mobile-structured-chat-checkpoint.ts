@@ -6,6 +6,7 @@ import type {
   AgentSessionHistoryPage
 } from '../../../src/shared/agent-session-wire'
 import {
+  EMPTY_STRUCTURED_AGENT_SESSION,
   reduceStructuredAgentSession,
   type StructuredAgentSessionAction,
   type StructuredAgentSessionState
@@ -65,6 +66,15 @@ export function reduceMobileStructuredChatCheckpoint(
   action: StructuredAgentSessionAction,
   now: number
 ): MobileStructuredChatState {
+  if (typeof state.retainedOwnItemLimit !== 'number' || typeof state.retainedItemCap !== 'number') {
+    state = {
+      ...EMPTY_STRUCTURED_AGENT_SESSION,
+      ...state,
+      retainedOwnItemLimit:
+        state.retainedOwnItemLimit ?? EMPTY_STRUCTURED_AGENT_SESSION.retainedOwnItemLimit,
+      retainedItemCap: state.retainedItemCap ?? EMPTY_STRUCTURED_AGENT_SESSION.retainedItemCap
+    }
+  }
   if (
     action.type === 'older-page' &&
     (state.epoch !== action.requestedCursor.epoch || action.page.epoch !== state.epoch)
@@ -103,7 +113,10 @@ export function reduceMobileStructuredChatCheckpoint(
     ) {
       page = { ...page, latestTurn: state.latestTurn }
     }
-    next = { ...reduceStructuredAgentSession(state, { ...action, page }, now), fence: state.fence }
+    next = {
+      ...reduceStructuredAgentSession(state, { ...action, page }, now),
+      fence: state.epoch === page.epoch ? state.fence : null
+    }
   } else if (
     action.type === 'event' &&
     action.event.type === 'snapshot' &&

@@ -1,3 +1,4 @@
+import { MobileAgentLaunchFeedback } from './MobileAgentLaunchFeedback'
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { mobileNativeChatScopeKey } from './mobile-native-chat-scope-key'
 import { Animated, View, Text, Pressable, ActivityIndicator } from 'react-native'
@@ -51,6 +52,7 @@ export function MobileSessionActiveContent({
     deleteDiffCommentForFile,
     copyDiffCommentsToClipboard,
     sendDiffCommentsToAgent,
+    sendingDiffCommentIds,
     updateMarkdownLocalContent,
     copyMarkdownLocalContent,
     discardMarkdownLocalContent,
@@ -141,6 +143,7 @@ export function MobileSessionActiveContent({
   ) : activeFileTab ? (
     <View style={styles.markdownFrame}>
       <FileReader
+        client={client}
         doc={fileDocs.get(activeFileTab.id)}
         title={activeFileTab.title || 'File'}
         relativePath={activeFileTab.relativePath}
@@ -149,6 +152,7 @@ export function MobileSessionActiveContent({
           activeFileTab.diffSource === 'staged' || activeFileTab.diffSource === 'unstaged'
             ? {
                 comments: diffComments,
+                sendingCommentIds: sendingDiffCommentIds,
                 busy: diffCommentBusy,
                 onAdd: addDiffCommentForFile,
                 onDelete: deleteDiffCommentForFile,
@@ -256,6 +260,7 @@ export function MobileSessionActiveContent({
         getSendCompletionGeneration={controller.getSendCompletionGeneration}
         keyboardInset={keyboardLift}
       />
+      <MobileAgentLaunchFeedback controller={controller} mode="pane" />
       {toastMessage && (
         <Animated.View pointerEvents="none" style={[styles.toast, toastAnimatedStyle]}>
           <Text style={styles.toastText}>{toastMessage}</Text>

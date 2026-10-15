@@ -70,16 +70,16 @@ it('passes original text and offsets to native and repaints both theme direction
   act(() => applyMobileColorScheme('dark'))
   await paint()
   expect(native.decorateText.mock.lastCall?.[3]).toBe(darkColors.bgRaised)
-  expect(tree!.root.findAllByType('Text' as never)[0].props.selectable).toBe(true)
+  expect(tree!.root.findAll((node) => String(node.type) === 'Text')[0].props.selectable).toBe(true)
 })
 it('does not retain the old native height when streamed content loses its code span', async () => {
   render()
   await paint()
   act(() => tree!.update(createElement(MobileMarkdownNativeText, null, 'Done')))
   await paint()
-  expect(JSON.stringify(tree!.root.findAllByType('Text' as never)[0].props.style)).not.toContain(
-    'minHeight'
-  )
+  expect(
+    JSON.stringify(tree!.root.findAll((node) => String(node.type) === 'Text')[0].props.style)
+  ).not.toContain('minHeight')
 })
 it('keeps ordinary native text working on older shells without the module', async () => {
   native.available = false

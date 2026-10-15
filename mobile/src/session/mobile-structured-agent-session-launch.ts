@@ -1,7 +1,3 @@
-import {
-  measureChatRead,
-  recordChatClientDiagnostic
-} from '../diagnostics/chat-runtime-diagnostics'
 import type { AgentSessionHandleProvider } from '../../../src/shared/agent-session-provider-handle'
 import type {
   AgentSessionAttachResult,
@@ -21,6 +17,7 @@ import {
   structuredAgentSupportProbe
 } from './mobile-session-launch-operations'
 import { structuredSessionRandomUuid } from './structured-session-operation-id'
+import { rememberMobileCreatedStructuredSession } from './mobile-created-structured-sessions'
 
 type StructuredCreateSupport = {
   supported?: boolean
@@ -35,7 +32,7 @@ function delay(ms: number): Promise<void> {
 }
 
 export type MobileStructuredAgentLaunchResult =
-  | { kind: 'created'; sessionId: string; tabId?: string }
+  | { kind: 'created'; sessionId: string }
   | { kind: 'unsupported'; reason?: StructuredCreateSupport['reason'] }
   | { kind: 'failed'; message: string }
   | { kind: 'unknown'; message: string }
@@ -86,17 +83,11 @@ export async function createMobileStructuredAgentSession(
   worktreeId: string,
   agent: AgentSessionHandleProvider
 ): Promise<MobileStructuredAgentLaunchResult> {
-  recordChatClientDiagnostic(client, worktreeId, 'agent-launch-intent', { mode: 'structured' })
   const worktree = `id:${worktreeId}`
   let supportResponse
   for (let attempt = 0; ; attempt += 1) {
     try {
-      supportResponse = await measureChatRead(
-        client,
-        worktreeId,
-        'agentSession.createSupport',
-        () => structuredAgentSupportProbe.request(client, { worktree, agent })
-      )
+      supportResponse = await structuredAgentSupportProbe.request(client, { worktree, agent })
     } catch (error) {
       const retryDelayMs = CREATE_SUPPORT_RETRY_DELAYS_MS[attempt]
       if (
@@ -132,20 +123,20 @@ export async function createMobileStructuredAgentSession(
   }
 
   const params = createParamsFor(agent, worktree)
-  const sendCreate = () =>
-    measureChatRead(client, worktreeId, 'agentSession.create', () =>
-      structuredAgentSessionCreate.request(client, params, {
-        timeoutMs: 15_000,
-        budgetSpansConnect: true
-      })
-    )
+  rememberMobileCreatedStructuredSession(params.envelope.sessionId, worktree)
   let response
   try {
-    response = await sendCreate()
+    response = await structuredAgentSessionCreate.request(client, params, {
+      timeoutMs: 15_000,
+      budgetSpansConnect: true
+    })
   } catch {
     // Replay the durable envelope once so a lost acknowledgement cannot create a sibling.
     try {
-      response = await sendCreate()
+      response = await structuredAgentSessionCreate.request(client, params, {
+        timeoutMs: 15_000,
+        budgetSpansConnect: true
+      })
     } catch (retryError) {
       // A second transport error cannot disprove the first attempt committed.
       return unknownCreateResult(agent, retryError)
@@ -191,10 +182,5 @@ export async function createMobileStructuredAgentSession(
   ) {
     return unknownCreateResult(agent, new Error(unconfirmedMessage(agent)))
   }
-  recordChatClientDiagnostic(client, worktreeId, 'agent-launch-result', {
-    mode: 'structured',
-    kind: 'structured',
-    sessionResolved: true
-  })
   return { kind: 'created', sessionId: result.value.sessionId }
 }

@@ -25,8 +25,7 @@ describe('useHostStatusGates', () => {
       nextId: () => String(++sequence),
       getState: () => 'connected',
       waitForConnected: async () => {},
-      sendEncrypted: () => true,
-      deviceToken: 'test'
+      sendFrame: () => true
     })
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: this gate only requires the request method, backed by the real deadline tracker.
     const client = { sendRequest: tracker.sendRequest.bind(tracker) } as unknown as RpcClient

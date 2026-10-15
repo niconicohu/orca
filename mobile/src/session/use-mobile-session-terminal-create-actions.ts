@@ -1,4 +1,9 @@
-import { loadDefaultSessionView } from '../storage/session-view-preferences'
+import { TUI_AGENT_DISPLAY_NAMES } from '../../../src/shared/tui-agent-display-names'
+import {
+  mobileAgentLaunchFeedback,
+  mobileAgentLaunchFeedbackScope,
+  bindMobileAgentLaunchFeedback
+} from './mobile-agent-launch-feedback'
 import {
   buildMobileQuickCommandLaunch,
   type MobileQuickCommandLaunch
@@ -14,6 +19,14 @@ import type { MobileSessionTab, Terminal } from './mobile-session-route-types'
 import type { MobileSessionAttachmentsModel } from './use-mobile-session-attachments'
 import { isAgentSessionHandleProvider } from '../../../src/shared/agent-session-provider-handle'
 import { createMobileStructuredAgentSession } from './mobile-structured-agent-session-launch'
+import { launchesThroughHost, launchNewTabAgentThroughHost } from './new-tab-agent-host-launch'
+import {
+  launchedSelection,
+  withLaunchReply,
+  withoutUnansweredLaunch,
+  withoutPendingHandle
+} from './pending-session-selection'
+import { releaseTerminalCreateLock } from './terminal-create-lock'
 import { placeCreatedSessionTab } from '../../../src/shared/session-tab-placement'
 import { SESSION_TABS_SPLIT_GROUP_PLACEMENT_RUNTIME_CAPABILITY } from '../../../src/shared/protocol-version'
 
@@ -26,10 +39,10 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
     setTerminals,
     terminalsRef,
     setSessionTabs,
+    sessionTabsRef,
     defaultTerminalHandlesToLiveInput,
     setActiveHandle,
     activeSessionTabId,
-    activeSessionTabIdRef,
     setActiveSessionTabId,
     setCreating,
     creatingTerminalRef,
@@ -37,11 +50,9 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
     creatingMarkdown,
     setCreateError,
     deviceTokenRef,
-    initializedHandlesRef,
     activeHandleRef,
     activeSessionTabTypeRef,
-    pendingActiveSessionTabIdRef,
-    pendingActiveTerminalHandleRef,
+    pendingSelectionRef,
     scheduleDelayedAction,
     showToast,
     unsubscribeTerminal,
@@ -58,67 +69,85 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
     if (!client || creatingTerminalRef.current) {
       return
     }
-    creatingTerminalRef.current = true
-
-    setCreating(true)
-    setCreateError('')
-
     // Why: idempotency key so a transport retry (reconnect replay) resolves to the same terminal, not a duplicate; kept compact (no worktree id) for the schema length cap.
     const clientMutationId = `mobile-create:${Date.now().toString(36)}-${Math.random()
       .toString(36)
       .slice(2, 10)}`
+    const feedbackScope = mobileAgentLaunchFeedbackScope(client, worktreeId)
+    if (agent) {
+      mobileAgentLaunchFeedback.begin(
+        feedbackScope,
+        clientMutationId,
+        TUI_AGENT_DISPLAY_NAMES[agent],
+        activeSessionTabId
+      )
+    }
+    // Also names the "+" lock, which a launch frees when its tab lands.
+    creatingTerminalRef.current = clientMutationId
+
+    setCreating(true)
+    setCreateError('')
 
     // Why: the host names the real cause (pty exhaustion, disabled agent, unresolved worktree);
     // collapsing every failure to 'Failed to create terminal' left the phone undiagnosable.
     function reportCreateFailure(hostReason: string): void {
-      const reason = hostReason.trim()
-      const message = reason || options?.errorToast || 'Failed to create terminal'
-      setCreateError(message)
+      const reason = hostReason.trim() || options?.errorToast || 'Failed to create terminal'
+      if (agent) {
+        mobileAgentLaunchFeedback.fail(feedbackScope, clientMutationId, reason)
+      }
+      setCreateError(reason)
+      // Why: the inline error renders only in an empty session; beside open tabs only a toast is seen.
       triggerError()
-      showToast(options?.errorToast ?? message, options?.errorToast ? 1800 : 2400)
+      showToast(options?.errorToast ?? reason, 1800)
     }
 
     try {
-      // Explicit device view selects the execution surface, not just its renderer.
       if (
-        isAgentSessionHandleProvider(agent) &&
-        options === undefined &&
-        (await loadDefaultSessionView()) === 'chat'
+        agent &&
+        launchesThroughHost(options) &&
+        (await launchNewTabAgentThroughHost({
+          client,
+          hostCapabilities,
+          worktreeId,
+          agent,
+          options,
+          lock: clientMutationId,
+          activeSessionTabId,
+          pendingSelectionRef,
+          fetchSessionTabs,
+          getSessionTabs: () => sessionTabsRef.current,
+          showToast,
+          reportCreateFailure,
+          setCreateError
+        }))
       ) {
+        return
+      }
+      // COMPAT(agent.launch.v2): hosts before v1.4.206 keep the paths below; remove once none remain.
+      // Bare structured-provider launches follow host createSupport; prompted launches keep their startup semantics.
+      if (isAgentSessionHandleProvider(agent) && options === undefined) {
+        // Armed before asking with nothing to match yet, so a tab picked meanwhile still wins.
+        pendingSelectionRef.current = launchedSelection(clientMutationId, {}, null)
         const structured = await createMobileStructuredAgentSession(client, worktreeId, agent)
         if (structured.kind === 'created') {
-          const previous = activeHandleRef.current
-          if (previous) {
-            unsubscribeTerminal(previous)
-            initializedHandlesRef.current.delete(previous)
-          }
-          const tabId = structured.tabId ?? `agent-session:${structured.sessionId}`
-          pendingActiveSessionTabIdRef.current = tabId
-          pendingActiveTerminalHandleRef.current = null
-          activeSessionTabTypeRef.current = 'agent-session'
-          activeSessionTabIdRef.current = tabId
-          setActiveSessionTabId(tabId)
-          activeHandleRef.current = null
-          setActiveHandle(null)
-          // Refresh if the create response beats its published tab frame.
-          scheduleDelayedAction(() => void fetchSessionTabs(), 500)
-          return
-        }
-        if (structured.kind === 'failed') {
-          reportCreateFailure(structured.message)
+          // Found by session in the next snapshot, never by a predicted tab id; the current tab stays
+          // live until then, as on the launch path above.
+          const reply = { sessionId: structured.sessionId }
+          bindMobileAgentLaunchFeedback(client, worktreeId, clientMutationId, reply)
+          pendingSelectionRef.current = withLaunchReply(
+            pendingSelectionRef.current,
+            clientMutationId,
+            reply
+          )
+          void fetchSessionTabs()
           return
         }
         if (structured.kind === 'unknown') {
           // Never create a legacy sibling when the host may already have committed.
+          mobileAgentLaunchFeedback.fail(feedbackScope, clientMutationId, structured.message)
           setCreateError(structured.message)
           triggerError()
           showToast(structured.message, 1800)
-          return
-        }
-        if (structured.kind === 'unsupported') {
-          const message =
-            'This host cannot create structured Chat here. Enable Chat on the host or choose Terminal view.'
-          reportCreateFailure(message)
           return
         }
       }
@@ -147,12 +176,16 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
         { type: 'terminal' }
       >
       // Why: unsubscribe the old terminal so the server restores its desktop dims; otherwise its restore timer is never set.
+      if (agent) {
+        bindMobileAgentLaunchFeedback(client, worktreeId, clientMutationId, {
+          handle: created.terminal
+        })
+      }
       const prev = activeHandleRef.current
       if (prev) {
         unsubscribeTerminal(prev)
-        initializedHandlesRef.current.delete(prev)
       }
-      pendingActiveSessionTabIdRef.current = created.id
+      pendingSelectionRef.current = { kind: 'tab', tabId: created.id }
       activeSessionTabTypeRef.current = 'terminal'
       setActiveSessionTabId(created.id)
       // An older headed host places after the parent while an older headless host places after the
@@ -171,7 +204,7 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
         const createdHandle = created.terminal
         defaultTerminalHandlesToLiveInput([createdHandle])
         // Why: snapshots lag the create RPC; without this marker applySessionTabs reverts the active handle, blanking the new pane.
-        pendingActiveTerminalHandleRef.current = createdHandle
+        pendingSelectionRef.current = { kind: 'terminal', handle: createdHandle, tabId: created.id }
         activeHandleRef.current = createdHandle
         setActiveHandle(createdHandle)
         setTerminals((prev) => {
@@ -234,7 +267,7 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
         }
       } else {
         // Why: a prior pending handle must not outlive a create that returned no terminal; web-ready subscribe gates on this ref.
-        pendingActiveTerminalHandleRef.current = null
+        pendingSelectionRef.current = withoutPendingHandle(pendingSelectionRef.current)
         activeHandleRef.current = null
         setActiveHandle(null)
       }
@@ -242,8 +275,11 @@ export function useMobileSessionTerminalCreateActions(scope: MobileSessionAttach
     } catch (error) {
       reportCreateFailure(error instanceof Error ? error.message : '')
     } finally {
-      creatingTerminalRef.current = false
-      setCreating(false)
+      pendingSelectionRef.current = withoutUnansweredLaunch(
+        pendingSelectionRef.current,
+        clientMutationId
+      )
+      releaseTerminalCreateLock({ creatingTerminalRef, setCreating }, clientMutationId)
     }
   }
 

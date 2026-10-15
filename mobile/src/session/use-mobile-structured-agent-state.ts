@@ -1,3 +1,4 @@
+import { isRootAgentJournalItem } from '../../../src/shared/agent-session-journal-producer'
 import { boundMobileChatEntries } from '../cache/bound-mobile-chat-entries'
 import { mobileStructuredChatReads as routeReads } from './mobile-structured-chat-route-cache'
 import { subscribeMobileStructuredChat } from './subscribe-mobile-structured-chat'
@@ -190,22 +191,39 @@ export function useMobileStructuredAgentState(
         return
       }
       const cursor = { epoch: stateRef.current.epoch, sequence }
-      const result = await measureChatRead(client, sessionId, 'agentSession.history.before', () =>
-        callAgentSession<AgentSessionHistoryResult>(client, 'agentSession.history', {
-          sessionId,
-          direction: 'before',
-          cursor,
-          limit: 40
-        })
-      )
-      if (!isCurrentRead()) {
-        return
+      let requested = cursor
+      for (let pageCount = 0; pageCount < 8; pageCount += 1) {
+        const result = await measureChatRead(client, sessionId, 'agentSession.history.before', () =>
+          callAgentSession<AgentSessionHistoryResult>(client, 'agentSession.history', {
+            sessionId,
+            direction: 'before',
+            cursor: requested,
+            limit: 40
+          })
+        )
+        if (!isCurrentRead()) {
+          return
+        }
+        if (!result.ok) {
+          if (result.page) {
+            apply({ type: 'history-page', page: result.page })
+          }
+          return
+        }
+        apply({ type: 'older-page', requestedCursor: requested, page: result.page })
+        if (
+          !result.page.hasOlder ||
+          result.page.items.length === 0 ||
+          result.page.items.some(isRootAgentJournalItem)
+        ) {
+          return
+        }
+        const next = result.page.window.nextCursor
+        if (next.sequence >= requested.sequence) {
+          return
+        }
+        requested = next
       }
-      if (!result.ok) {
-        apply({ type: 'history-page', page: result.page })
-        return
-      }
-      apply({ type: 'older-page', requestedCursor: cursor, page: result.page })
     })()
       .catch((error: unknown) => {
         if (isCurrentRead()) {
@@ -220,5 +238,28 @@ export function useMobileStructuredAgentState(
       })
   }, [apply, client, loadingOlder, sessionId, sessionKey])
 
-  return { state, stateRef, loadingOlder, loadEarlier }
+  const childOnlyHead =
+    state.status === 'ready' &&
+    state.hasOlder &&
+    state.items.length > 0 &&
+    !state.items.some(isRootAgentJournalItem)
+      ? `${sessionKey}:${state.epoch}:${state.items[0]?.sequence}`
+      : null
+  const readBackFrom = useRef<string | null>(null)
+  useEffect(() => {
+    if (childOnlyHead === null || loadingOlder || readBackFrom.current === childOnlyHead) {
+      return
+    }
+    readBackFrom.current = childOnlyHead
+    loadEarlier()
+  }, [childOnlyHead, loadEarlier, loadingOlder])
+
+  return {
+    state,
+    stateRef,
+    queuedMessages: state.queuedMessages ?? null,
+    queuePause: state.queuePause ?? null,
+    loadingOlder,
+    loadEarlier
+  }
 }

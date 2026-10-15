@@ -24,6 +24,9 @@ vi.mock('react-native', () => ({
   },
   StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 }
 }))
+vi.mock('../home/MobileHomeAppUpdateCard', () => ({ MobileHomeAppUpdateCard: () => null }))
+vi.mock('expo-network', () => ({ getNetworkStateAsync: async () => ({}) }))
+vi.mock('expo-router', () => ({ router: { push() {} }, useRouter: () => ({ push() {} }) }))
 vi.mock('lucide-react-native', () => ({ Activity: 'Activity' }))
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }))
 vi.mock('../host-screen/host-screen-header', () => ({ HostScreenHeader: () => null }))
@@ -51,7 +54,7 @@ it('repaints the mounted machine screen without rebuilding its controller', () =
     tree = create(createElement(HostScreenView, { controller }))
   })
   const background = () =>
-    tree!.root.findByType('SafeAreaView' as never).props.style.backgroundColor
+    tree!.root.find((node) => String(node.type) === 'SafeAreaView').props.style.backgroundColor
   expect(background()).toBe(darkColors.bgBase)
   act(() => applyMobileColorScheme('light'))
   expect(background()).toBe(lightColors.bgBase)
@@ -97,7 +100,8 @@ it('repaints running indicators in place without restarting their state', () => 
   act(() => {
     tree = create(createElement(AgentSpinner, { status: 'working' }))
   })
-  const color = () => tree!.root.findByType('AnimatedView' as never).props.style[1].borderColor
+  const color = () =>
+    tree!.root.find((node) => String(node.type) === 'AnimatedView').props.style[1].borderColor
   expect(color()).toBe(darkColors.agentWorking)
   act(() => applyMobileColorScheme('light'))
   expect(color()).toBe(lightColors.agentWorking)
@@ -106,7 +110,8 @@ it('uses theme contrast for the per-agent indicator too', () => {
   act(() => {
     tree = create(createElement(AgentStateDot, { state: 'working' }))
   })
-  const color = () => tree!.root.findByType('AnimatedView' as never).props.style[0].borderColor
+  const color = () =>
+    tree!.root.find((node) => String(node.type) === 'AnimatedView').props.style[0].borderColor
   expect(color()).toBe(darkColors.agentWorking)
   act(() => applyMobileColorScheme('light'))
   expect(color()).toBe(lightColors.agentWorking)

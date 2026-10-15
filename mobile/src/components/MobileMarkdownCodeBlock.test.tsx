@@ -32,19 +32,20 @@ it('renders line numbers separately and copies exactly the code without the gutt
   })
   try {
     const gutter = tree.root
-      .findAllByType('Text' as never)
+      .findAll((node) => String(node.type) === 'Text')
       .find((node) => node.props.importantForAccessibility === 'no-hide-descendants')!
     expect(gutter.props.children).toBe('1\n2\n3')
     expect(gutter.props.selectable).toBe(false)
-    const button = () => tree.root.findByType('Pressable' as never)
+    const button = () => tree.root.find((node) => String(node.type) === 'Pressable')
     await act(async () => {
       await button().props.onPress()
     })
     expect(clipboard.writeText).toHaveBeenCalledWith(code)
     expect(button().props.accessibilityLabel).toBe('Code copied')
     const color = () =>
-      tree.root.findAllByType('Text' as never).find((node) => node.props.children === 'const')
-        ?.props.style.color
+      tree.root
+        .findAll((node) => String(node.type) === 'Text')
+        .find((node) => node.props.children === 'const')?.props.style.color
     act(() => applyMobileColorScheme('light'))
     expect(color()).toBe('#cf222e')
     act(() => applyMobileColorScheme('dark'))

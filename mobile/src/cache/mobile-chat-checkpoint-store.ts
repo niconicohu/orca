@@ -117,7 +117,7 @@ export function createChatCheckpointStore(storage: CheckpointStorage) {
     }
   }
   return {
-    get(entry: Pick<ChatCheckpoint, 'scope' | 'namespace' | 'key'>): unknown | null {
+    get(entry: Pick<ChatCheckpoint, 'scope' | 'namespace' | 'key'>): unknown {
       const record = entries.get(identity(entry))
       return record &&
         Date.now() - record.checkpoint.at <= MAX_AGE &&
@@ -125,7 +125,7 @@ export function createChatCheckpointStore(storage: CheckpointStorage) {
         ? record.checkpoint.value
         : null
     },
-    read(entry: Pick<ChatCheckpoint, 'scope' | 'namespace' | 'key'>): Promise<unknown | null> {
+    read(entry: Pick<ChatCheckpoint, 'scope' | 'namespace' | 'key'>): Promise<unknown> {
       return enqueue(async () => {
         await load()
         await trim()

@@ -1,3 +1,7 @@
+import {
+  snapshotEvent,
+  snapshotWithMessage
+} from './structured-agent-session-snapshot.test-fixture'
 import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,10 +10,11 @@ import type {
   AgentJournalRenderItem,
   AgentJournalResolution
 } from '../../../src/shared/agent-session-journal-types'
-import type { AgentSessionSubscribeEvent } from '../../../src/shared/agent-session-wire'
+import type { SessionOptionDescriptor } from '../../../src/shared/native-chat-session-options'
 import type { RpcClient } from '../transport/rpc-client'
 import { markRpcDeliveryUnknown } from '../transport/rpc-delivery-ambiguity'
 import { formatQuestionFreeTextAnswer } from './mobile-native-chat-question'
+import type { MobileNativeChatSendOutcome } from './mobile-native-chat-send'
 import { structuredSendResultFixture } from './structured-agent-send-result.test-fixture'
 import { useMobileStructuredAgentSession } from './use-mobile-structured-agent-session'
 
@@ -21,64 +26,13 @@ const asyncStorage = vi.hoisted(() => ({
 
 vi.mock('@react-native-async-storage/async-storage', () => ({ default: asyncStorage }))
 
-import { resetMobileStructuredSendOperationJournalForTests } from './mobile-structured-send-operation-journal'
+function listedModelIds(snapshot: readonly SessionOptionDescriptor[]): string[] {
+  const model = snapshot.find((descriptor) => descriptor.id === 'model')
+  return model?.kind.type === 'select' ? model.kind.choices.map((choice) => choice.value) : []
+}
 
 function ok(result: unknown) {
   return { ok: true, result, _meta: { runtimeId: 'runtime-1' } }
-}
-
-function snapshotEvent(fence = 3): AgentSessionSubscribeEvent {
-  return {
-    type: 'snapshot',
-    sessionId: 'session-1',
-    fence,
-    page: {
-      sessionId: 'session-1',
-      epoch: 'epoch-1',
-      fence,
-      direction: 'tail',
-      items: [],
-      removedItemIds: [],
-      submissions: [],
-      window: {
-        oldest: null,
-        newest: null,
-        nextCursor: { epoch: 'epoch-1', sequence: 0 }
-      },
-      liveCursor: { epoch: 'epoch-1', sequence: 0 },
-      hasOlder: false,
-      hasNewer: false
-    }
-  }
-}
-
-function snapshotWithMessage(): AgentSessionSubscribeEvent {
-  const event = snapshotEvent()
-  return {
-    ...event,
-    page: {
-      ...event.page,
-      items: [
-        {
-          itemId: 'msg-1',
-          revision: 1,
-          sequence: 1,
-          observedAt: 10,
-          body: {
-            kind: 'message',
-            role: 'user',
-            blocks: [{ type: 'text', text: 'sent before the blip' }]
-          }
-        }
-      ],
-      window: {
-        oldest: { epoch: 'epoch-1', sequence: 1 },
-        newest: { epoch: 'epoch-1', sequence: 1 },
-        nextCursor: { epoch: 'epoch-1', sequence: 2 }
-      },
-      liveCursor: { epoch: 'epoch-1', sequence: 1 }
-    }
-  } as AgentSessionSubscribeEvent
 }
 
 function pendingResolution(): AgentJournalResolution {
@@ -270,7 +224,7 @@ describe('useMobileStructuredAgentSession', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    resetMobileStructuredSendOperationJournalForTests()
+
     storedOperations = new Map()
     asyncStorage.getItem.mockImplementation(
       async (key: string) => storedOperations.get(key) ?? null
@@ -365,7 +319,7 @@ describe('useMobileStructuredAgentSession', () => {
     await vi.waitFor(() => expect(listener).toEqual(expect.any(Function)))
     act(() => listener?.(snapshotEvent()))
 
-    let outcome: 'accepted' | 'unknown' | 'rejected' = 'rejected'
+    let outcome: MobileNativeChatSendOutcome = 'rejected'
     await act(async () => {
       outcome = await hook!.sendWithOutcome('hello')
     })
@@ -413,7 +367,8 @@ describe('useMobileStructuredAgentSession', () => {
 
     await vi.waitFor(() => expect(hook.permission).not.toBeNull())
     await vi.waitFor(() => expect(hook.question).not.toBeNull())
-    await vi.waitFor(() => expect(hook.optionSnapshot.length).toBeGreaterThan(0))
+    // The seed paints first; the session's own list is what a pick is checked against.
+    await vi.waitFor(() => expect(listedModelIds(hook.optionSnapshot)).toContain('gpt-slow'))
 
     expect(hook.permission).toMatchObject({
       title: 'Allow Bash?',
@@ -496,7 +451,7 @@ describe('useMobileStructuredAgentSession', () => {
     await vi.waitFor(() => expect(listener).toEqual(expect.any(Function)))
     act(() => listener?.(snapshotEvent(3)))
 
-    let outcome: 'accepted' | 'unknown' | 'rejected' = 'rejected'
+    let outcome: MobileNativeChatSendOutcome = 'rejected'
     await act(async () => {
       outcome = await hook.sendWithOutcome('look at this', undefined, undefined, [
         { path: '/tmp/a.png', previewUri: 'file:///a.jpg' }
@@ -534,7 +489,7 @@ describe('useMobileStructuredAgentSession', () => {
     act(() => listener?.(snapshotEvent(3)))
     sendRequest.mockClear()
 
-    let outcome: 'accepted' | 'unknown' | 'rejected' = 'accepted'
+    let outcome: MobileNativeChatSendOutcome = 'accepted'
     await act(async () => {
       outcome = await hook!.sendWithOutcome('look at this', ['file:///a.jpg'])
     })
@@ -707,7 +662,7 @@ describe('useMobileStructuredAgentSession', () => {
     })
     await vi.waitFor(() => expect(listener).toEqual(expect.any(Function)))
     act(() => listener?.(snapshotEvent(3)))
-    await vi.waitFor(() => expect(hook!.optionSnapshot.length).toBeGreaterThan(0))
+    await vi.waitFor(() => expect(listedModelIds(hook!.optionSnapshot)).toContain('gpt-slow'))
     sendRequest.mockImplementation(async (method, params) => {
       if (method === 'agentSession.setOption') {
         throw markRpcDeliveryUnknown(new Error('Connection closed'))

@@ -1,4 +1,9 @@
 import { useMobileTheme } from '../../../../src/theme/use-mobile-theme'
+import { withWorkspaceRoute } from '../../../../src/navigation/workspace-route'
+import {
+  useWorkspaceExecutionHost,
+  workspaceRouteParams
+} from '../../../../src/navigation/workspace-execution-host'
 import { useCallback } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { MobileSessionRouteScreen } from '../../../../src/session/MobileSessionRouteScreen'
@@ -8,8 +13,7 @@ import {
   shellScreenRouteKey
 } from '../../../../src/mobile-web-shell/shell-screen-route'
 import { MobileWebShellScreen } from '../../../../src/mobile-web-shell/MobileWebShellScreen'
-import { ShellSwitchPendingScreen } from '../../../../src/mobile-web-shell/ShellSwitchPendingScreen'
-import { useShellSwitchDecision } from '../../../../src/mobile-web-shell/shell-switch-decision'
+import { shellSwitchDecision } from '../../../../src/mobile-web-shell/shell-switch-decision'
 
 /**
  * The session screen — terminal and chat — from the desktop's bundle or from this app.
@@ -27,7 +31,7 @@ import { useShellSwitchDecision } from '../../../../src/mobile-web-shell/shell-s
  * the native param once the page has been handed it, exactly as the notification hook did, so no
  * later `init` can replay a spent tap.
  */
-export default function MobileSessionScreen() {
+export default withWorkspaceRoute(function MobileSessionScreen() {
   useMobileTheme()
 
   // Through `firstParam` on every param, as every switch does: expo-router answers a repeated query
@@ -44,6 +48,7 @@ export default function MobileSessionScreen() {
   }>()
   const hostId = firstParam(params.hostId)
   const worktreeId = firstParam(params.worktreeId)
+  const executionHost = useWorkspaceExecutionHost()
   const router = useRouter()
   const native = <MobileSessionRouteScreen />
   const paneKey = firstParam(params.paneKey) ?? ''
@@ -67,11 +72,14 @@ export default function MobileSessionScreen() {
   // the create flow sets to `1`, `warning` is the host's own text, `name` is a label the screen
   // otherwise derives from the workspace, and `paneKey` empty is exactly what the notification hook
   // writes back to say the tap is spent.
-  const routeParams = Object.fromEntries(
-    (['name', 'created', 'warning', 'paneKey'] as const)
-      .map((key) => [key, firstParam(params[key])] as const)
-      .filter(([, value]) => value !== '')
-  )
+  const routeParams: Record<string, string> = {
+    ...Object.fromEntries(
+      (['name', 'created', 'warning', 'paneKey'] as const)
+        .map((key) => [key, firstParam(params[key])] as const)
+        .filter(([, value]) => value !== '')
+    ),
+    ...workspaceRouteParams(executionHost)
+  }
   const route =
     hostId && worktreeId
       ? shellScreenRoute({
@@ -80,11 +88,8 @@ export default function MobileSessionScreen() {
         })
       : null
 
-  const decision = useShellSwitchDecision(route)
+  const decision = shellSwitchDecision(route)
 
-  if (decision.kind === 'pending') {
-    return <ShellSwitchPendingScreen />
-  }
   if (decision.kind === 'native') {
     return native
   }
@@ -105,4 +110,4 @@ export default function MobileSessionScreen() {
       onRouteParamClear={erasePaneKey}
     />
   )
-}
+})

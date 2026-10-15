@@ -4,26 +4,19 @@ import { subscribeChatCheckpointFlush } from '../cache/mobile-chat-checkpoint-re
 /** Throttle token-heavy streams; backgrounding and route teardown flush the latest checkpoint. */
 export function useMobileChatCheckpoint(save: () => void): void {
   const latest = useRef(save)
+  const saved = useRef<(() => void) | null>(null)
   latest.current = save
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => {
-    if (timer.current === null) {
-      timer.current = setTimeout(() => {
-        timer.current = null
-        latest.current()
-      }, 2000)
-    }
-  })
   useEffect(() => {
     const flush = (): void => {
-      if (timer.current !== null) {
-        clearTimeout(timer.current)
+      if (saved.current !== latest.current) {
+        saved.current = latest.current
+        latest.current()
       }
-      timer.current = null
-      latest.current()
     }
+    const timer = setInterval(flush, 2000)
     const unsubscribe = subscribeChatCheckpointFlush(flush)
     return () => {
+      clearInterval(timer)
       unsubscribe()
       flush()
     }

@@ -1,7 +1,8 @@
+import { MobileChatText as Text } from '../components/MobileChatText'
 import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useEffect, useRef } from 'react'
-import { Animated, StyleSheet, Text, View } from 'react-native'
+import { Animated, StyleSheet, View } from 'react-native'
 import { colors, spacing, typography } from '../theme/mobile-theme'
 
 /** Animated three-dot "agent is working" row, shown while the active agent is

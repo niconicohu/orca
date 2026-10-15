@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { findNodeHandle, Text, type LayoutChangeEvent } from 'react-native'
+import { findNodeHandle, Text as NativeText, type LayoutChangeEvent } from 'react-native'
+import { MobileChatText as Text } from './MobileChatText'
 import {
   collectMarkdownCodeRanges,
   type MarkdownTextProps
@@ -20,7 +21,7 @@ export function MobileMarkdownNativeText({
 }: MarkdownTextProps) {
   const scheme = useMobileTheme()
   const nested = useContext(InsideText)
-  const view = useRef<Text>(null)
+  const view = useRef<NativeText>(null)
   const frame = useRef<number | null>(null)
   const revision = useRef(0)
   const [measurement, setMeasurement] = useState<{ text: string; height: number } | null>(null)

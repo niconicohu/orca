@@ -1,7 +1,7 @@
-import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { useMobileTheme } from '../theme/use-mobile-theme'
+import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { QrCode } from 'lucide-react-native'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radii, spacing } from '../theme/mobile-theme'
 
 const ONBOARDING_STEPS = [
@@ -27,9 +27,10 @@ export function MobileHomeEmptyState(props: {
 }) {
   useMobileTheme()
 
+  // Scrolls because a phone in landscape is shorter than the hero and the steps together.
   return (
-    <View
-      style={[
+    <ScrollView
+      contentContainerStyle={[
         styles.emptyContainer,
         { paddingBottom: props.bottomInset },
         props.isWideLayout && {
@@ -64,15 +65,15 @@ export function MobileHomeEmptyState(props: {
           </View>
         ))}
       </View>
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = createThemedStyles(() =>
   StyleSheet.create({
-    emptyContainer: { flex: 1 },
+    emptyContainer: { flexGrow: 1 },
     emptyHero: {
-      flex: 1,
+      flexGrow: 1,
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 32,
@@ -123,7 +124,7 @@ const styles = createThemedStyles(() =>
       width: 28,
       height: 28,
       borderRadius: 8,
-      backgroundColor: colors.bgRaised,
+      backgroundColor: 'rgba(255,255,255,0.04)',
       borderWidth: 1,
       borderColor: colors.borderSubtle,
       alignItems: 'center',

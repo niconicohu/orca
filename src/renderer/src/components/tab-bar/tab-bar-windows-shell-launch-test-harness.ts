@@ -30,6 +30,7 @@ export const appStoreSnapshot: {
     }[]
   >
   unifiedTabsByWorktree: Record<string, unknown[]>
+  groupsByWorktree: Record<string, { id: string; activeTabId: string | null }[]>
   activeGroupIdByWorktree: Record<string, string>
   detectedAgentIds: string[] | null
   localDetectedAgentIdsByContext: Record<string, string[] | null>
@@ -49,6 +50,7 @@ export const appStoreSnapshot: {
   sshConnectionStates: new Map(),
   worktreesByRepo: {},
   unifiedTabsByWorktree: {},
+  groupsByWorktree: {},
   activeGroupIdByWorktree: {},
   detectedAgentIds: null,
   localDetectedAgentIdsByContext: {},
@@ -74,6 +76,7 @@ const useAppStoreMock = vi.fn(
       sshConnectionStates: Map<string, { remotePlatform?: NodeJS.Platform }>
       worktreesByRepo: typeof appStoreSnapshot.worktreesByRepo
       unifiedTabsByWorktree: Record<string, unknown[]>
+      groupsByWorktree: Record<string, { id: string; activeTabId: string | null }[]>
       activeGroupIdByWorktree: Record<string, string>
       detectedAgentIds: string[] | null
       localDetectedAgentIdsByContext: Record<string, string[] | null>
@@ -103,6 +106,7 @@ const useAppStoreMock = vi.fn(
       sshConnectionStates: appStoreSnapshot.sshConnectionStates,
       worktreesByRepo: appStoreSnapshot.worktreesByRepo,
       unifiedTabsByWorktree: appStoreSnapshot.unifiedTabsByWorktree,
+      groupsByWorktree: {},
       activeGroupIdByWorktree: appStoreSnapshot.activeGroupIdByWorktree,
       detectedAgentIds: appStoreSnapshot.detectedAgentIds,
       localDetectedAgentIdsByContext: appStoreSnapshot.localDetectedAgentIdsByContext,
@@ -135,6 +139,7 @@ useAppStoreExport.getState = vi.fn(() => ({
   sshConnectionStates: appStoreSnapshot.sshConnectionStates,
   worktreesByRepo: appStoreSnapshot.worktreesByRepo,
   unifiedTabsByWorktree: appStoreSnapshot.unifiedTabsByWorktree,
+  groupsByWorktree: {},
   activeGroupIdByWorktree: appStoreSnapshot.activeGroupIdByWorktree,
   detectedAgentIds: appStoreSnapshot.detectedAgentIds,
   localDetectedAgentIdsByContext: appStoreSnapshot.localDetectedAgentIdsByContext,

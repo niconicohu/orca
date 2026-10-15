@@ -1,6 +1,11 @@
 import { useMobileChatInitialPosition } from './use-mobile-chat-initial-position'
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
-import type { FlatList, NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
+import {
+  Platform,
+  type FlatList,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent
+} from 'react-native'
 
 /** Distance from the bottom, in points, still treated as "at the tail". */
 const AT_TAIL_SLOP = 80
@@ -62,6 +67,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   const atTailRef = useRef(true)
   const userScrollActiveRef = useRef(false)
   const pagingGestureRef = useRef(false)
+  const pageReaderMovedUpRef = useRef(false)
   const userScrollSettleFrameRef = useRef<number | null>(null)
 
   const positionsRef = useRef(new Map<string, { following: boolean; offset: number }>())
@@ -87,6 +93,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     const saved = args.scopeKey ? positionsRef.current.get(args.scopeKey) : undefined
     scopeGenerationRef.current += 1
     measuredHeightRef.current = null
+    pageReaderMovedUpRef.current = false
     offsetRef.current = saved?.offset ?? 0
     restoringOffsetRef.current = saved && !saved.following ? saved.offset : null
     setScopeKey(args.scopeKey)
@@ -177,10 +184,22 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
       if (scopeGenerationRef.current !== scopeGeneration) {
         return
       }
+      const atTail = isAtTail(event)
+      const moved = event.contentOffset.y - offsetRef.current
       offsetRef.current = event.contentOffset.y
-      setAtTail(isAtTail(event))
+      setAtTail(atTail)
+      if (Platform.OS === 'web') {
+        pageReaderMovedUpRef.current = moved < -1
+        const distance =
+          event.contentSize.height - event.contentOffset.y - event.layoutMeasurement.height
+        if (followingRef.current && pageReaderMovedUpRef.current && distance > 1) {
+          setFollowing(false)
+        } else if (!followingRef.current && moved > 1 && atTail) {
+          setFollowing(true)
+        }
+      }
     },
-    [setAtTail, scopeGeneration]
+    [setAtTail, setFollowing, scopeGeneration]
   )
 
   const jumpToTail = useCallback(() => {
@@ -264,7 +283,6 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     restoringOffsetRef.current = null
     clearUserScrollSettle()
     pagingGestureRef.current = userScrollActiveRef.current || pagingGestureRef.current
-    userScrollActiveRef.current = false
     setAtTail(false)
     setFollowing(false)
   }, [clearUserScrollSettle, setAtTail, setFollowing, scopeGeneration])
@@ -305,6 +323,12 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     detachFromTail,
     recordScrollMetrics,
     canPageFromScroll: () =>
-      (userScrollActiveRef.current || pagingGestureRef.current) && !followingRef.current
+      (Platform.OS === 'web'
+        ? pageReaderMovedUpRef.current
+        : userScrollActiveRef.current || pagingGestureRef.current) && !followingRef.current
   }
+}
+
+export function mobileNativeChatRowAnchor(hasHeader: boolean): { minIndexForVisible: number } {
+  return { minIndexForVisible: hasHeader ? 1 : 0 }
 }

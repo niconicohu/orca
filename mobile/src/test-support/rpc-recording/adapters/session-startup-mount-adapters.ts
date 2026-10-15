@@ -69,6 +69,7 @@ export function sessionStartupMountAdapters(
             setTerminals: () => {},
             terminalsRef: { current: [] },
             setSessionTabs: () => {},
+            setSessionTabsLoadFailed: () => {},
             appliedSnapshotMarkerRef,
             closedTabTombstonesRef,
             setTerminalsLoaded: (value: boolean) => {
@@ -90,9 +91,8 @@ export function sessionStartupMountAdapters(
             },
             activeHandleRef,
             activeSessionTabTypeRef: { current: 'terminal' },
-            pendingActiveSessionTabIdRef: { current: null },
+            pendingSelectionRef: { current: null },
             selectedSessionTabIdRef: { current: null },
-            pendingActiveTerminalHandleRef: { current: null },
             pendingBrowserFocusPageIdRef: { current: null },
             pendingTerminalActivationAttemptRef: { current: null },
             initialSessionAutoCreateRef: { current: null },

@@ -48,7 +48,7 @@ export function MobileChatFontWeightSetting() {
         <View style={styles.copy}>
           <Text style={styles.title}>Font weight</Text>
           <Text style={styles.description}>
-            Adjust chat text weight. Bold text keeps its emphasis.
+            Adjust chat text, code and status labels. Bold emphasis stays distinct.
           </Text>
         </View>
         <Text style={styles.value}>

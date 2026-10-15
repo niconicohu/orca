@@ -9,7 +9,6 @@ import type {
 } from './host-env/types'
 import { registerPtyHandlers } from './register-handlers'
 import { hydrateLocalPtyRegistryAtBoot } from '../../memory/hydrate-local-pty-registry'
-import { createHeadlessCodexHookPreparation } from './headless-codex-hook-preparation'
 
 export function registerHeadlessPtyRuntime(
   runtime: OrcaRuntimeService,
@@ -26,8 +25,7 @@ export function registerHeadlessPtyRuntime(
   registerPtyHandlers(
     undefined,
     runtime,
-    getSelectedCodexHomePath ??
-      (getSettings ? createHeadlessCodexHookPreparation(getSettings) : undefined),
+    getSelectedCodexHomePath,
     getSettings,
     prepareClaudeAuth,
     store,

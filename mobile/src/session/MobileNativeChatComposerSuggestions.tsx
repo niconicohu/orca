@@ -1,6 +1,7 @@
+import { MobileChatText as Text } from '../components/MobileChatText'
 import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { useMobileTheme } from '../theme/use-mobile-theme'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { colors, spacing, typography } from '../theme/mobile-theme'
 import type { SlashCommandSuggestion } from '../../../src/shared/native-chat-slash-commands'
 

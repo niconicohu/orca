@@ -7,6 +7,8 @@ export type MobileHistoryWindow = {
   covered: { first: number; last: number }[]
   detached: AgentJournalRenderItem[]
   deleted: Record<string, number>
+  deletedRevisions?: Record<string, number>
+  writes?: Record<string, number>
   /** Pages older than evicted tombstones must be re-read, not trusted. */
   minimumSnapshot: number
 }

@@ -49,10 +49,18 @@ export const hostScreenSecondaryStyles = createThemedStyles(() =>
       paddingHorizontal: spacing.xs,
       marginBottom: spacing.md
     },
+    filterModalHeading: {
+      flexShrink: 1
+    },
     filterModalTitle: {
       fontSize: 15,
       fontWeight: '600',
       color: colors.textPrimary
+    },
+    filterModalSubtitle: {
+      fontSize: 11,
+      color: colors.textMuted,
+      marginTop: 2
     },
     clearFiltersText: {
       fontSize: 13,
@@ -136,7 +144,7 @@ export const hostScreenSecondaryStyles = createThemedStyles(() =>
     confirmBtnDestructiveText: {
       fontSize: typography.bodySize,
       fontWeight: '600',
-      color: colors.onAccent
+      color: '#fff'
     }
   })
 )

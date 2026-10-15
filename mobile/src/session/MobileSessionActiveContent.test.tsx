@@ -36,6 +36,7 @@ it('shows creation failures above the chat overlay rather than inside its covere
   try {
     await act(async () => {
       renderer = create(
+        // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: terminal and chat children are mocked; this fixture renders only the failure overlay.
         createElement(MobileSessionActiveContent, { controller: controller as never })
       )
     })

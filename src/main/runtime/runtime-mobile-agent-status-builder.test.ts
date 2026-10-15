@@ -17,6 +17,7 @@ const TAB: RuntimeMobileSessionTerminalTab = {
 
 describe('mobile agent status builder', () => {
   function projectCompletedCodex(title: string, receivedAt = Date.now() - 1000) {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the status projection reads the explicitly supplied PTY fields; process and terminal operations are outside this fixture.
     const pty = {
       ptyId: 'pty-codex',
       worktreeId: 'workspace',

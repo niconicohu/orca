@@ -1,4 +1,9 @@
 import { useMobileTheme } from '../../../../src/theme/use-mobile-theme'
+import { withWorkspaceRoute } from '../../../../src/navigation/workspace-route'
+import {
+  useWorkspaceExecutionHost,
+  workspaceRouteParams
+} from '../../../../src/navigation/workspace-execution-host'
 import { useLocalSearchParams } from 'expo-router'
 import { MobileSourceControlPanel } from '../../../../src/source-control/MobileSourceControlPanel'
 import { firstParam } from '../../../../src/navigation/route-param-reader'
@@ -8,22 +13,19 @@ import {
   shellScreenRouteKey
 } from '../../../../src/mobile-web-shell/shell-screen-route'
 import { MobileWebShellScreen } from '../../../../src/mobile-web-shell/MobileWebShellScreen'
-import { ShellSwitchPendingScreen } from '../../../../src/mobile-web-shell/ShellSwitchPendingScreen'
-import { useShellSwitchDecision } from '../../../../src/mobile-web-shell/shell-switch-decision'
+import { shellSwitchDecision } from '../../../../src/mobile-web-shell/shell-switch-decision'
 
 /**
  * The source-control hub, from the desktop's bundle or from this app.
  *
  * The files switch's shape, for its reasons: the shell answers `native-route` for a route the
  * bundle does not list or this app's grants do not cover, and `fallback` is what that renders.
- * A flag read still settling is a third answer and paints neither renderer; see
- * `shell-switch-decision.ts`.
  *
  * `pr` and `history` are not switched and never will be. Both are `Redirect`s into this route, and
  * a redirect inside the page would leave the session bound to a pathname the page has left; left
  * native they replace into this route, whose switch then mounts the shell. One extra native frame.
  */
-export default function MobileSourceControlScreen() {
+export default withWorkspaceRoute(function MobileSourceControlScreen() {
   useMobileTheme()
 
   // Through `firstParam` on every param, as the files switch does: expo-router answers a repeated
@@ -56,10 +58,12 @@ export default function MobileSourceControlScreen() {
   // Each omitted rather than empty, and the whole record omitted when none of the three was named:
   // the panel derives its own label, origin and lens from the workspace when the caller named none,
   // where `name=` is a label and `tab=` is a lens named nothing.
+  const executionHost = useWorkspaceExecutionHost()
   const routeParams = {
     ...(name === '' ? {} : { name }),
     ...(origin === '' ? {} : { origin }),
-    ...(tab === '' ? {} : { tab })
+    ...(tab === '' ? {} : { tab }),
+    ...workspaceRouteParams(executionHost)
   }
   const route =
     hostId && worktreeId
@@ -69,11 +73,8 @@ export default function MobileSourceControlScreen() {
         })
       : null
 
-  const decision = useShellSwitchDecision(route)
+  const decision = shellSwitchDecision(route)
 
-  if (decision.kind === 'pending') {
-    return <ShellSwitchPendingScreen />
-  }
   if (decision.kind === 'native') {
     return native
   }
@@ -88,4 +89,4 @@ export default function MobileSourceControlScreen() {
       fallback={native}
     />
   )
-}
+})

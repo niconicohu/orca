@@ -70,6 +70,10 @@ export function useMobileChatInitialPosition(
   lastItemIndex.current = scroll.lastItemIndex ?? 0
   const targetOffset = useRef(offset)
   targetOffset.current = offset
+  if (!hasItems && shown.current === generation.current) {
+    shown.current = -1
+    setShownGeneration(-1)
+  }
   const current = generation.current
   const ready = shownGeneration === current
   const pinAfterNativeCommit = () => {
@@ -216,12 +220,6 @@ export function useMobileChatInitialPosition(
     [current]
   )
   useEffect(() => {
-    if (!hasItems) {
-      shown.current = -1
-      setShownGeneration(-1)
-    }
-  }, [hasItems, current])
-  useEffect(() => {
     return () => {
       if (generation.current === current) {
         cancel()
@@ -257,7 +255,7 @@ export function useMobileChatInitialPosition(
         }
       },
       onLayout: (event?: LayoutChangeEvent) => {
-        measure('viewport', event?.nativeEvent.layout.height ?? 0)
+        measure('viewport', event?.nativeEvent?.layout?.height ?? 0)
         scroll.pinToTail()
       }
     },

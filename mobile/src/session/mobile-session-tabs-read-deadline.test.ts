@@ -10,8 +10,7 @@ it('reports a stalled first tab request after eight seconds so the page can offe
     nextId: () => String(++sequence),
     getState: () => 'connected',
     waitForConnected: async () => {},
-    sendEncrypted: () => true,
-    deviceToken: 'test'
+    sendFrame: () => true
   })
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: tab reads use only sendRequest and the optional generation; the real request tracker owns timeouts.
   const client = { sendRequest: tracker.sendRequest.bind(tracker) } as unknown as RpcClient

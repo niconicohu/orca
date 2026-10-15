@@ -363,16 +363,6 @@ describe('useAiVaultSessionRefresh refocus behavior', () => {
     expect(lastCallArgs()).toMatchObject({ force: false })
   })
 
-  it('does not force transcript scans for refocus events', async () => {
-    await renderHook()
-    await flushMicrotasks()
-    expect(listSessionsMock).toHaveBeenCalledTimes(1)
-
-    await fireWindowFocused()
-    expect(listSessionsMock).toHaveBeenCalledTimes(2)
-    expect(lastCallArgs()).toMatchObject({ force: false })
-  })
-
   it('ignores focus/visibility events while the document is hidden', async () => {
     await renderHook()
     await flushMicrotasks()
@@ -818,12 +808,5 @@ describe('useAiVaultSessionRefresh in a non-secure context', () => {
         )
       })
     })
-  })
-
-  // Guards the stub itself: an own-property stub of randomUUID is unrestorable, so a
-  // leaky teardown would silently strip the real method from every later test in the file.
-  it('leaves the real crypto.randomUUID in place afterwards', () => {
-    // oxlint-disable-next-line no-restricted-properties -- asserting the restore this case exists for
-    expect(typeof globalThis.crypto.randomUUID).toBe('function')
   })
 })

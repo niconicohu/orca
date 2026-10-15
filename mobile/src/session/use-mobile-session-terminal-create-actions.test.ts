@@ -1,13 +1,11 @@
+import { launchedSelection, type PendingSessionSelection } from './pending-session-selection'
 import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RpcClient } from '../transport/rpc-client'
 import { markRpcDeliveryUnknown } from '../transport/rpc-delivery-ambiguity'
 import { useMobileSessionTerminalCreateActions } from './use-mobile-session-terminal-create-actions'
 import { SESSION_TABS_SPLIT_GROUP_PLACEMENT_RUNTIME_CAPABILITY } from '../../../src/shared/protocol-version'
-import { loadDefaultSessionView } from '../storage/session-view-preferences'
-
-vi.mock('../storage/session-view-preferences', () => ({ loadDefaultSessionView: vi.fn() }))
 
 type PlacementTab = { id: string; parentTabId?: string }
 type PlacementUpdater = (previous: PlacementTab[]) => PlacementTab[]
@@ -16,6 +14,14 @@ vi.mock('../platform/haptics', () => ({
   triggerSuccess: vi.fn(),
   triggerError: vi.fn()
 }))
+
+function noPendingSelection(): { current: PendingSessionSelection | null } {
+  return { current: null }
+}
+
+function noCreateLock(): { current: string | null } {
+  return { current: null }
+}
 
 function clientReturning(...responses: unknown[]): RpcClient {
   let responseIndex = 0
@@ -54,7 +60,7 @@ function createScope(client: RpcClient) {
     activeSessionTabIdRef: { current: 'existing-tab' },
     setActiveSessionTabId: vi.fn(),
     setCreating: vi.fn(),
-    creatingTerminalRef: { current: false },
+    creatingTerminalRef: noCreateLock(),
     creatingBrowser: false,
     creatingMarkdown: false,
     setCreateError: vi.fn(),
@@ -62,8 +68,7 @@ function createScope(client: RpcClient) {
     initializedHandlesRef: { current: new Set<string>() },
     activeHandleRef: { current: 'existing-terminal' },
     activeSessionTabTypeRef: { current: 'terminal' },
-    pendingActiveSessionTabIdRef: { current: null },
-    pendingActiveTerminalHandleRef: { current: null },
+    pendingSelectionRef: noPendingSelection(),
     scheduleDelayedAction: vi.fn(),
     showToast: vi.fn(),
     unsubscribeTerminal: vi.fn(),
@@ -74,7 +79,6 @@ function createScope(client: RpcClient) {
 
 describe('mobile + Codex tab creation routing', () => {
   let renderer: ReactTestRenderer | undefined
-  beforeEach(() => vi.mocked(loadDefaultSessionView).mockResolvedValue('chat'))
   afterEach(() => renderer?.unmount())
 
   it('uses the structured agent-session path for a bare Codex launch', async () => {
@@ -89,11 +93,6 @@ describe('mobile + Codex tab creation routing', () => {
       }
     )
     const scope = createScope(client)
-    scope.hostCapabilities = [
-      'agent.launch.v2',
-      'agent.launch.replay.v1',
-      'agent.launch.replay-required.v1'
-    ]
     let actions: ReturnType<typeof useMobileSessionTerminalCreateActions> | undefined
     function Harness() {
       actions = useMobileSessionTerminalCreateActions(scope as never)
@@ -120,12 +119,20 @@ describe('mobile + Codex tab creation routing', () => {
       'session.tabs.createTerminal',
       expect.anything()
     )
-    expect(scope.setActiveSessionTabId).toHaveBeenCalledWith('agent-session:codex_session_1')
-    expect(scope.setActiveHandle).toHaveBeenCalledWith(null)
-    expect(scope.unsubscribeTerminal).toHaveBeenCalledWith('existing-terminal')
+    // The chat's tab is found by its session in the next snapshot, never by a predicted id.
+    expect(scope.pendingSelectionRef.current).toEqual(
+      launchedSelection(expect.any(String), { sessionId: 'codex_session_1' })
+    )
+    expect(scope.setActiveSessionTabId).not.toHaveBeenCalled()
+    // The open terminal stays live until the chat's tab lands, rather than blanking beside it.
+    expect(scope.setActiveHandle).not.toHaveBeenCalled()
+    expect(scope.unsubscribeTerminal).not.toHaveBeenCalled()
+    expect(scope.activeSessionTabTypeRef.current).toBe('terminal')
+    expect(scope.fetchSessionTabs).toHaveBeenCalledTimes(1)
+    expect(scope.scheduleDelayedAction).not.toHaveBeenCalled()
   })
 
-  it('reports unavailable Chat without silently creating a terminal', async () => {
+  it('keeps the legacy terminal path when structured support is disabled', async () => {
     const client = clientReturning(
       { ok: false, error: { code: 'structured_agent_session_unsupported', message: 'off' } },
       terminalCreateResponse()
@@ -143,35 +150,15 @@ describe('mobile + Codex tab creation routing', () => {
       await actions?.handleCreateTerminal('codex')
     })
 
-    expect(client.sendRequest).toHaveBeenCalledTimes(1)
-    expect(scope.setCreateError).toHaveBeenCalledWith(expect.stringContaining('structured Chat'))
-    expect(scope.setActiveSessionTabId).not.toHaveBeenCalled()
-  })
-
-  it('creates a terminal directly when the phone default is Terminal', async () => {
-    vi.mocked(loadDefaultSessionView).mockResolvedValue('terminal')
-    const client = clientReturning(terminalCreateResponse())
-    const scope = createScope(client)
-    let actions: ReturnType<typeof useMobileSessionTerminalCreateActions> | undefined
-    function Harness() {
-      actions = useMobileSessionTerminalCreateActions(scope as never)
-      return null
-    }
-    await act(async () => {
-      renderer = create(createElement(Harness))
-    })
-    await act(async () => {
-      await actions?.handleCreateTerminal('codex')
-    })
-    expect(client.sendRequest).toHaveBeenCalledOnce()
-    expect(client.sendRequest).toHaveBeenCalledWith(
+    expect(client.sendRequest).toHaveBeenNthCalledWith(
+      2,
       'session.tabs.createTerminal',
       expect.objectContaining({ worktree: 'id:workspace-1', agent: 'codex' })
     )
     expect(scope.setActiveSessionTabId).toHaveBeenCalledWith('terminal-tab-1')
   })
 
-  it('reports a refused chat creation without silently switching to a terminal', async () => {
+  it('falls back to a terminal when structured creation is definitively refused', async () => {
     const client = clientReturning(
       { ok: true, result: { supported: true } },
       {
@@ -199,9 +186,12 @@ describe('mobile + Codex tab creation routing', () => {
       await actions?.handleCreateTerminal('codex')
     })
 
-    expect(client.sendRequest).toHaveBeenCalledTimes(2)
-    expect(scope.setCreateError).toHaveBeenCalledWith('provider unavailable')
-    expect(scope.setActiveSessionTabId).not.toHaveBeenCalled()
+    expect(client.sendRequest).toHaveBeenNthCalledWith(
+      3,
+      'session.tabs.createTerminal',
+      expect.objectContaining({ worktree: 'id:workspace-1', agent: 'codex' })
+    )
+    expect(scope.setActiveSessionTabId).toHaveBeenCalledWith('terminal-tab-1')
   })
 
   it('keeps prompted Codex launches on the legacy terminal path', async () => {
@@ -318,10 +308,6 @@ describe('mobile + Codex tab creation routing', () => {
     expect(scope.setCreateError).toHaveBeenCalledWith(
       'Your system cannot allocate any more pty devices.'
     )
-    expect(scope.showToast).toHaveBeenCalledWith(
-      'Your system cannot allocate any more pty devices.',
-      2400
-    )
   })
 
   it('falls back to the generic message when the host gives no reason', async () => {
@@ -408,8 +394,11 @@ describe('optimistic placement of a created tab', () => {
     await createTerminal(scope)
 
     expect(scope.setSessionTabs).not.toHaveBeenCalled()
-    expect(scope.pendingActiveSessionTabIdRef.current).toBe('terminal-tab-1')
-    expect(scope.pendingActiveTerminalHandleRef.current).toBe('terminal-1')
+    expect(scope.pendingSelectionRef.current).toEqual({
+      kind: 'terminal',
+      handle: 'terminal-1',
+      tabId: 'terminal-tab-1'
+    })
     expect(scope.subscribeToTerminal).toHaveBeenCalledWith('terminal-1')
   })
 

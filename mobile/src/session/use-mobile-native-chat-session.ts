@@ -9,6 +9,7 @@ import {
 } from '../../../src/shared/native-chat-transcript-retention'
 import { createNativeChatMerger, replaceList } from '../../../src/shared/native-chat-merge'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
+import { structuredSessionRandomUuid } from './structured-session-operation-id'
 import { buildNativeChatSubscriptionId } from '../../../src/shared/native-chat-stream-unsubscribe'
 import type { RpcClient } from '../transport/rpc-client'
 import { mobileNativeChatRouteReads as routeReads } from './mobile-native-chat-route-cache'
@@ -39,6 +40,7 @@ export type MobileNativeChatSession = {
    *  wait for this to clear. */
   transcriptLoading: boolean
   error?: string
+  readFailedFinally?: boolean
   syncing?: boolean
   initialSyncRevision?: number
   /** True when an older page may exist (the last read filled the window). */
@@ -51,6 +53,7 @@ export type MobileNativeChatSession = {
 
 // Small first page for a fast first paint; grows by a page as the user scrolls.
 const INITIAL_LIMIT = 40
+const MAX_MESSAGES = 2000
 
 /** Subscribe to an agent's native-chat transcript over the paired connection.
  *  Reads a small recent window for a fast first paint, tails it for live turns,
@@ -201,7 +204,7 @@ export function useMobileNativeChatSession(args: {
       const applied = applyMobileNativeChatStreamFrame({
         merger: mergerRef.current,
         frame,
-        limit: limitRef.current,
+        limit: MAX_MESSAGES,
         replaceSnapshot: !snapshotSeenRef.current
       })
       if (applied.kind === 'ignored') {
@@ -284,7 +287,11 @@ export function useMobileNativeChatSession(args: {
         agent,
         sessionId,
         limit: INITIAL_LIMIT,
-        subscriptionId: buildNativeChatSubscriptionId(agent, sessionId),
+        subscriptionId: buildNativeChatSubscriptionId(
+          agent,
+          sessionId,
+          structuredSessionRandomUuid()
+        ),
         capabilities: { transcriptPending: 1 },
         ...(transcriptPath ? { transcriptPath } : {})
       },

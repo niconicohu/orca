@@ -1,9 +1,10 @@
+import { MobileChatText as Text } from '../components/MobileChatText'
 import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { useMobileTheme } from '../theme/use-mobile-theme'
 // The pill and choice-row primitives the session-option card is built from, kept
 // beside it so the card file stays about layout and apply wiring.
 
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Switch, View } from 'react-native'
 import { Check, ChevronDown, ChevronRight } from 'lucide-react-native'
 import { colors, radii, spacing, typography } from '../theme/mobile-theme'
 import {
@@ -24,12 +25,14 @@ export function Pill({
   label,
   accessibleName,
   disabled,
-  onPress
+  onPress,
+  labelColor
 }: {
   label: string
   accessibleName: string
   disabled: boolean
   onPress: () => void
+  labelColor?: string
 }): React.JSX.Element {
   useMobileTheme()
 
@@ -44,7 +47,11 @@ export function Pill({
       hitSlop={6}
     >
       <Text
-        style={[styles.pillText, disabled && styles.pillTextDisabled]}
+        style={[
+          styles.pillText,
+          labelColor ? { color: labelColor } : null,
+          disabled && styles.pillTextDisabled
+        ]}
         numberOfLines={1}
         ellipsizeMode="tail"
       >
@@ -62,7 +69,8 @@ function ChoiceRow({
   disabled,
   grouped,
   divided,
-  onPress
+  onPress,
+  labelColor
 }: {
   label: string
   description?: string
@@ -71,6 +79,7 @@ function ChoiceRow({
   grouped: boolean
   divided: boolean
   onPress: () => void
+  labelColor?: string
 }): React.JSX.Element {
   useMobileTheme()
 
@@ -92,7 +101,7 @@ function ChoiceRow({
         {selected ? <Check size={12} color={colors.bgBase} strokeWidth={3} /> : null}
       </View>
       <View style={styles.rowBody}>
-        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={[styles.rowLabel, labelColor ? { color: labelColor } : null]}>{label}</Text>
         {description ? (
           <Text style={styles.rowDescription} numberOfLines={2}>
             {description}
@@ -212,13 +221,16 @@ export function DescriptorRows({
   disabled,
   grouped = false,
   onSetOption,
-  onInvokeAction
+  onInvokeAction,
+  choiceLabelColor
 }: {
   descriptor: SessionOptionDescriptor
   disabled: boolean
   grouped?: boolean
   onSetOption: (value: SessionOptionValue) => void
   onInvokeAction: () => void
+  /** A choice whose name reads in a colour of its own, as Full access does. */
+  choiceLabelColor?: (value: string) => string | undefined
 }): React.JSX.Element {
   useMobileTheme()
 
@@ -273,6 +285,7 @@ export function DescriptorRows({
           grouped={grouped}
           divided={grouped && index < choices.length - 1}
           onPress={() => onSetOption(choice.value)}
+          labelColor={choiceLabelColor?.(choice.value)}
         />
       ))}
     </>

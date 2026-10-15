@@ -1,3 +1,8 @@
+import { MobileAgentLaunchFeedback } from './MobileAgentLaunchFeedback'
+import {
+  mobileAgentLaunchFeedback,
+  useMobileAgentLaunchFeedback
+} from './mobile-agent-launch-feedback'
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { View, Text, ScrollView, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -9,6 +14,7 @@ import {
   GitBranch,
   Globe,
   MoreHorizontal,
+  PanelLeftOpen,
   Plus
 } from 'lucide-react-native'
 import { MobileSessionHeaderIconButton } from './MobileSessionHeaderIconButton'
@@ -23,6 +29,7 @@ import { colors } from '../theme/mobile-theme'
 import { QuickCommandsTabButton } from './QuickCommandsTabButton'
 import { styles } from './mobile-session-styles'
 import { useKeyboardPersistingTaps } from '../platform/keyboard-persisting-taps'
+import { useHostSidebarReveal } from '../layout/host-sidebar-reveal'
 import type { MobileSessionController } from './use-mobile-session-controller'
 
 export function MobileSessionHeader({ controller }: { controller: MobileSessionController }) {
@@ -62,10 +69,27 @@ export function MobileSessionHeader({ controller }: { controller: MobileSessionC
     handlePanelTap,
     showHeaderMoreButton
   } = controller
+  const pendingLaunch = useMobileAgentLaunchFeedback(
+    controller.client,
+    controller.worktreeId,
+    activeSessionTabId
+  )
   const tabBarKeepsKeyboard = useKeyboardPersistingTaps('handled')
+  const revealSidebar = useHostSidebarReveal()
   return (
     <SafeAreaView style={styles.sessionChrome} edges={['top']}>
       <View style={styles.sessionTopBar}>
+        {revealSidebar ? (
+          <Pressable
+            style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+            onPress={revealSidebar}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Show sidebar"
+          >
+            <PanelLeftOpen size={18} color={colors.textSecondary} />
+          </Pressable>
+        ) : null}
         <Pressable
           style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
           onPress={requestLeaveSession}
@@ -123,7 +147,7 @@ export function MobileSessionHeader({ controller }: { controller: MobileSessionC
         ) : null}
       </View>
 
-      {visibleTabs.length > 0 && (
+      {(visibleTabs.length > 0 || pendingLaunch.entries.length > 0) && (
         <View ref={tabBarKeepsKeyboard} style={styles.tabBar}>
           {/* Why: tab taps must register on first press with the keyboard open instead of being eaten by dismissal (#5106). */}
           <ScrollView
@@ -143,13 +167,20 @@ export function MobileSessionHeader({ controller }: { controller: MobileSessionC
             }}
             onContentSizeChange={(width) => {
               tabStripContentWidthRef.current = width
-              scrollActiveTabIntoView(activeSessionTabIdRef.current, false)
+              if (pendingLaunch.selected) {
+                tabStripRef.current?.scrollToEnd({ animated: false })
+              } else {
+                scrollActiveTabIntoView(activeSessionTabIdRef.current, false)
+              }
             }}
           >
             {visibleTabs.map((t) => (
               <Pressable
                 key={t.id}
-                style={[styles.tab, t.id === activeSessionTabId && styles.tabActive]}
+                style={[
+                  styles.tab,
+                  !pendingLaunch.selected && t.id === activeSessionTabId && styles.tabActive
+                ]}
                 onLayout={(e) => {
                   const { x, width } = e.nativeEvent.layout
                   tabLayoutsRef.current.set(t.id, { x, width })
@@ -157,7 +188,10 @@ export function MobileSessionHeader({ controller }: { controller: MobileSessionC
                     scrollActiveTabIntoView(t.id, false)
                   }
                 }}
-                onPress={() => switchSessionTab(t)}
+                onPress={() => {
+                  mobileAgentLaunchFeedback.select(pendingLaunch.scope, null)
+                  switchSessionTab(t)
+                }}
                 onLongPress={() => {
                   triggerMediumImpact()
                   openSessionTabActionSheetAfterKeyboardDismiss(t)
@@ -181,7 +215,10 @@ export function MobileSessionHeader({ controller }: { controller: MobileSessionC
                       return agentId ? <MobileAgentIcon agentId={agentId} size={13} /> : null
                     })()}
                   <Text
-                    style={[styles.tabText, t.id === activeSessionTabId && styles.tabTextActive]}
+                    style={[
+                      styles.tabText,
+                      !pendingLaunch.selected && t.id === activeSessionTabId && styles.tabTextActive
+                    ]}
                     numberOfLines={1}
                   >
                     {getMobileSessionTabTitle(t)}
@@ -189,6 +226,7 @@ export function MobileSessionHeader({ controller }: { controller: MobileSessionC
                 </View>
               </Pressable>
             ))}
+            <MobileAgentLaunchFeedback controller={controller} mode="tabs" />
           </ScrollView>
           {/* Why: pinned outside the scroll strip so the new-agent button stays reachable however far the tabs scroll. */}
           <Pressable

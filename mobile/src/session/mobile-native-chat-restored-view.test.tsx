@@ -14,7 +14,7 @@ beforeEach(() => {
   )
   vi.stubGlobal('cancelAnimationFrame', clearTimeout)
 })
-const list = () => renderer!.root.findByType('FlatList' as never)
+const list = () => renderer!.root.find((node) => String(node.type) === 'FlatList')
 const render = async (props: Overrides) => {
   await act(async () => {
     renderer = create(chatViewElement(props))

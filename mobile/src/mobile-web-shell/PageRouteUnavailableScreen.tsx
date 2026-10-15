@@ -1,5 +1,5 @@
-import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { useMobileTheme } from '../theme/use-mobile-theme'
+import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { hostStackHostRoute } from '../navigation/host-stack-navigation'
 import { useRouteHandoff } from '../navigation/route-handoff'
@@ -28,7 +28,13 @@ import { colors, radii, spacing, typography } from '../theme/mobile-theme'
  * `.web.tsx` sibling, and there a bare replace navigates inside the WebView to a route the page
  * does not carry instead of leaving it. The seam posts the target to the shell.
  */
-export function PageRouteUnavailableScreen({ hostId }: { hostId: string }) {
+export function PageRouteUnavailableScreen({
+  hostId,
+  message = 'This workspace screen is not available on this host.'
+}: {
+  hostId: string
+  message?: string
+}) {
   useMobileTheme()
 
   const router = useRouteHandoff()
@@ -36,7 +42,7 @@ export function PageRouteUnavailableScreen({ hostId }: { hostId: string }) {
   const label = hostId === '' ? 'Back to hosts' : 'Back to workspaces'
   return (
     <View style={styles.root} testID="mobile-web-page-route-unavailable">
-      <Text style={styles.message}>This workspace screen is not available on this host.</Text>
+      <Text style={styles.message}>{message}</Text>
       <Pressable
         style={({ pressed }) => [styles.button, pressed && styles.pressed]}
         accessibilityRole="button"

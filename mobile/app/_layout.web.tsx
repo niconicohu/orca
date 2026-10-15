@@ -5,13 +5,14 @@ import { StyleSheet, useColorScheme, useWindowDimensions, View } from 'react-nat
 import { Slot } from 'expo-router'
 import { SafeAreaFrameContext, SafeAreaInsetsContext } from 'react-native-safe-area-context'
 import { ZERO_SAFE_AREA_INSETS } from '../src/mobile-web-shell/bridge/bridge-safe-area-insets'
+import { SideSafeArea } from '../src/layout/side-safe-area'
 import { usePageBridgeClient } from '../src/transport/client-context.web'
 import { applyMobileColorScheme, colors } from '../src/theme/mobile-theme'
 
 /**
  * The page's root layout, standing where the native `_layout.tsx` does. Without one expo-router
  * mounts `DefaultNavigator`, an all-edges `SafeAreaView`, which would pad each screen a second time.
- * Like the native root it adds no padding. It supplies the insets the shell sent in `init` below
+ * Like the native root it pads only the sides. It supplies the insets the shell sent in `init` below
  * ExpoRoot's own provider, whose web half reads `env(safe-area-inset-*)`: 0 in both WebViews.
  */
 export default function PageRootLayout() {
@@ -33,7 +34,9 @@ export default function PageRootLayout() {
     <SafeAreaFrameContext.Provider value={frame}>
       <SafeAreaInsetsContext.Provider value={insets}>
         <View style={styles.root}>
-          <Slot />
+          <SideSafeArea>
+            <Slot />
+          </SideSafeArea>
         </View>
       </SafeAreaInsetsContext.Provider>
     </SafeAreaFrameContext.Provider>

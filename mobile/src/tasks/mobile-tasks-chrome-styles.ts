@@ -99,6 +99,9 @@ export const mobileTasksChromeStyles = createThemedStyles(() =>
       fontSize: 12,
       color: colors.textSecondary
     },
+    segmentDisabledText: {
+      color: colors.textMuted
+    },
     searchBar: {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,

@@ -12,6 +12,7 @@ export type TabBarProbeState = {
   mobileEmulatorTabIntroDismissed: boolean
   gitStatusByWorktree: Record<string, never[]>
   unifiedTabsByWorktree: Record<string, never[]>
+  groupsByWorktree: Record<string, { id: string; activeTabId: string | null }[]>
   activeGroupIdByWorktree: Record<string, string>
   activeRepoId: string | null
   activeWorktreeId: string | null
@@ -44,6 +45,7 @@ export async function createTabBarProbeStore(): Promise<TabBarProbeStore> {
       mobileEmulatorTabIntroDismissed: true,
       gitStatusByWorktree: {},
       unifiedTabsByWorktree: {},
+      groupsByWorktree: {},
       activeGroupIdByWorktree: {},
       activeRepoId: null,
       activeWorktreeId: null,
@@ -81,7 +83,6 @@ const CREATION_POLICY = Object.freeze({
   'mobile-emulator': { state: 'enabled' }
 })
 const DETECTED_AGENTS = Object.freeze({ detectedIds: Object.freeze([]) })
-const RUNTIME_TARGET = Object.freeze({ kind: 'local' })
 const CREATE_MENU = Object.freeze({})
 const ITEM_PROJECTION = Object.freeze({
   orderedItems: Object.freeze([]),
@@ -109,7 +110,6 @@ export function tabBarRuntimeModelStubs(): Record<string, () => Record<string, u
     detectionTarget: () => ({ useAgentDetectionTargetForWorktree: () => null }),
     connectionContext: () => ({ getConnectionIdFromState: () => null }),
     runtimeOwner: () => ({ getRuntimeEnvironmentIdForWorktree: () => null }),
-    runtimeRpcClient: () => ({ getActiveRuntimeTarget: () => RUNTIME_TARGET }),
     nativeChatReadability: () => ({ isNativeChatTranscriptLocalReadable: () => false }),
     creationPolicy: () => ({ getClientCreationActionPolicy: () => CREATION_POLICY }),
     agentProjections: () => ({ selectTabBarAgentProjections: () => AGENT_PROJECTIONS }),

@@ -6,7 +6,7 @@ type SyntaxNode = {
   properties?: { className?: unknown }
   children?: readonly SyntaxNode[]
 }
-export type CodeToken = { text: string; classes: string[] }
+export type CodeToken = { text: string; offset?: number; classes: string[] }
 let highlighter: ReturnType<typeof createLowlight> | null = null
 const cache = new Map<string, CodeToken[]>()
 let cachedCharacters = 0
@@ -55,6 +55,11 @@ export function highlightMobileCode(code: string, language?: string): CodeToken[
   }
   if (tokens.length > MAX_TOKENS || tokens.map((token) => token.text).join('') !== code) {
     return plain()
+  }
+  let offset = 0
+  for (const token of tokens) {
+    token.offset = offset
+    offset += token.text.length
   }
   cache.set(key, tokens)
   cachedCharacters += code.length

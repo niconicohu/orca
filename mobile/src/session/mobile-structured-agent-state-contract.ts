@@ -14,6 +14,8 @@ export type MobileStructuredAgentStateArgs = {
 export type MobileStructuredAgentState = {
   state: MobileStructuredChatState
   stateRef: { readonly current: MobileStructuredChatState }
+  queuedMessages: import('./mobile-structured-queued-message-feed').MobileQueuedMessageFeed
+  queuePause: import('./mobile-structured-queued-message-feed').MobileQueuePause
   loadingOlder: boolean
   loadEarlier: () => void
 }

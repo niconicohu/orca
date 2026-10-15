@@ -1,14 +1,22 @@
 import { createElement } from 'react'
 import { act, create } from 'react-test-renderer'
-import { expect, it, vi } from 'vitest'
+import { expect, it, vi, type Mock } from 'vitest'
 
-const native = vi.hoisted(() => ({
+type NativeFixture = {
+  system: string
+  cached: string
+  active: ((state: string) => void) | null
+  direct: string | null
+  changed: (() => void) | null
+  set: Mock<(preference: string) => void>
+}
+const native = vi.hoisted<NativeFixture>(() => ({
   system: 'light',
   cached: 'light',
-  active: null as ((state: string) => void) | null,
-  direct: null as string | null,
-  changed: null as (() => void) | null,
-  set: vi.fn()
+  active: null,
+  direct: null,
+  changed: null,
+  set: vi.fn<(preference: string) => void>()
 }))
 vi.mock('react-native', () => ({
   Platform: { OS: 'android' },

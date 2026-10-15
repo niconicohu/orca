@@ -3,6 +3,7 @@ export const MOBILE_CHAT_FIRST_READ_TIMEOUT_MS = 8000
 
 /** A bounded recent-history read runs alongside the live subscription. */
 export function startMobileChatFirstRead<T>(args: {
+  graceMs?: number
   read: () => Promise<T>
   apply: (value: T) => void
   fail: (error: Error) => void
@@ -34,7 +35,7 @@ export function startMobileChatFirstRead<T>(args: {
           fail(error)
         }
       }, fail)
-  }, MOBILE_CHAT_FIRST_FRAME_GRACE_MS)
+  }, args.graceMs ?? MOBILE_CHAT_FIRST_FRAME_GRACE_MS)
   function stop(): void {
     ended = true
     clearTimeout(timer)

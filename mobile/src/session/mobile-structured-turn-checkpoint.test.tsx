@@ -22,6 +22,7 @@ const client = {
 }
 function Harness() {
   hook = useMobileStructuredAgentSession({
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the hook exercises only the supplied request and subscription members; native connection management is outside this fixture.
     client: client as unknown as RpcClient,
     sessionId: 'long-turn-checkpoint',
     agent: 'codex',
@@ -95,5 +96,6 @@ it('reads live completion outside the loaded page without adding lifecycle recor
   )
   expect(hook?.isWorking).toBe(false)
   expect(hook?.turnId).toBeNull()
-  expect(hook?.settledTurns.get('__unanchored__')?.workedSeconds).toBe(2)
+  expect(hook?.turnJournal?.latestTurn?.turn.state).toBe('completed')
+  expect(hook?.settledTurns.size).toBe(0)
 })

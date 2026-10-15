@@ -1,3 +1,5 @@
+import type { ComposerTrayProps } from './use-mobile-native-chat-composer-tray'
+import type { NativeChatTurnJournal } from '../../../src/shared/native-chat-turn-membership'
 export type MobileNativeChatInputLockReason = 'disconnected' | 'waiting'
 
 import type { AskAnswerSelection, AskPrompt } from '../../../src/shared/native-chat-ask'
@@ -13,7 +15,7 @@ import type { MobileChatQuestion } from './mobile-native-chat-question'
 import type { MobileNativeChatSessionOptionPickersProps } from './MobileNativeChatSessionOptionPickers'
 import type { MobileNativeChatStatus } from './use-mobile-native-chat-session'
 
-export type MobileNativeChatViewProps = {
+export type MobileNativeChatViewProps = ComposerTrayProps & {
   /** Raw transcript, only for telling "still loading" from "loaded and empty". */
   messages: NativeChatMessage[]
   /** `messages` with noise stripped and tool turns folded in, from the overlay. */
@@ -22,6 +24,8 @@ export type MobileNativeChatViewProps = {
   syncing?: boolean
   initialSyncRevision?: number
   error?: string
+  /** The read failed for good (damage, a newer Orca's chat): its error takes the whole pane. */
+  readFailedFinally?: boolean
   /** Resolved agent for this chat; names the empty-state copy (desktop parity). */
   agent?: string | null
   agentWorking?: boolean
@@ -34,6 +38,8 @@ export type MobileNativeChatViewProps = {
   /** Structured lane: host-recorded turn timing feeding the per-turn status rows. */
   workingStartedAt?: number | null
   settledTurns?: NativeChatSettledTurns | null
+  /** Structured lane: the journal that places each row in its turn. */
+  turnJournal?: NativeChatTurnJournal | null
   /** Interrupt the agent mid-turn (shown as a Stop button on the working bar). */
   /** Interrupt a provider turn. */
   onStop?: () => void
@@ -96,9 +102,13 @@ export type MobileNativeChatViewProps = {
   onCancelAsk?: () => Promise<boolean>
   /** Cancel a structured approval/question with exact item identity when supported. */
   onCancelPrompt?: (prompt?: { itemId: string; expectedRevision: number }) => Promise<boolean>
+  onCollapseAsk?: () => void
+  onCollapsePrompt?: () => void
+  collapsedPrompt?: { title: string; expand: () => void } | null
   question?: MobileChatQuestion | null
   onAnswerQuestion?: (text: string) => Promise<boolean>
   permission?: MobileChatPermission | null
+  promptKey?: string | null
   onRespondPermission?: (send: string) => Promise<boolean>
   /** Open a worktree file tapped in agent markdown. */
   onOpenFile?: (relativePath: string) => void

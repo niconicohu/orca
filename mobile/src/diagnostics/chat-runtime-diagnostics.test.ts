@@ -20,7 +20,7 @@ describe('chat runtime capture', () => {
       transcriptPath: '/private/path',
       receive
     })
-    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(100)
     expect(client.requests[0]?.method).toBe('nativeChat.readSession')
     await vi.advanceTimersByTimeAsync(1234)
     client.requests[0]?.resolve({

@@ -18,6 +18,7 @@ import { reviewSheetKey, type ReviewSheet } from '../session/mobile-diff-review-
 import type { useMobileDiffReviewController } from '../session/use-mobile-diff-review-controller'
 import { mobileDiffReviewStyles as styles } from './mobile-diff-review-screen-styles'
 import { hostOs } from '../platform/host-os'
+import { useWorkspaceOnPairedHost } from '../navigation/workspace-execution-host'
 
 type Props = {
   controller: ReturnType<typeof useMobileDiffReviewController>
@@ -145,6 +146,7 @@ function useSendActions(
 function useOverflowActions(controller: ReturnType<typeof useMobileDiffReviewController>) {
   useMobileTheme()
 
+  const sessionTabsAvailable = useWorkspaceOnPairedHost()
   return useMemo<ActionSheetAction[]>(
     () => [
       {
@@ -186,14 +188,18 @@ function useOverflowActions(controller: ReturnType<typeof useMobileDiffReviewCon
         skipAutoClose: true,
         onPress: () => void controller.markUnreviewed()
       },
-      {
-        label: 'Open in Session',
-        icon: FileText,
-        disabled: !controller.currentItem || controller.currentItem.scope === 'branch',
-        onPress: () => void controller.openInSession()
-      }
+      ...(sessionTabsAvailable
+        ? [
+            {
+              label: 'Open in Session',
+              icon: FileText,
+              disabled: !controller.currentItem || controller.currentItem.scope === 'branch',
+              onPress: () => void controller.openInSession()
+            }
+          ]
+        : [])
     ],
-    [controller]
+    [controller, sessionTabsAvailable]
   )
 }
 

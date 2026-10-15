@@ -1,5 +1,6 @@
+import { MobileChatText as Text } from '../components/MobileChatText'
 import { useMobileTheme } from '../theme/use-mobile-theme'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { ChevronsDownUp, ChevronsUpDown, Square } from 'lucide-react-native'
 import { colors } from '../theme/mobile-theme'
 import { styles } from './mobile-native-chat-view-styles'

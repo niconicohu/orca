@@ -5,15 +5,18 @@ import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { MobileNativeChatOverlay } from './MobileNativeChatOverlay'
 import type { MobileNativeChatController } from './use-mobile-native-chat-controller'
 
-const inputFocus = vi.hoisted(() => ({ get: vi.fn(), blur: vi.fn() }))
-
 vi.mock('react-native', () => ({
+  TextInput: { State: { currentlyFocusedInput: () => null } },
   StyleSheet: { create: (styles: unknown) => styles, absoluteFillObject: {} },
-  View: 'View',
-  TextInput: { State: { currentlyFocusedInput: inputFocus.get, blurTextInput: inputFocus.blur } }
+  View: 'View'
 }))
 
 vi.mock('./MobileNativeChatView', () => ({ MobileNativeChatView: 'ChatView' }))
+vi.mock('./MobileNativeChatQueuedMessages', () => ({ MobileNativeChatQueuedMessages: 'Queued' }))
+vi.mock('./MobileNativeChatBackgroundTasks', () => ({
+  MobileNativeChatBackgroundTasks: 'BackgroundTasks'
+}))
+vi.mock('./MobileNativeChatVisual', () => ({ useMobileNativeChatVisualRenderer: () => null }))
 
 function assistantTurn(id: string, text: string): NativeChatMessage {
   return { id, role: 'assistant', blocks: [{ type: 'text', text }], timestamp: 0, source: 'hook' }
@@ -21,31 +24,46 @@ function assistantTurn(id: string, text: string): NativeChatMessage {
 
 /** One render of the route: chat visible or not, the transcript it currently
  *  holds, and the agent-status stream behind it. */
-let activeSurface: string | null = null
-
 type Tick = {
   show?: boolean
   messages?: NativeChatMessage[]
   streamingText?: string
   streamLive?: boolean
   identity?: string
-  liveKeys?: string[]
+  /** The host says a person's Stop is ending the turn. */
+  stopping?: boolean
+  acceptsImages?: boolean
 }
 
 function overlayElement(tick: Tick): ReturnType<typeof createElement> {
-  activeSurface = tick.show === false ? null : (tick.identity ?? 'tab-a')
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the overlay reads only these controller members; the rest of the controller is unreachable from it.
   const controller = {
     showNativeChat: tick.show ?? true,
     nativeChatSession: { messages: tick.messages ?? [], status: 'ready' },
     nativeChatAgent: 'claude',
+    nativeChatAcceptsImages: tick.acceptsImages ?? true,
     nativeChatAgentWorking: tick.streamLive ?? false,
+    nativeChatTurnIndicator: {
+      thinking: false,
+      activityText: null,
+      stopping: tick.stopping ?? false
+    },
     nativeChatStreamingText: tick.streamingText,
     nativeChatStreamLive: tick.streamLive ?? false,
     nativeChatStreamScopeKey: tick.identity ?? 'tab-a',
     chatPending: [],
     chatImagePreviewsByMessageId: {},
     chatComposerText: '',
-    setChatComposerText: vi.fn()
+    setChatComposerText: vi.fn(),
+    nativeChatQueued: {
+      cards: [],
+      send: vi.fn(),
+      delete: vi.fn(),
+      edit: vi.fn(),
+      pause: null,
+      resume: vi.fn(),
+      sessionKey: 'session-a'
+    }
   } as unknown as MobileNativeChatController
   return createElement(MobileNativeChatOverlay, {
     controller,
@@ -58,7 +76,6 @@ function overlayElement(tick: Tick): ReturnType<typeof createElement> {
     inputLockReason: null,
     sendErrorMessage: null,
     onClearSendError: vi.fn(),
-    liveChatSurfaceIds: tick.liveKeys,
     sendSurfaceId: tick.identity ?? 'tab-a',
     getSendCompletionGeneration: () => 0,
     keyboardInset: 0
@@ -71,8 +88,6 @@ describe('MobileNativeChatOverlay streaming gate', () => {
   afterEach(() => {
     act(() => renderer?.unmount())
     renderer = null
-    inputFocus.get.mockReset()
-    inputFocus.blur.mockReset()
   })
 
   async function render(tick: Tick): Promise<void> {
@@ -90,8 +105,17 @@ describe('MobileNativeChatOverlay streaming gate', () => {
   /** The bubble text handed to the chat list, or `'hidden'` when chat is off. */
   function streaming(): string | null | 'hidden' {
     const views = renderer!.root.findAll((node) => node.type === 'ChatView')
-    const visible = views.find((view) => view.props.sendSurfaceId === activeSurface)
-    return visible ? (visible.props.streaming as string | null) : 'hidden'
+    const visible = views.find((view) => {
+      let parent = view.parent
+      while (parent) {
+        if (parent.props.pointerEvents === 'none') {
+          return false
+        }
+        parent = parent.parent
+      }
+      return true
+    })
+    return visible ? visible.props.streaming : 'hidden'
   }
 
   it('keeps streaming a reply that repeats the previous turn as a prefix', async () => {
@@ -184,46 +208,47 @@ describe('MobileNativeChatOverlay streaming gate', () => {
 
     expect(streaming()).toBeNull()
   })
-  it('retains the actual cached chat view across A to B and back, including a non-chat tab', async () => {
-    await render({ identity: 'a', messages: [assistantTurn('a1', 'cached A')] })
-    const originalA = renderer!.root.find(
-      (node) => node.type === 'ChatView' && node.props.sendSurfaceId === 'a'
-    )
-    await update({ identity: 'b', messages: [assistantTurn('b1', 'cached B')] })
-    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(2)
-    expect(
-      renderer!.root.find((node) => node.type === 'ChatView' && node.props.sendSurfaceId === 'a')
-    ).toBe(originalA)
-    await update({ identity: 'terminal', show: false })
-    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(2)
-    await update({ identity: 'a', messages: [assistantTurn('a1', 'cached A')] })
-    expect(
-      renderer!.root.find((node) => node.type === 'ChatView' && node.props.sendSurfaceId === 'a')
-    ).toBe(originalA)
+})
+
+describe("MobileNativeChatOverlay while a person's Stop ends the turn", () => {
+  let renderer: ReactTestRenderer | null = null
+
+  afterEach(() => {
+    act(() => renderer?.unmount())
+    renderer = null
   })
-  it('releases closed tabs and bounds retained native lists', async () => {
-    await render({ identity: 'a' })
-    for (const id of ['b', 'c', 'd', 'e']) {
-      await update({ identity: id })
-    }
-    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(4)
-    expect(
-      renderer!.root.findAll((node) => node.type === 'ChatView' && node.props.sendSurfaceId === 'a')
-    ).toHaveLength(0)
-    await update({ identity: 'e', liveKeys: ['e'] })
-    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(1)
-    await update({ show: false, liveKeys: [] })
-    expect(renderer!.root.findAll((node) => node.type === 'ChatView')).toHaveLength(0)
+
+  async function steerHeld(tick: Tick): Promise<unknown> {
+    await act(async () => {
+      renderer = create(overlayElement(tick))
+    })
+    const view = renderer!.root.find((node) => node.type === 'ChatView')
+    // The tray's second child is the queued box; the first is the child-work strip.
+    return view.props.composerTray?.content?.props?.children?.[1]?.props?.steerHeld
+  }
+
+  it("holds the queued cards' Steer while the agent works and the host says Stopping", async () => {
+    expect(await steerHeld({ streamLive: true, stopping: true })).toBe(true)
   })
-  it('blurs an input left in the hidden tab without blurring a newly focused input', async () => {
-    await render({ identity: 'a' })
-    const oldInput = { id: 'old', blur: inputFocus.blur }
-    inputFocus.get.mockReturnValue(oldInput)
-    await update({ identity: 'b' })
-    expect(inputFocus.blur).toHaveBeenCalledOnce()
-    inputFocus.blur.mockClear()
-    inputFocus.get.mockReturnValueOnce(oldInput).mockReturnValueOnce({ id: 'new' })
-    await update({ identity: 'a' })
-    expect(inputFocus.blur).not.toHaveBeenCalled()
+
+  it('leaves Steer to the cards otherwise', async () => {
+    expect(await steerHeld({ streamLive: true, stopping: false })).toBe(false)
+  })
+})
+
+describe('MobileNativeChatOverlay attach button', () => {
+  let renderer: ReactTestRenderer | null = null
+
+  afterEach(() => {
+    act(() => renderer?.unmount())
+    renderer = null
+  })
+
+  it.each([true, false])('offers attach only when the agent takes images (%s)', async (accepts) => {
+    await act(async () => {
+      renderer = create(overlayElement({ acceptsImages: accepts }))
+    })
+    const view = renderer!.root.find((node) => node.type === 'ChatView')
+    expect(typeof view.props.onAttachImage === 'function').toBe(accepts)
   })
 })

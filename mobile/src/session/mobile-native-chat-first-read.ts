@@ -15,6 +15,7 @@ export function startMobileNativeChatFirstRead(args: {
 }): () => void {
   const { client, agent, sessionId, transcriptPath, receive } = args
   return startMobileChatFirstRead({
+    graceMs: 100,
     read: async () => {
       const response = await measureChatRead(client, sessionId, 'nativeChat.readSession', () =>
         nativeChatSessionPageRead.request(

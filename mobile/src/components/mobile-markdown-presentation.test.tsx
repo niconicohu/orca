@@ -3,10 +3,15 @@ import { act, create, type ReactTestInstance } from 'react-test-renderer'
 import { expect, it, vi } from 'vitest'
 vi.mock('react-native', () => ({
   Text: 'Text',
+  Platform: { OS: 'ios' },
   View: 'View',
   Pressable: 'Pressable',
   ScrollView: 'ScrollView',
-  StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 }
+  StyleSheet: {
+    flatten: (value: unknown) => flat(value),
+    create: (styles: unknown) => styles,
+    hairlineWidth: 1
+  }
 }))
 vi.mock('../platform/clipboard', () => ({
   useClipboardWriter: () => ({ writeText: async () => {} })

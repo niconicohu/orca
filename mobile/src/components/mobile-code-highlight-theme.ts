@@ -57,7 +57,10 @@ export function mobileCodeTokenStyle(classes: readonly string[], scheme: MobileC
     const token = name.replace(/^hljs-/, '')
     const key = aliases[token] ?? token
     if (Object.hasOwn(palette, key)) {
-      color = palette[key as keyof typeof palette]
+      const entry = Object.entries(palette).find(([name]) => name === key)
+      if (entry) {
+        color = entry[1]
+      }
     }
   }
   return {

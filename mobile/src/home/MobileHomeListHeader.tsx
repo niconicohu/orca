@@ -3,6 +3,7 @@ import { useMobileTheme } from '../theme/use-mobile-theme'
 import { StyleSheet, Text, View } from 'react-native'
 import type { HomeStatsSummary } from '../stats/home-stats-total'
 import { colors, spacing } from '../theme/mobile-theme'
+import { MobileHomeAppUpdateCard } from './MobileHomeAppUpdateCard'
 
 function formatDuration(ms: number): string {
   const totalMinutes = Math.floor(ms / 60_000)
@@ -40,6 +41,7 @@ export function MobileHomeListHeader({ stats }: { stats: HomeStatsSummary | null
           </View>
         </View>
       ) : null}
+      <MobileHomeAppUpdateCard />
       <Text style={styles.sectionHeading}>Desktops</Text>
     </View>
   )

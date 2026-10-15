@@ -51,8 +51,9 @@ export function useMobileNativeChatHistory(args: {
     // apply this read's result onto the new session (mirrors desktop's guard).
     const requestSessionId = sessionId
     const requestGeneration = streamGenerationRef.current
-    const nextLimit = Math.min(limitRef.current + PAGE, MAX_MESSAGES)
-    const pageLimit = nextLimit - limitRef.current
+    const held = Math.max(limitRef.current, mergerRef.current.list.length)
+    const nextLimit = Math.min(held + PAGE, MAX_MESSAGES)
+    const pageLimit = nextLimit - held
     if (pageLimit <= 0) {
       setHasMore(false)
       return

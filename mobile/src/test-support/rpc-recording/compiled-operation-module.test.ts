@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { compiledOperationModule } from './compiled-operation-module'
 
 describe('compiled operation code', () => {
+  it('parses generic arrow functions in .ts files without treating them as JSX', () => {
+    const evaluate = compiledOperationModule(
+      'cache.ts',
+      'const enqueue = <T>(value: T): T => value; export const value = enqueue(42)',
+      ''
+    )
+    const exports = {}
+    evaluate(() => undefined, exports)
+    expect(exports).toEqual({ value: 42 })
+  })
+
   it('reuses identical code but separates source, exposure and diagnostic filename', () => {
     const source = 'const value: number = 1; export const read = () => value'
     const original = compiledOperationModule('original.ts', source, '')
@@ -13,6 +24,7 @@ describe('compiled operation code', () => {
       original
     )
     expect(compiledOperationModule('different.ts', source, '')).not.toBe(original)
+    expect(compiledOperationModule('original.ts', source, '')).toBe(original)
   })
 
   it('bounds retained code and still evaluates an evicted module correctly', () => {
@@ -22,6 +34,19 @@ describe('compiled operation code', () => {
       compiledOperationModule(`bounded-${index}.ts`, 'export {}', '')
     }
     const recompiled = compiledOperationModule('evicted.ts', source, '')
+    expect(recompiled).not.toBe(original)
+    const exports = {}
+    recompiled(() => undefined, exports)
+    expect(exports).toEqual({ value: 42 })
+  })
+
+  it('bounds retained variants of one file, not only the number of filenames', () => {
+    const source = 'export const value = 42'
+    const original = compiledOperationModule('variants.ts', source, '')
+    for (let index = 0; index < 512; index++) {
+      compiledOperationModule('variants.ts', `${source}; export const variant = ${index}`, '')
+    }
+    const recompiled = compiledOperationModule('variants.ts', source, '')
     expect(recompiled).not.toBe(original)
     const exports = {}
     recompiled(() => undefined, exports)

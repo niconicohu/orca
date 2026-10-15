@@ -1,6 +1,11 @@
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect } from 'react'
+import {
+  publishMobileChatFontWeight,
+  useMobileChatFontWeightValue,
+  type MobileChatFontWeight
+} from './mobile-chat-font-weight-value'
+export type { MobileChatFontWeight } from './mobile-chat-font-weight-value'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-export type MobileChatFontWeight = 300 | 400 | 500
 export const DEFAULT_MOBILE_CHAT_FONT_WEIGHT: MobileChatFontWeight = 400
 export function normalizeMobileChatFontWeight(value: unknown): MobileChatFontWeight {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -16,12 +21,7 @@ let loaded = false
 let version = 0
 let hydration: Promise<void> | undefined
 let writes = Promise.resolve()
-const listeners = new Set<() => void>()
-let snapshot: { weight: MobileChatFontWeight; ready: boolean } = { weight: value, ready: loaded }
-const notify = () => {
-  snapshot = { weight: value, ready: loaded }
-  listeners.forEach((listener) => listener())
-}
+const notify = () => publishMobileChatFontWeight({ weight: value, ready: loaded })
 export async function hydrateMobileChatFontWeight(): Promise<void> {
   if (!hydration) {
     const requested = version
@@ -49,16 +49,7 @@ export function setMobileChatFontWeight(next: number): Promise<void> {
   return write
 }
 export function useMobileChatFontWeight() {
-  const state = useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener)
-      return () => {
-        listeners.delete(listener)
-      }
-    },
-    () => snapshot,
-    () => snapshot
-  )
+  const state = useMobileChatFontWeightValue()
   useEffect(() => {
     if (!loaded) {
       void hydrateMobileChatFontWeight()

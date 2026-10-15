@@ -1,3 +1,4 @@
+import { useMobileChatTextStyle } from '../theme/mobile-chat-typography'
 import { Children, Fragment, isValidElement, type ReactNode } from 'react'
 import { StyleSheet, Text, UIManager, type TextProps } from 'react-native'
 import { UITextView } from 'react-native-uitextview'
@@ -16,20 +17,21 @@ function flattenFragments(children: ReactNode): ReactNode[] {
 }
 
 export function MobileSelectableText({ children, style, ...props }: TextProps): React.JSX.Element {
+  const weightedStyle = useMobileChatTextStyle(style)
   if (!hasRangeSelection) {
     return (
-      <Text {...props} style={style}>
+      <Text {...props} style={weightedStyle}>
         {children}
       </Text>
     )
   }
 
   // The native span adapter otherwise maps numeric bold to semibold.
-  const textStyle = StyleSheet.flatten(style)
+  const textStyle = StyleSheet.flatten(weightedStyle)
   const nativeStyle =
     textStyle?.fontWeight === '700' || textStyle?.fontWeight === 700
       ? { ...textStyle, fontWeight: 'bold' as const }
-      : style
+      : weightedStyle
   return (
     <UITextView {...props} uiTextView style={nativeStyle}>
       {flattenFragments(children)}

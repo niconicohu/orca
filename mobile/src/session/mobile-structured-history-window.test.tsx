@@ -11,6 +11,11 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: async () => null, setItem: async () => {}, removeItem: async () => {} }
 }))
 const client = createFakeRpcClient()
+const request = client.sendRequest
+client.sendRequest = (method, ...args) =>
+  method === 'agentSession.hold' || method === 'agentSession.release'
+    ? Promise.resolve({ id: 'hold', ok: true, result: {} })
+    : request(method, ...args)
 let state!: ReturnType<typeof useMobileStructuredAgentState>
 let renderer: ReactTestRenderer | undefined
 function Harness({ id, snapshotLimit }: { id: string; snapshotLimit?: boolean }) {

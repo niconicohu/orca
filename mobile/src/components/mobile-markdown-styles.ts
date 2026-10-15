@@ -38,6 +38,7 @@ export const styles = createThemedStyles(() =>
     },
     inlineCode: {
       fontFamily: typography.monoFamily,
+      fontSize: 12,
       color: colors.textPrimary,
       backgroundColor: colors.bgRaised,
       borderRadius: radii.row,
@@ -50,12 +51,32 @@ export const styles = createThemedStyles(() =>
     quote: {
       borderLeftWidth: 2,
       borderLeftColor: colors.borderSubtle,
-      paddingLeft: spacing.sm
+      paddingLeft: spacing.sm,
+      gap: spacing.xs
     },
     quoteText: {
       fontSize: 13,
       lineHeight: 19,
       color: colors.textSecondary
+    },
+    codeBlock: {
+      backgroundColor: colors.bgRaised,
+      borderWidth: 1,
+      borderColor: colors.borderSubtle,
+      borderRadius: radii.input,
+      padding: spacing.sm
+    },
+    codeLanguage: {
+      fontSize: 10,
+      color: colors.textMuted,
+      marginBottom: spacing.xs,
+      textTransform: 'uppercase'
+    },
+    codeText: {
+      fontFamily: typography.monoFamily,
+      fontSize: 12,
+      lineHeight: 17,
+      color: colors.textPrimary
     },
     imageFrame: {
       borderWidth: 1,
@@ -83,8 +104,6 @@ export const styles = createThemedStyles(() =>
       flexDirection: 'row'
     },
     tableCell: {
-      minWidth: 112,
-      maxWidth: 220,
       borderRightWidth: 1,
       borderBottomWidth: 1,
       borderColor: colors.borderSubtle,
@@ -98,11 +117,6 @@ export const styles = createThemedStyles(() =>
       fontWeight: '700',
       backgroundColor: colors.bgRaised
     },
-    tableTruncated: {
-      padding: spacing.sm,
-      fontSize: 12,
-      color: colors.textMuted
-    },
     list: {
       gap: spacing.xs
     },
@@ -112,18 +126,25 @@ export const styles = createThemedStyles(() =>
       gap: spacing.sm
     },
     listMarker: {
-      width: 22,
+      // A floor, not a width: "10." would wrap inside a fixed 22.
+      minWidth: 22,
       fontSize: 13,
       lineHeight: 19,
       color: colors.textSecondary,
       fontFamily: typography.monoFamily
     },
-    listText: {
+    listItemBody: {
       flex: 1,
       minWidth: 0,
+      gap: spacing.xs
+    },
+    listText: {
       fontSize: 13,
       lineHeight: 19,
       color: colors.textPrimary
+    },
+    footnoteReference: {
+      color: colors.textSecondary
     },
     rule: {
       height: StyleSheet.hairlineWidth,

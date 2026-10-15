@@ -1,21 +1,32 @@
 import { colors } from '../theme/mobile-theme'
-import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { useMobileTheme } from '../theme/use-mobile-theme'
-import { useEffect, useRef } from 'react'
+import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { Activity } from 'lucide-react-native'
-import { Animated, Easing, StyleSheet, View } from 'react-native'
+import { Animated, StyleSheet, View } from 'react-native'
 import type { AgentWorkingMode } from '../../../src/shared/agent-status-types'
+import { useWorkingRingRotation } from './use-working-ring-rotation'
 
 type WorktreeStatus = 'working' | 'active' | 'permission' | 'done' | 'inactive'
 
-// Keep the desktop state vocabulary while adapting indicator contrast.
-const STATUS_COLORS = createThemedStyles(() => ({
-  working: colors.agentWorking,
-  active: colors.agentDone,
-  done: colors.agentDone,
-  permission: colors.agentAttention,
-  inactive: colors.agentInactive
-})) satisfies Record<WorktreeStatus, string>
+// Why: colors and sizing are 1:1 with the desktop StatusIndicator
+// (src/renderer/src/components/sidebar/StatusIndicator.tsx) so the mobile
+// worktree list reads identically to the sidebar — same yellow spinner for
+// 'working', same emerald dot for 'active'/'done', same neutral-500 @ 40%
+// for 'inactive', same red for 'permission'. Diverging palettes here lose
+// the design intent ('moving' vs 'alive' vs 'completed') the desktop encodes.
+function statusColor(status: WorktreeStatus): string {
+  switch (status) {
+    case 'working':
+      return colors.agentWorking
+    case 'active':
+    case 'done':
+      return colors.agentDone
+    case 'permission':
+      return colors.agentAttention
+    default:
+      return colors.agentInactive
+  }
+}
 
 export function AgentSpinner({
   status,
@@ -26,40 +37,20 @@ export function AgentSpinner({
 }) {
   useMobileTheme()
 
-  const spinValue = useRef(new Animated.Value(0)).current
   const monitoring = status === 'working' && workingMode === 'monitoring'
+  const rotate = useWorkingRingRotation(status === 'working' && !monitoring)
 
-  useEffect(() => {
-    if (status === 'working' && !monitoring) {
-      const animation = Animated.loop(
-        Animated.timing(spinValue, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.linear,
-          useNativeDriver: true
-        })
-      )
-      animation.start()
-      return () => animation.stop()
-    }
-    spinValue.setValue(0)
-  }, [monitoring, status, spinValue])
-
-  const color = STATUS_COLORS[status] ?? STATUS_COLORS.inactive
+  const color = statusColor(status)
 
   if (monitoring) {
     return (
       <View style={styles.wrapper} accessibilityLabel="Monitoring background tasks">
-        <Activity size={12} color={STATUS_COLORS.working} />
+        <Activity size={12} color={colors.agentWorking} />
       </View>
     )
   }
 
   if (status === 'working') {
-    const rotate = spinValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['0deg', '360deg']
-    })
     return (
       <View style={styles.wrapper}>
         <Animated.View style={[styles.spinner, { borderColor: color, transform: [{ rotate }] }]} />
@@ -74,27 +65,29 @@ export function AgentSpinner({
   )
 }
 
-const styles = StyleSheet.create({
-  // Why: 12x12 wrapper centered around an 8x8 inner glyph mirrors the
-  // desktop's `inline-flex h-3 w-3 ... items-center justify-center` shell
-  // around `size-2` indicator — keeps row height/baseline alignment stable
-  // across status transitions.
-  wrapper: {
-    width: 12,
-    height: 12,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4
-  },
-  spinner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderTopColor: 'transparent'
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    // Why: 12x12 wrapper centered around an 8x8 inner glyph mirrors the
+    // desktop's `inline-flex h-3 w-3 ... items-center justify-center` shell
+    // around `size-2` indicator — keeps row height/baseline alignment stable
+    // across status transitions.
+    wrapper: {
+      width: 12,
+      height: 12,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4
+    },
+    spinner: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      borderWidth: 2,
+      borderTopColor: 'transparent'
+    }
+  })
+)

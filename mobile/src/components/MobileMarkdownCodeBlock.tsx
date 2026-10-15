@@ -1,9 +1,9 @@
+import { MobileChatText as Text } from './MobileChatText'
 import { memo, useMemo, useState } from 'react'
 import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
   type StyleProp,
   type ViewStyle
@@ -19,6 +19,7 @@ import { mobileCodeTokenStyle } from './mobile-code-highlight-theme'
 
 type Props = {
   code: string
+  selectable?: boolean
   language?: string
   fontSize?: number
   lineHeight?: number
@@ -27,6 +28,7 @@ type Props = {
 
 export const MobileMarkdownCodeBlock = memo(function MobileMarkdownCodeBlock({
   code,
+  selectable = true,
   language,
   fontSize = 12,
   lineHeight = fontSize + 5,
@@ -89,15 +91,15 @@ export const MobileMarkdownCodeBlock = memo(function MobileMarkdownCodeBlock({
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
           <MobileSelectableText
-            selectable
+            selectable={selectable}
             style={[
               styles.code,
               metrics,
               { color: mobileCodeTokenStyle([], scheme).color, minHeight: lineHeight }
             ]}
           >
-            {tokens.map((token, index) => (
-              <Text key={index} style={mobileCodeTokenStyle(token.classes, scheme)}>
+            {tokens.map((token) => (
+              <Text key={token.offset ?? 0} style={mobileCodeTokenStyle(token.classes, scheme)}>
                 {token.text}
               </Text>
             ))}

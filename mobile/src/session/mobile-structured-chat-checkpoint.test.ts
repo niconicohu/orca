@@ -1,3 +1,4 @@
+import { acceptedSubmission } from './use-mobile-structured-agent-session-queued.test-fixture'
 import { expect, it } from 'vitest'
 import type { AgentSessionHistoryPage } from '../../../src/shared/agent-session-wire'
 import { EMPTY_STRUCTURED_AGENT_SESSION } from '../../../src/shared/structured-agent-session-reducer'
@@ -306,4 +307,185 @@ it('continues paging when a live deletion removes the visible page anchor', () =
   )
   expect(older.items.map((item) => item.itemId)).toEqual(['older', 'm'])
   expect(older.mobileHistory?.before).toBe(39)
+})
+
+it('never revives a tombstoned stable ID from a replay of the old revision', () => {
+  const base = reduceMobileStructuredChatCheckpoint(
+    EMPTY_STRUCTURED_AGENT_SESSION,
+    { type: 'history-page', page: page(1) },
+    1
+  )
+  const deleted = reduceMobileStructuredChatCheckpoint(
+    base,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        batch: {
+          cursor: { epoch: 'e', sequence: 2 },
+          items: [],
+          removedItemIds: ['m'],
+          submissions: []
+        }
+      }
+    },
+    2
+  )
+  const replayed = reduceMobileStructuredChatCheckpoint(
+    deleted,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        batch: {
+          cursor: { epoch: 'e', sequence: 3 },
+          items: page(1, 1).items,
+          removedItemIds: [],
+          submissions: []
+        }
+      }
+    },
+    3
+  )
+  expect(replayed.items).toEqual([])
+  expect(replayed.cursor?.sequence).toBe(3)
+})
+
+it('preserves newer running state and write authority when a stale snapshot arrives', () => {
+  const running = {
+    itemId: 'turn',
+    observedAt: 3,
+    turn: { turnId: 't', state: 'running' as const, startedAt: 3 }
+  }
+  const state = {
+    ...EMPTY_STRUCTURED_AGENT_SESSION,
+    epoch: 'e',
+    fence: 5,
+    cursor: { epoch: 'e', sequence: 5 },
+    items: page(1, 3).items,
+    latestTurn: running,
+    working: true,
+    actionablePromptIds: ['permission']
+  }
+  const next = reduceMobileStructuredChatCheckpoint(
+    state,
+    {
+      type: 'event',
+      event: {
+        type: 'snapshot',
+        sessionId: 's',
+        fence: 2,
+        page: { ...page(1), latestTurn: null, working: false, actionablePromptIds: [] }
+      }
+    },
+    10
+  )
+  expect(next).toMatchObject({
+    fence: 5,
+    working: true,
+    actionablePromptIds: ['permission'],
+    latestTurn: running
+  })
+})
+
+it('accepts a genuine newer revision after deletion and ignores a replayed old deletion', () => {
+  const base = reduceMobileStructuredChatCheckpoint(
+    EMPTY_STRUCTURED_AGENT_SESSION,
+    { type: 'history-page', page: page(1) },
+    1
+  )
+  const deleted = reduceMobileStructuredChatCheckpoint(
+    base,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        batch: {
+          cursor: { epoch: 'e', sequence: 2 },
+          items: [],
+          removedItemIds: ['m'],
+          submissions: []
+        }
+      }
+    },
+    2
+  )
+  const revived = reduceMobileStructuredChatCheckpoint(
+    deleted,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        batch: {
+          cursor: { epoch: 'e', sequence: 4 },
+          items: page(1, 3).items,
+          removedItemIds: [],
+          submissions: []
+        }
+      }
+    },
+    4
+  )
+  const refreshed = reduceMobileStructuredChatCheckpoint(
+    deleted,
+    { type: 'history-page', page: { ...page(1, 3), liveCursor: { epoch: 'e', sequence: 4 } } },
+    4
+  )
+  expect(refreshed.items[0]?.revision).toBe(3)
+  expect(revived.items[0]?.revision).toBe(3)
+  const lateDelete = reduceMobileStructuredChatCheckpoint(
+    revived,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        batch: {
+          cursor: { epoch: 'e', sequence: 2 },
+          items: [],
+          removedItemIds: ['m'],
+          submissions: []
+        }
+      }
+    },
+    5
+  )
+  expect(lateDelete.items[0]?.revision).toBe(3)
+})
+
+it('does not carry row revisions or write authority across a journal epoch change', () => {
+  const old = {
+    ...EMPTY_STRUCTURED_AGENT_SESSION,
+    epoch: 'old',
+    fence: 9,
+    cursor: { epoch: 'old', sequence: 8 },
+    items: page(1, 7).items
+  }
+  const next = reduceMobileStructuredChatCheckpoint(
+    old,
+    { type: 'history-page', page: page(1, 1) },
+    1
+  )
+  expect(next.items[0]?.revision).toBe(1)
+  expect(next.fence).toBeNull()
+})
+
+
+it('does not roll an accepted send back to pending from a late read or replay batch', () => {
+  const accepted = acceptedSubmission('send')
+  const pending = { ...accepted, dispatchState: 'pending' as const, resolvedAt: null }
+  const state = { ...EMPTY_STRUCTURED_AGENT_SESSION, epoch: 'e',
+    cursor: { epoch: 'e', sequence: 5 }, items: page(1).items, submissions: [accepted] }
+  const read = reduceMobileStructuredChatCheckpoint(state, { type: 'history-page',
+    page: { ...page(1), submissions: [pending] } }, 5)
+  expect(read.submissions[0]?.dispatchState).toBe('accepted')
+  const replay = reduceMobileStructuredChatCheckpoint(state, { type: 'event', event: {
+    type: 'batch', sessionId: 's', batch: { cursor: { epoch: 'e', sequence: 1 },
+      items: [], removedItemIds: [], submissions: [pending] }
+  } }, 6)
+  expect(replay.submissions[0]?.dispatchState).toBe('accepted')
 })

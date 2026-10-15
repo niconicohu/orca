@@ -58,6 +58,11 @@ export function persistedStructuredChatRead(
         }
       : {}),
     hasOlder: value.hasOlder || items.length < value.items.length,
+    working: undefined,
+    actionablePromptIds: undefined,
+    queuedMessages: undefined,
+    queuePause: undefined,
+    nextQueuedMessageId: undefined,
     backgroundTasks: null,
     activity: null,
     hostClock: undefined,
@@ -105,7 +110,9 @@ const historyMetadata = z.object({
       })
     )
     .max(200),
-  deleted: z.record(z.string(), z.number())
+  deleted: z.record(z.string(), z.number()),
+  deletedRevisions: z.record(z.string(), z.number()).optional(),
+  writes: z.record(z.string(), z.number()).optional()
 })
 function validHistoryMetadata(value: unknown): boolean {
   return value === undefined || historyMetadata.safeParse(value).success
