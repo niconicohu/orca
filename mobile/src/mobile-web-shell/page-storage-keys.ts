@@ -33,6 +33,8 @@ export const PAGE_STORAGE_EXACT_KEYS = [
   'orca:mobileStructuredSendOperations:v1',
   /** The terminal's text scale, which pinch-to-zoom writes. */
   'orca:terminalTextScale',
+  /** Shared chat typography for native and hybrid page surfaces. */
+  'orca:chatFontWeight',
   /** Whether the terminal's command inputs offer autocorrect. */
   'orca:terminalAutocompleteEnabled',
   /** Whether a terminal link opens in Orca's browser or the phone's. */

@@ -1,3 +1,5 @@
+import { orderedMobileHistoryAction } from './mobile-structured-history-ordering'
+import type { MobileStructuredChatState } from './mobile-structured-history-window'
 import { activeStructuredAgentSessionTurnId } from '../../../src/shared/structured-agent-session-live-turn'
 import type {
   AgentSessionSubscribeEvent,
@@ -59,10 +61,37 @@ function retainedPage(
 }
 
 export function reduceMobileStructuredChatCheckpoint(
-  state: StructuredAgentSessionState,
+  state: MobileStructuredChatState,
   action: StructuredAgentSessionAction,
   now: number
-): StructuredAgentSessionState {
+): MobileStructuredChatState {
+  if (
+    action.type === 'older-page' &&
+    (state.epoch !== action.requestedCursor.epoch || action.page.epoch !== state.epoch)
+  ) {
+    return state
+  }
+  const ordered = orderedMobileHistoryAction(state, action)
+  if (!ordered) {
+    return state
+  }
+  action = ordered.action
+  const { window } = ordered
+  if (action.type === 'older-page') {
+    if (window.before !== action.requestedCursor.sequence) {
+      return state
+    }
+    // A deleted head does not create a gap. The core reducer's trim guard uses
+    // visible rows; mobile owns the independent before cursor instead.
+    action = {
+      ...action,
+      requestedCursor: {
+        ...action.requestedCursor,
+        sequence: Math.max(action.requestedCursor.sequence, state.items[0]?.sequence ?? 0)
+      }
+    }
+  }
+  let next: StructuredAgentSessionState
   if (action.type === 'history-page') {
     let page = retainedPage(state, action.page)
     const incomingHead = action.page.liveCursor ?? action.page.window.nextCursor
@@ -74,11 +103,57 @@ export function reduceMobileStructuredChatCheckpoint(
     ) {
       page = { ...page, latestTurn: state.latestTurn }
     }
-    const next = reduceStructuredAgentSession(state, { ...action, page }, now)
-    return { ...next, fence: state.fence }
+    next = { ...reduceStructuredAgentSession(state, { ...action, page }, now), fence: state.fence }
+  } else if (
+    action.type === 'event' &&
+    action.event.type === 'snapshot' &&
+    state.epoch === action.event.page.epoch
+  ) {
+    const event = action.event
+    const merged = retainedPage(state, event.page)
+    next = reduceStructuredAgentSession(
+      state,
+      { type: 'event', event: { ...event, page: merged } },
+      now
+    )
+  } else {
+    next = reduceStructuredAgentSession(state, action, now)
   }
-
-  return reduceStructuredAgentSession(state, action, now)
+  const page = ordered.page
+  const event = action.type === 'event' ? action.event : null
+  const reset = event?.type === 'reset'
+  const disjoint =
+    page && page.items[0] && state.cursor && page.items[0].sequence > state.cursor.sequence + 1
+  const trimmed =
+    event?.type === 'batch' &&
+    state.items[0] &&
+    next.items[0] &&
+    next.items[0].sequence > state.items[0].sequence &&
+    window.deleted[state.items[0].itemId] === undefined
+  const before = trimmed
+    ? next.items[0]!.sequence
+    : page
+      ? action.type === 'older-page' ||
+        reset ||
+        disjoint ||
+        window.before === null ||
+        state.epoch !== page.epoch
+        ? page.window.nextCursor.sequence
+        : Math.min(window.before, page.window.nextCursor.sequence)
+      : window.before
+  const covered =
+    page && page.items.length
+      ? [
+          { first: page.items[0]!.sequence, last: page.items.at(-1)!.sequence },
+          ...(reset || disjoint ? [] : window.covered)
+        ].slice(0, 32)
+      : window.covered
+  return {
+    ...next,
+    syncing: state.syncing,
+    initialSyncRevision: state.initialSyncRevision,
+    mobileHistory: { ...window, before, covered }
+  }
 }
 
 export function isResumedBatchForCheckpoint(

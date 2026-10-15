@@ -11,7 +11,13 @@ export function createMobileChatReadCache<T>(
   persisted?: { valid: (value: unknown) => boolean; compact: (value: T) => T }
 ) {
   const clients = new WeakMap<RpcClient, Map<string, { value: T; bytes: number; at: number }>>()
+  const allowed = (client: RpcClient, key: string) => {
+    const address = namespace ? checkpointAddress(client, namespace, key) : null
+    return !address || chatCheckpointStore.allowed({ ...address, value: null, at: 0 })
+  }
   return {
+    allowed,
+    subscribeInvalidation: chatCheckpointStore.subscribeInvalidation,
     get(client: RpcClient, key: string): T | null {
       const address = namespace ? checkpointAddress(client, namespace, key) : null
       if (address && !chatCheckpointStore.allowed({ ...address, value: null, at: 0 })) {

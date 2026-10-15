@@ -225,38 +225,45 @@ function renderInline(text: string, base: number) {
   } catch {
     tokens = [{ kind: 'text', text }]
   }
+  let offset = 0
   return (
     <>
-      {tokens.map((token, i) => {
+      {tokens.map((token) => {
+        const key = offset
+        offset += token.text.length + 1
         if (token.kind === 'bold') {
           return (
-            <Text key={i} style={styles.bold}>
+            <Text key={key} style={styles.bold}>
               {token.text}
             </Text>
           )
         }
         if (token.kind === 'italic') {
           return (
-            <Text key={i} style={styles.italic}>
+            <Text key={key} style={styles.italic}>
               {token.text}
             </Text>
           )
         }
         if (token.kind === 'code') {
           return (
-            <Text key={i} inlineCode style={[styles.codeInline, { fontSize: base - 1 }]}>
+            <Text
+              key={key}
+              inlineCode
+              style={[styles.codeInline, { fontSize: base * 0.9, fontWeight: '400' }]}
+            >
               {token.text}
             </Text>
           )
         }
         if (token.kind === 'link') {
           return (
-            <Text key={i} style={styles.link} onPress={() => openMarkdownLink(token.url)}>
+            <Text key={key} style={styles.link} onPress={() => openMarkdownLink(token.url)}>
               {token.text}
             </Text>
           )
         }
-        return <Text key={i}>{token.text}</Text>
+        return <Text key={key}>{token.text}</Text>
       })}
     </>
   )

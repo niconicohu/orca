@@ -278,7 +278,8 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
         id: subscriptionId,
         sessionId: params.sessionId,
         emit: (event) => emit(projectTurnItemEvent(projectBackgroundTaskEvent(event, ctx), ctx)),
-        ...(params.cursor ? { cursor: params.cursor } : {})
+        ...(params.cursor ? { cursor: params.cursor } : {}),
+        ...(params.snapshotLimit !== undefined ? { snapshotLimit: params.snapshotLimit } : {})
       })
       if (stream.isClosed()) {
         dispose()

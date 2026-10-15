@@ -1,3 +1,4 @@
+import { readAgentSessionLatestTurn } from './agent-session-latest-turn'
 // Paged history over one journal.
 //
 // `tail` and `before` read the REDUCED timeline, so backward paging keeps
@@ -112,16 +113,18 @@ export function createAgentSessionCatchUpReader(
 
 export function readAgentSessionHydrationPage(
   journal: AgentSessionJournal,
-  fence?: number
+  fence?: number,
+  snapshotLimit?: number
 ): AgentSessionHistoryPage {
-  return buildHydrationPage(journal.snapshot(), fence)
+  return buildHydrationPage(journal.snapshot(), fence, snapshotLimit)
 }
 
 function buildHydrationPage(
   snapshot: AgentJournalSnapshot,
-  fence?: number
+  fence?: number,
+  snapshotLimit = AGENT_SESSION_HISTORY_MAX_LIMIT
 ): AgentSessionHistoryPage {
-  const items = newestWholeSequenceGroups(snapshot.items, AGENT_SESSION_HISTORY_MAX_LIMIT)
+  const items = newestWholeSequenceGroups(snapshot.items, resolveHistoryLimit(snapshotLimit))
   const bounded = boundHistoryItemsByBytes(
     items,
     'newest',
@@ -262,6 +265,7 @@ function buildPage(input: {
   const newest = input.items.at(-1)
   return {
     sessionId: input.snapshot.sessionId,
+    latestTurn: readAgentSessionLatestTurn(input.snapshot),
     epoch,
     ...(input.fence !== undefined ? { fence: input.fence } : {}),
     direction: input.direction,

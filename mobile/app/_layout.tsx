@@ -12,6 +12,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import * as Notifications from 'expo-notifications'
 import * as Linking from 'expo-linking'
 import { colors } from '../src/theme/mobile-theme'
+import { useMobileChatFontWeight } from '../src/theme/use-mobile-chat-font-weight'
 import { useMobileAppearance } from '../src/theme/use-mobile-appearance'
 import { OrcaLogo } from '../src/components/OrcaLogo'
 import { RpcClientProvider } from '../src/transport/client-context'
@@ -47,6 +48,7 @@ Notifications.setNotificationHandler({
 export default function RootLayout() {
   const colorScheme = useMobileTheme()
   const appearance = useMobileAppearance()
+  const chatTypography = useMobileChatFontWeight()
 
   const router = useRouter()
   const pathname = usePathname()
@@ -195,7 +197,7 @@ export default function RootLayout() {
     await SplashScreen.hideAsync()
   }, [])
 
-  if (!appearance.ready) {
+  if (!appearance.ready || !chatTypography.ready) {
     return null
   }
   return (

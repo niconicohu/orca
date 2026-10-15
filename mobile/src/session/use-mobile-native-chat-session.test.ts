@@ -1,3 +1,4 @@
+import { createFakeRpcClient } from '../mobile-web-shell/bridge-host-test-fakes'
 import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -367,6 +368,32 @@ describe('useMobileNativeChatSession', () => {
     await act(async () => emit({ type: 'replacement', messages: [message('only')] }))
 
     expect(state?.hasMore).toBe(false)
+  })
+
+  it('accepts an older page across an identical replay snapshot instead of silently discarding it', async () => {
+    const client = createFakeRpcClient()
+    const retained = Array.from({ length: 40 }, (_, index) => message(`replay-${index}`))
+    client.subscribe = vi.fn((_method, _params, onData) => {
+      emit = onData
+      onData({ type: 'snapshot', messages: retained, hasMore: true, beforeOffset: 100 })
+      return () => {}
+    })
+    await mount(client)
+    act(() => state?.loadEarlier())
+    await act(async () =>
+      emit({ type: 'snapshot', messages: retained, hasMore: true, beforeOffset: 100 })
+    )
+    await act(async () =>
+      client.requests.at(-1)!.resolve({
+        id: 'test',
+        ok: true,
+        result: { messages: [message('earlier-accepted')], hasMore: true, beforeOffset: 50 }
+      })
+    )
+    expect(state?.messages[0]?.id).toBe('earlier-accepted')
+    expect(state?.loadingEarlier).toBe(false)
+    act(() => state?.loadEarlier())
+    expect(client.requests.at(-1)?.args[1]).toMatchObject({ beforeOffset: 50, limit: 60 })
   })
 
   it('fences an in-flight older page when a merging replay re-cuts the byte cursor', async () => {

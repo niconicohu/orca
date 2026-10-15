@@ -61,6 +61,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   const followingRef = useRef(true)
   const atTailRef = useRef(true)
   const userScrollActiveRef = useRef(false)
+  const pagingGestureRef = useRef(false)
   const userScrollSettleFrameRef = useRef<number | null>(null)
 
   const positionsRef = useRef(new Map<string, { following: boolean; offset: number }>())
@@ -200,6 +201,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     }
     restoringOffsetRef.current = null
     clearUserScrollSettle()
+    pagingGestureRef.current = false
     userScrollActiveRef.current = true
     setFollowing(false)
   }, [clearUserScrollSettle, setFollowing, scopeGeneration])
@@ -222,6 +224,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
 
   const endUserDrag = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      pagingGestureRef.current = false
       if (scopeGenerationRef.current !== scopeGeneration || !userScrollActiveRef.current) {
         return
       }
@@ -247,8 +250,10 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
   }, [clearUserScrollSettle, scopeGeneration])
 
   const endMomentum = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) =>
-      finishUserScroll(isAtTail(event.nativeEvent)),
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      pagingGestureRef.current = false
+      finishUserScroll(isAtTail(event.nativeEvent))
+    },
     [finishUserScroll]
   )
 
@@ -258,6 +263,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     }
     restoringOffsetRef.current = null
     clearUserScrollSettle()
+    pagingGestureRef.current = userScrollActiveRef.current || pagingGestureRef.current
     userScrollActiveRef.current = false
     setAtTail(false)
     setFollowing(false)
@@ -276,6 +282,12 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     }
   )
 
+  useEffect(() => {
+    if (initialPosition.ready) {
+      restoringOffsetRef.current = null
+    }
+  }, [initialPosition.ready])
+
   useEffect(() => clearUserScrollSettle, [clearUserScrollSettle, scopeGeneration])
 
   return {
@@ -292,6 +304,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     endMomentum,
     detachFromTail,
     recordScrollMetrics,
-    canPageFromScroll: () => userScrollActiveRef.current && !followingRef.current
+    canPageFromScroll: () =>
+      (userScrollActiveRef.current || pagingGestureRef.current) && !followingRef.current
   }
 }

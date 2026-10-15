@@ -134,3 +134,176 @@ it('accepts explicit null latest-turn checkpoints rather than reviving an old ru
   )
   expect(next.latestTurn).toBeNull()
 })
+
+it('does not resurrect a live-deleted message when an older page arrives late', () => {
+  const state = {
+    ...EMPTY_STRUCTURED_AGENT_SESSION,
+    epoch: 'e',
+    fence: 3,
+    cursor: { epoch: 'e', sequence: 100 },
+    hasOlder: true,
+    status: 'ready' as const,
+    items: page(40).items.map((item) => ({ ...item, itemId: 'head' }))
+  }
+  const deleted = reduceMobileStructuredChatCheckpoint(
+    state,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        fence: 3,
+        batch: {
+          cursor: { epoch: 'e', sequence: 101 },
+          items: [],
+          removedItemIds: ['m'],
+          submissions: []
+        }
+      }
+    },
+    1
+  )
+  const restored = reduceMobileStructuredChatCheckpoint(
+    deleted,
+    {
+      type: 'older-page',
+      requestedCursor: { epoch: 'e', sequence: 40 },
+      page: { ...page(1), direction: 'before' }
+    },
+    2
+  )
+  expect(restored.items.map((item) => item.itemId)).toEqual(['head'])
+})
+
+it('merges late live revisions without rolling the cursor or turn state backward', () => {
+  const state = {
+    ...EMPTY_STRUCTURED_AGENT_SESSION,
+    epoch: 'e',
+    cursor: { epoch: 'e', sequence: 100 },
+    items: page(40, 1).items,
+    hasOlder: true
+  }
+  const batch = (sequence: number, revision: number) => ({
+    type: 'event' as const,
+    event: {
+      type: 'batch' as const,
+      sessionId: 's',
+      batch: {
+        cursor: { epoch: 'e', sequence },
+        items: page(40, revision).items,
+        removedItemIds: [],
+        submissions: []
+      }
+    }
+  })
+  const newer = reduceMobileStructuredChatCheckpoint(state, batch(105, 3), 1)
+  const late = reduceMobileStructuredChatCheckpoint(newer, batch(103, 2), 2)
+  expect(late.items[0]?.revision).toBe(3)
+  expect(late.cursor?.sequence).toBe(105)
+  const older = reduceMobileStructuredChatCheckpoint(
+    late,
+    {
+      type: 'older-page',
+      requestedCursor: { epoch: 'e', sequence: 40 },
+      page: { ...page(40, 1), direction: 'before' }
+    },
+    3
+  )
+  expect(older.items[0]?.revision).toBe(3)
+})
+
+it('rejects batches from a replaced epoch and bounds deletion memory', () => {
+  const state = {
+    ...EMPTY_STRUCTURED_AGENT_SESSION,
+    epoch: 'e',
+    cursor: { epoch: 'e', sequence: 100 },
+    items: page(40).items
+  }
+  const foreign = reduceMobileStructuredChatCheckpoint(
+    state,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        batch: {
+          cursor: { epoch: 'old', sequence: 200 },
+          items: [],
+          submissions: [],
+          removedItemIds: ['m']
+        }
+      }
+    },
+    1
+  )
+  expect(foreign).toBe(state)
+  const deleted = reduceMobileStructuredChatCheckpoint(
+    state,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        batch: {
+          cursor: { epoch: 'e', sequence: 200 },
+          items: [],
+          submissions: [],
+          removedItemIds: Array.from({ length: 2500 }, (_, i) => String(i))
+        }
+      }
+    },
+    2
+  )
+  expect(Object.keys(deleted.mobileHistory!.deleted).length).toBeLessThanOrEqual(2048)
+  expect(deleted.mobileHistory!.minimumSnapshot).toBe(200)
+  const late = reduceMobileStructuredChatCheckpoint(
+    deleted,
+    { type: 'older-page', requestedCursor: { epoch: 'e', sequence: 40 }, page: page(1) },
+    3
+  )
+  expect(late).toBe(deleted)
+})
+
+it('continues paging when a live deletion removes the visible page anchor', () => {
+  const state = {
+    ...EMPTY_STRUCTURED_AGENT_SESSION,
+    epoch: 'e',
+    cursor: { epoch: 'e', sequence: 100 },
+    fence: 1,
+    hasOlder: true,
+    items: [...page(40).items.map((item) => ({ ...item, itemId: 'anchor' })), ...page(41).items]
+  }
+  const deleted = reduceMobileStructuredChatCheckpoint(
+    state,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        fence: 1,
+        batch: {
+          cursor: { epoch: 'e', sequence: 101 },
+          items: [],
+          removedItemIds: ['anchor'],
+          submissions: []
+        }
+      }
+    },
+    1
+  )
+  const older = reduceMobileStructuredChatCheckpoint(
+    deleted,
+    {
+      type: 'older-page',
+      requestedCursor: { epoch: 'e', sequence: 40 },
+      page: {
+        ...page(39),
+        direction: 'before',
+        items: page(39).items.map((item) => ({ ...item, itemId: 'older' }))
+      }
+    },
+    2
+  )
+  expect(older.items.map((item) => item.itemId)).toEqual(['older', 'm'])
+  expect(older.mobileHistory?.before).toBe(39)
+})

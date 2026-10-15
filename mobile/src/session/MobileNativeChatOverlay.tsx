@@ -70,6 +70,8 @@ export function MobileNativeChatOverlay({
           messages={session.messages}
           folded={folded}
           status={session.status}
+          syncing={session.syncing}
+          initialSyncRevision={session.initialSyncRevision}
           error={session.error}
           agent={controller.nativeChatAgent}
           agentWorking={controller.nativeChatAgentWorking}

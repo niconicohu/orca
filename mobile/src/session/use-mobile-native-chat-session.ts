@@ -1,6 +1,6 @@
 import { recordChatClientDiagnostic } from '../diagnostics/chat-runtime-diagnostics'
 import { useMobileNativeChatHistory } from './use-mobile-native-chat-history'
-import { useMobileChatCheckpoint } from './use-mobile-chat-checkpoint'
+import { useMobileNativeChatReadCheckpoint } from './use-mobile-native-chat-read-checkpoint'
 import { createMobileNativeChatReadStream } from './mobile-native-chat-read-stream'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -11,10 +11,7 @@ import { createNativeChatMerger, replaceList } from '../../../src/shared/native-
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { buildNativeChatSubscriptionId } from '../../../src/shared/native-chat-stream-unsubscribe'
 import type { RpcClient } from '../transport/rpc-client'
-import {
-  mobileNativeChatRouteReads as routeReads,
-  type CachedMobileNativeChatRead
-} from './mobile-native-chat-route-cache'
+import { mobileNativeChatRouteReads as routeReads } from './mobile-native-chat-route-cache'
 import { startMobileNativeChatFirstRead } from './mobile-native-chat-first-read'
 import {
   applyMobileNativeChatStreamFrame,
@@ -42,6 +39,8 @@ export type MobileNativeChatSession = {
    *  wait for this to clear. */
   transcriptLoading: boolean
   error?: string
+  syncing?: boolean
+  initialSyncRevision?: number
   /** True when an older page may exist (the last read filled the window). */
   hasMore: boolean
   /** Whether an older-history page is currently loading. */
@@ -74,11 +73,6 @@ export function useMobileNativeChatSession(args: {
     transcriptPath
   ])
   const cachedRead = client ? routeReads.get(client, identity) : null
-  const lastReadyReadRef = useRef<{
-    client: RpcClient
-    identity: string
-    value: CachedMobileNativeChatRead
-  } | null>(null)
   // Pre-read status is a pure function of the props, so derive it rather than
   // letting the effect write it a commit later.
   const initialStatus: MobileNativeChatStatus =
@@ -105,6 +99,11 @@ export function useMobileNativeChatSession(args: {
   // client/agent/session means idle or waiting-session outranks it outright.
   const settled = initialStatus === 'loading' ? current : null
   const status = settled ? settled.status : initialStatus
+  const [syncState, setSyncState] = useState<{
+    identity: string
+    syncing: boolean
+    revision: number
+  }>({ identity, syncing: false, revision: 0 })
   const [error, setError] = useState<string | undefined>(undefined)
   const [hasMore, setHasMore] = useState(false)
   const [loadingEarlier, setLoadingEarlier] = useState(false)
@@ -131,29 +130,15 @@ export function useMobileNativeChatSession(args: {
   })
   const transcriptRetentionRef = useRef(initialRetention)
   const settledReady = settled?.status === 'ready'
-  useEffect(() => {
-    if (settledReady) {
-      transcriptRetentionRef.current.capture(identity, messages)
-      if (client) {
-        lastReadyReadRef.current = {
-          client,
-          identity,
-          value: {
-            messages,
-            hasMore,
-            beforeOffset: beforeOffsetRef.current,
-            limit: limitRef.current
-          }
-        }
-      }
-    }
-  }, [client, identity, messages, hasMore, settledReady])
-
-  useMobileChatCheckpoint(() => {
-    const last = lastReadyReadRef.current
-    if (last) {
-      routeReads.set(last.client, last.identity, last.value)
-    }
+  const { readyReads, lastReadyReadRef } = useMobileNativeChatReadCheckpoint({
+    client,
+    identity,
+    messages,
+    hasMore,
+    settledReady,
+    beforeOffsetRef,
+    limitRef,
+    transcriptRetentionRef
   })
 
   // Replace the base list (read results are an ordered tail). Resets the merger
@@ -168,7 +153,8 @@ export function useMobileNativeChatSession(args: {
     // Why: disconnect/agent/session loss must invalidate a page request before
     // the early idle/waiting return can clear the visible source.
     streamGenerationRef.current += 1
-    const retained = client ? routeReads.get(client, identity) : null
+    const inProcess = readyReads.current.get(identity)
+    const retained = inProcess ?? (client ? routeReads.get(client, identity) : null)
     if (retained) {
       transcriptRetentionRef.current.capture(identity, retained.messages)
     }
@@ -177,6 +163,14 @@ export function useMobileNativeChatSession(args: {
     snapshotSeenRef.current = retained !== null
     setLoadingEarlier(false)
     setList(retained?.messages ?? [])
+    if (retained && client) {
+      setRead({ client, identity, status: 'ready' })
+    }
+    setSyncState((current) => ({
+      identity,
+      syncing: !inProcess && !!client && !!agent && !!sessionId,
+      revision: current.identity === identity ? current.revision : 0
+    }))
     setError(undefined)
     setHasMore(retained?.hasMore ?? false)
     beforeOffsetRef.current = retained?.beforeOffset ?? null
@@ -188,9 +182,10 @@ export function useMobileNativeChatSession(args: {
     }
 
     let firstDiagnosticFrame = true
+    let firstSyncComplete = !!inProcess
     let finishFirstRead = (): void => {}
     const receive = (raw: unknown): void => {
-      if (cancelled) {
+      if (cancelled || !routeReads.allowed(client, identity)) {
         return
       }
       const frame = raw as MobileNativeChatStreamFrame
@@ -220,7 +215,12 @@ export function useMobileNativeChatSession(args: {
       if (frame.type === 'snapshot' && !applied.pending) {
         snapshotSeenRef.current = true
       }
-      if (applied.windowReplaced || frame.type === 'snapshot') {
+      if (
+        applied.windowReplaced ||
+        (frame.type === 'snapshot' &&
+          applied.beforeOffset !== undefined &&
+          applied.beforeOffset !== beforeOffsetRef.current)
+      ) {
         // A replay may merge history but still replace the byte cursor used by an in-flight page.
         streamGenerationRef.current += 1
         loadingEarlierRef.current = false
@@ -232,6 +232,14 @@ export function useMobileNativeChatSession(args: {
         setHasMore(applied.hasMore ?? applied.messages.length >= INITIAL_LIMIT)
       }
       setMessages(applied.messages)
+      if (!applied.pending && !firstSyncComplete) {
+        firstSyncComplete = true
+        setSyncState((current) => ({
+          identity,
+          syncing: false,
+          revision: (current.identity === identity ? current.revision : 0) + 1
+        }))
+      }
       if (!applied.windowReplaced && applied.hasMore != null) {
         setHasMore(applied.hasMore)
       }
@@ -256,17 +264,20 @@ export function useMobileNativeChatSession(args: {
       transcriptRetentionRef.current.capture(identity, restored.messages)
       setList(restored.messages)
       snapshotSeenRef.current = true
+      setRead({ client, identity, status: 'ready' })
       limitRef.current = restored.limit
       beforeOffsetRef.current = restored.beforeOffset
       setHasMore(restored.hasMore)
     })
-    finishFirstRead = startMobileNativeChatFirstRead({
-      client,
-      agent,
-      sessionId,
-      transcriptPath,
-      receive: flow.history
-    })
+    finishFirstRead = inProcess
+      ? () => {}
+      : startMobileNativeChatFirstRead({
+          client,
+          agent,
+          sessionId,
+          transcriptPath,
+          receive: flow.history
+        })
     const unsubscribe = client.subscribe(
       'nativeChat.subscribe',
       {
@@ -300,6 +311,7 @@ export function useMobileNativeChatSession(args: {
     setHasMore,
     setLoadingEarlier,
     setList,
+    setHistoryError: setError,
     loadingEarlierRef,
     sessionIdRef,
     streamGenerationRef,
@@ -321,7 +333,12 @@ export function useMobileNativeChatSession(args: {
     // clears the previous tab's list is passive, so `messages` lags a commit.
     messages: visibleMessages,
     status,
-    transcriptLoading: status === 'loading' || status === 'awaiting-transcript',
+    syncing: syncState.identity === identity && syncState.syncing,
+    initialSyncRevision: syncState.identity === identity ? syncState.revision : 0,
+    transcriptLoading:
+      status === 'loading' ||
+      status === 'awaiting-transcript' ||
+      (syncState.identity === identity && syncState.syncing),
     error,
     hasMore,
     loadingEarlier,

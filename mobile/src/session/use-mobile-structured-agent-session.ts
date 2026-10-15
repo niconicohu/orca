@@ -1,3 +1,4 @@
+import { mobileStructuredAgentStateArgs } from './mobile-structured-agent-state-contract'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { mobileStructuredActiveTurnId } from './mobile-structured-chat-checkpoint'
 import { dispatchMobileStructuredCommand } from './mobile-structured-composer-command'
@@ -5,7 +6,6 @@ import {
   structuredAgentSessionSendBody,
   type StructuredAgentSessionAttachment
 } from '../../../src/shared/structured-agent-session-outbox'
-import { encodeNativeChatTranscriptIdentity } from '../../../src/shared/native-chat-transcript-retention'
 import type { MobileNativeChatSendOutcome } from './mobile-native-chat-send'
 import { projectStructuredAgentSessionMessages } from '../../../src/shared/structured-agent-session-message-projection'
 import { hasUnansweredStructuredAgentSessionDispatch } from '../../../src/shared/structured-agent-session-projection'
@@ -88,16 +88,15 @@ export function useMobileStructuredAgentSession(args: {
     client,
     connected,
     sessionId,
-    sourceIdentity = '',
     enabled,
     onSendError,
     hostSupport
   } = args
-  const sessionKey = encodeNativeChatTranscriptIdentity([sourceIdentity, agent, sessionId])
+  const stateArgs = mobileStructuredAgentStateArgs(args)
+  const sessionKey = stateArgs.sessionKey
   const operationIdsRef = useRef(new Map<string, string>())
   const commandPendingRef = useRef(false)
   useEffect(() => () => operationIdsRef.current.clear(), [])
-  const stateArgs = { client, sessionId, sessionKey, enabled, connected }
   const { state, stateRef, loadingOlder, loadEarlier } = useMobileStructuredAgentState(stateArgs)
   useMobileStructuredSendOperationReconciliation(state.submissions)
 
@@ -283,6 +282,8 @@ export function useMobileStructuredAgentSession(args: {
     writeReady: connected && state.fence !== null,
     session: {
       messages,
+      syncing: state.syncing,
+      initialSyncRevision: state.initialSyncRevision,
       status: state.status,
       transcriptLoading: state.status === 'loading',
       error: state.error,

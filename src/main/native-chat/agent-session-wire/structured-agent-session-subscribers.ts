@@ -1,3 +1,4 @@
+import { createAgentSessionHydrationReader } from './agent-session-hydration-reader'
 // Per-subscriber cursors over one session's journal.
 //
 // Each subscriber advances independently: a client that connected two epochs
@@ -30,12 +31,10 @@ export type AgentSessionSubscribeInput = {
   sessionId: string
   emit: AgentSessionSubscriberEmit
   cursor?: AgentJournalCursor
+  snapshotLimit?: number
 }
 
-type Subscriber = {
-  id: string
-  sessionId: string
-  emit: AgentSessionSubscriberEmit
+type Subscriber = AgentSessionSubscribeInput & {
   cursor: AgentJournalCursor
   fence: number
   commands?: AgentSessionSlashCommand[] | null
@@ -62,22 +61,21 @@ export class AgentSessionSubscribers {
     return this.bySession.get(sessionId)?.size ?? 0
   }
 
-  open(input: {
-    id: string
-    sessionId: string
-    journal: AgentSessionJournal
-    fence: number
-    emit: AgentSessionSubscriberEmit
-    cursor?: AgentJournalCursor
-    backgroundTasks?: AgentSessionBackgroundTaskState | null
-  }): () => void {
+  open(
+    input: AgentSessionSubscribeInput & {
+      journal: AgentSessionJournal
+      fence: number
+      backgroundTasks?: AgentSessionBackgroundTaskState | null
+    }
+  ): () => void {
     const liveCursor = input.journal.cursor()
     const subscriber: Subscriber = {
       id: input.id,
       sessionId: input.sessionId,
       emit: input.emit,
       cursor: input.cursor ?? { epoch: liveCursor.epoch, sequence: 0 },
-      fence: input.fence
+      fence: input.fence,
+      snapshotLimit: input.snapshotLimit
     }
     const session = this.bySession.get(input.sessionId) ?? new Map<string, Subscriber>()
     session.set(input.id, subscriber)
@@ -87,7 +85,7 @@ export class AgentSessionSubscribers {
     if (input.cursor) {
       this.deliver(subscriber, input.journal, hostNow, true, input.backgroundTasks)
     } else {
-      const page = readAgentSessionHydrationPage(input.journal, input.fence)
+      const page = readAgentSessionHydrationPage(input.journal, input.fence, input.snapshotLimit)
       this.emit(subscriber, {
         type: 'snapshot',
         sessionId: input.sessionId,
@@ -165,9 +163,10 @@ export class AgentSessionSubscribers {
     backgroundTasks: AgentSessionBackgroundTaskState | null | undefined,
     frame: { type: 'snapshot' } | { type: 'reset'; reset: AgentJournalResetReason }
   ): void {
-    const page = readAgentSessionHydrationPage(journal, fence)
+    const readPage = createAgentSessionHydrationReader(journal, fence)
     const hostNow = this.now()
     for (const subscriber of this.subscribers(sessionId)) {
+      const page = readPage(subscriber.snapshotLimit)
       this.emit(subscriber, {
         ...frame,
         sessionId,
@@ -232,7 +231,11 @@ export class AgentSessionSubscribers {
         limit: AGENT_SESSION_HISTORY_MAX_LIMIT
       })
       if (!result.ok) {
-        const page = { ...result.page, fence: subscriber.fence }
+        const page = readAgentSessionHydrationPage(
+          journal,
+          subscriber.fence,
+          subscriber.snapshotLimit
+        )
         this.emit(subscriber, {
           type: 'reset',
           sessionId: subscriber.sessionId,
@@ -255,6 +258,7 @@ export class AgentSessionSubscribers {
       this.emit(subscriber, {
         type: 'batch',
         sessionId: subscriber.sessionId,
+        latestTurn: page.latestTurn,
         batch: {
           cursor: page.window.nextCursor,
           items: page.items,

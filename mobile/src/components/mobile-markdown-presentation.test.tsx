@@ -43,7 +43,7 @@ it('scales headings, prose, lists, tables and fenced code together and retains i
     expect(style('Listed').fontSize).toBe(16.25)
     expect(style('Cell').fontSize).toBe(15)
     expect(style('const value = 1').fontSize).toBe(15)
-    expect(style('src/a.ts').fontSize).toBeUndefined()
+    expect(style('src/a.ts').fontSize).toBe(16.25 * 0.9)
     expect(nodes.find((node) => text(node) === 'Read src/a.ts now.')!.props.selectable).toBe(true)
     const code = nodes.find((node) => text(node) === 'const value = 1')!
     let parent = code.parent

@@ -1,3 +1,4 @@
+import { useMobileChatFontWeight } from '../theme/use-mobile-chat-font-weight'
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { MobileSelectableText as Text } from '../components/MobileSelectableText'
 import { memo, type RefObject } from 'react'
@@ -27,6 +28,7 @@ function Prose({
   onOpenFile?: (relativePath: string) => void
 }): React.JSX.Element | null {
   useMobileTheme()
+  const { weight } = useMobileChatFontWeight()
 
   if (isTextBlock(block)) {
     if (block.presentation === 'compaction') {
@@ -44,13 +46,17 @@ function Prose({
     // markdown renderer's light-on-dark palette.
     if (invert) {
       return (
-        <Text selectable style={[styles.userText, { fontSize: TEXT_SIZE * fontScale }]}>
+        <Text
+          selectable
+          style={[styles.userText, { fontSize: TEXT_SIZE * fontScale, fontWeight: weight }]}
+        >
           {block.text}
         </Text>
       )
     }
     return (
       <MobileMarkdown
+        textWeight={weight}
         content={block.text}
         rangeSelectable
         textScale={1.25 * fontScale}

@@ -1,9 +1,10 @@
+import { MobileChatSyncPresentation } from './MobileChatSyncPresentation'
 import type { MobileNativeChatViewProps as Props } from './mobile-native-chat-view-props'
 export type { MobileNativeChatInputLockReason } from './mobile-native-chat-view-props'
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { MobileNativeChatToolbar } from './MobileNativeChatToolbar'
 import { MobileChatPositioningCover } from './MobileChatPositioningCover'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -40,7 +41,9 @@ import { MobileNativeChatMessage } from './MobileNativeChatMessage'
 /** Why the composer input is locked: the transport is disconnected, or the
  *  terminal subscription has not acknowledged its input lease yet. */
 
-export function MobileNativeChatView({
+function MobileNativeChatViewContent({
+  syncing,
+  onPresentationReady,
   messages,
   folded,
   status,
@@ -92,7 +95,7 @@ export function MobileNativeChatView({
   onRespondPermission,
   onOpenFile,
   keyboardInset = 0
-}: Props): React.JSX.Element {
+}: Props & { onPresentationReady?: () => void }): React.JSX.Element {
   useMobileTheme()
 
   const insets = useSafeAreaInsets()
@@ -149,6 +152,12 @@ export function MobileNativeChatView({
     scopeKey: sendSurfaceId,
     measurePosition: nativeLayout.measurePosition
   })
+
+  useEffect(() => {
+    if (initialPosition.ready) {
+      onPresentationReady?.()
+    }
+  }, [initialPosition.ready, onPresentationReady])
 
   const handleSend = useCallback(
     async (text: string): Promise<boolean> => {
@@ -225,6 +234,17 @@ export function MobileNativeChatView({
 
   return (
     <View style={[styles.root, { paddingBottom: bottomPad }]}>
+      {syncing && messages.length > 0 ? (
+        <View style={styles.loadEarlier}>
+          <ActivityIndicator size="small" color={colors.textMuted} />
+          <Text style={styles.loadEarlierText}>Syncing…</Text>
+        </View>
+      ) : null}
+      {error && messages.length > 0 ? (
+        <Text accessibilityRole="alert" style={styles.loadEarlierText}>
+          {error}
+        </Text>
+      ) : null}
       {showLoading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.textSecondary} />
@@ -365,5 +385,14 @@ export function MobileNativeChatView({
         onNeedFiles={onNeedFiles}
       />
     </View>
+  )
+}
+
+export function MobileNativeChatView(props: Props): React.JSX.Element {
+  return (
+    <MobileChatSyncPresentation
+      props={props}
+      render={(value) => <MobileNativeChatViewContent {...value} />}
+    />
   )
 }

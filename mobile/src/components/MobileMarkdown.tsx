@@ -1,3 +1,4 @@
+import type { MobileChatFontWeight } from '../theme/use-mobile-chat-font-weight'
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { openExternalLink } from '../platform/external-link'
 import { createMarkdownInlineMatcher, type MarkdownInlineMatch } from './markdown-inline-matcher'
@@ -34,6 +35,7 @@ import { parseMobileMarkdown } from './mobile-markdown-parser'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
 
 type Props = {
+  textWeight?: MobileChatFontWeight
   content?: string
   fallback?: string
   /** Enables iOS range selection for native-chat transcript prose. */
@@ -112,7 +114,11 @@ function renderTextRun(
   })
 }
 
-function renderInline(text: string, onOpenFile?: (pathText: string) => void): ReactNode[] {
+function renderInline(
+  text: string,
+  onOpenFile?: (pathText: string) => void,
+  fontSize = 13
+): ReactNode[] {
   const parts: ReactNode[] = []
   const pattern = createMarkdownInlineMatcher(
     text,
@@ -182,7 +188,11 @@ function renderInline(text: string, onOpenFile?: (pathText: string) => void): Re
           <MarkdownText
             key={key}
             inlineCode
-            style={[styles.inlineCode, styles.inlineCodeLink]}
+            style={[
+              styles.inlineCode,
+              styles.inlineCodeLink,
+              { fontSize: fontSize * 0.9, fontWeight: '400' }
+            ]}
             onPress={() => onOpenFile(normalizeFilePath(code.trim()))}
           >
             {code}
@@ -190,7 +200,11 @@ function renderInline(text: string, onOpenFile?: (pathText: string) => void): Re
         )
       } else {
         parts.push(
-          <MarkdownText key={key} inlineCode style={styles.inlineCode}>
+          <MarkdownText
+            key={key}
+            inlineCode
+            style={[styles.inlineCode, { fontSize: fontSize * 0.9, fontWeight: '400' }]}
+          >
             {code}
           </MarkdownText>
         )
@@ -227,6 +241,7 @@ function MobileMarkdownContent({
   fallback = '',
   rangeSelectable = false,
   textScale = 1,
+  textWeight = 400,
   onOpenFile
 }: Props) {
   useMobileTheme()
@@ -240,12 +255,12 @@ function MobileMarkdownContent({
     lineHeight = size + 6
   ): { fontSize: number; lineHeight: number } | null =>
     textScale !== 1 ? { fontSize: size * textScale, lineHeight: lineHeight * textScale } : null
-  const proseScale = scaled(13)
+  const proseScale = { ...scaled(13), fontWeight: textWeight }
   const listScale = proseScale
   const codeScale = scaled(12, 17)
   if (!text) {
     return fallback ? (
-      <MarkdownText selectable={rangeSelectable} style={styles.paragraph}>
+      <MarkdownText selectable={rangeSelectable} style={[styles.paragraph, proseScale]}>
         {fallback}
       </MarkdownText>
     ) : null
@@ -267,7 +282,7 @@ function MobileMarkdownContent({
                 scaled(block.level <= 2 ? 15 : 14)
               ]}
             >
-              {renderInline(block.text, onOpenFile)}
+              {renderInline(block.text, onOpenFile, (block.level <= 2 ? 15 : 14) * textScale)}
             </MarkdownText>
           )
         }
@@ -275,7 +290,7 @@ function MobileMarkdownContent({
           return (
             <View key={index} style={styles.quote}>
               <MarkdownText selectable style={[styles.quoteText, proseScale]}>
-                {renderInline(block.text, onOpenFile)}
+                {renderInline(block.text, onOpenFile, 13 * textScale)}
               </MarkdownText>
             </View>
           )
@@ -334,7 +349,7 @@ function MobileMarkdownContent({
                       selectable
                       style={[styles.tableCell, styles.tableHeader, codeScale]}
                     >
-                      {renderInline(header, onOpenFile)}
+                      {renderInline(header, onOpenFile, 12 * textScale)}
                     </MarkdownText>
                   ))}
                 </View>
@@ -346,7 +361,7 @@ function MobileMarkdownContent({
                         selectable
                         style={[styles.tableCell, codeScale]}
                       >
-                        {renderInline(row[cellIndex] ?? '', onOpenFile)}
+                        {renderInline(row[cellIndex] ?? '', onOpenFile, 12 * textScale)}
                       </MarkdownText>
                     ))}
                   </View>
@@ -377,7 +392,7 @@ function MobileMarkdownContent({
                         : '[ ]'}
                   </NativeText>
                   <MarkdownText selectable style={[styles.listText, listScale]}>
-                    {renderInline(item.text, onOpenFile)}
+                    {renderInline(item.text, onOpenFile, 13 * textScale)}
                   </MarkdownText>
                 </View>
               ))}
@@ -396,7 +411,7 @@ function MobileMarkdownContent({
             {block.text.split('\n').map((line, lineIndex) => (
               <Fragment key={lineIndex}>
                 {lineIndex > 0 ? '\n' : null}
-                {renderInline(line, onOpenFile)}
+                {renderInline(line, onOpenFile, 13 * textScale)}
               </Fragment>
             ))}
           </MarkdownText>

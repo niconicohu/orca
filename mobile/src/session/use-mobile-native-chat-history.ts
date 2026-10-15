@@ -1,3 +1,4 @@
+import { mergeMobileOlderTranscript } from './mobile-native-chat-history-merge'
 import { useCallback, type MutableRefObject } from 'react'
 import type { RpcClient } from '../transport/rpc-client'
 import type { NativeChatMerger } from '../../../src/shared/native-chat-merge'
@@ -16,6 +17,7 @@ export function useMobileNativeChatHistory(args: {
   hasMore: boolean
   setHasMore: (value: boolean) => void
   setLoadingEarlier: (value: boolean) => void
+  setHistoryError: (message: string | undefined) => void
   setList: (next: readonly NativeChatMessage[]) => void
   loadingEarlierRef: MutableRefObject<boolean>
   sessionIdRef: MutableRefObject<string | null>
@@ -33,6 +35,7 @@ export function useMobileNativeChatHistory(args: {
     setHasMore,
     setLoadingEarlier,
     setList,
+    setHistoryError,
     loadingEarlierRef,
     sessionIdRef,
     streamGenerationRef,
@@ -54,9 +57,13 @@ export function useMobileNativeChatHistory(args: {
       setHasMore(false)
       return
     }
+    const requestedMessages = new Map(
+      mergerRef.current.list.map((message) => [message.id, message])
+    )
     const beforeOffset = beforeOffsetRef.current
     loadingEarlierRef.current = true
     setLoadingEarlier(true)
+    setHistoryError(undefined)
     void (async () => {
       try {
         const response = await nativeChatSessionPageRead.request(client, {
@@ -68,7 +75,7 @@ export function useMobileNativeChatHistory(args: {
         })
         const accepted = nativeChatSessionPageRead.interpret(response)
         if (!accepted.accepted) {
-          return
+          throw new Error('Earlier history could not be read. Try again.')
         }
         // The read is `z.unknown()` because the reply is a union, so an accepted success can still
         // carry no result at all, or null; `'error' in` throws on either.
@@ -79,7 +86,7 @@ export function useMobileNativeChatHistory(args: {
         // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: main cast this payload unread; the reader hands back the same result.
         const result = payload as ReadSessionResult
         if ('error' in result) {
-          return
+          throw new Error(result.error)
         }
         // Drop a stale resolve from a session that swapped underneath us.
         if (
@@ -91,20 +98,33 @@ export function useMobileNativeChatHistory(args: {
         limitRef.current = nextLimit
         if (beforeOffset !== null && result.beforeOffset != null) {
           beforeOffsetRef.current = result.beforeOffset
-          setList([...result.messages, ...mergerRef.current.list])
+          setList(
+            mergeMobileOlderTranscript(result.messages, mergerRef.current.list, requestedMessages)
+          )
           setHasMore(
             nextLimit < MAX_MESSAGES && (result.hasMore ?? result.messages.length >= pageLimit)
           )
         } else {
           // Older runtimes ignore the cursor and return the growing tail.
-          setList(result.messages)
+          setList(
+            mergeMobileOlderTranscript(
+              result.messages,
+              mergerRef.current.list,
+              requestedMessages,
+              true
+            )
+          )
           setHasMore(result.messages.length >= nextLimit)
         }
-      } catch {
-        // Nothing awaits this page, so a rejected request — a transport drop, or the client
-        // abandoning it at teardown — would otherwise reach the document as an unhandled
-        // rejection. Swallowed to match the operation's own skip policy: a page that never
-        // arrives leaves the window the subscription already delivered.
+      } catch (error) {
+        if (
+          sessionIdRef.current === requestSessionId &&
+          streamGenerationRef.current === requestGeneration
+        ) {
+          setHistoryError(
+            error instanceof Error ? error.message : 'Earlier history could not be read. Try again.'
+          )
+        }
       } finally {
         // A late page from a prior tab must not unlock the current tab's request.
         if (

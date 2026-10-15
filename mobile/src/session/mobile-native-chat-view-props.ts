@@ -19,6 +19,8 @@ export type MobileNativeChatViewProps = {
   /** `messages` with noise stripped and tool turns folded in, from the overlay. */
   folded: NativeChatMessage[]
   status: MobileNativeChatStatus
+  syncing?: boolean
+  initialSyncRevision?: number
   error?: string
   /** Resolved agent for this chat; names the empty-state copy (desktop parity). */
   agent?: string | null

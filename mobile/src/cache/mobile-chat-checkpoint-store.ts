@@ -41,6 +41,7 @@ function isCheckpoint(value: unknown): value is ChatCheckpoint {
 /** One serialized mutation queue keeps deletion ahead of late network/checkpoint writes. */
 export function createChatCheckpointStore(storage: CheckpointStorage) {
   const entries = new Map<string, RecordEntry>()
+  const invalidationListeners = new Set<() => void>()
   const denied = new Map<string, (entry: ChatCheckpoint) => boolean>()
   let queue: Promise<unknown> = Promise.resolve()
   let loaded = false
@@ -167,6 +168,9 @@ export function createChatCheckpointStore(storage: CheckpointStorage) {
           denied.delete(oldest)
         }
       }
+      for (const listener of invalidationListeners) {
+        listener()
+      }
       return enqueue(async () => {
         await load()
         const removed: string[] = []
@@ -181,6 +185,12 @@ export function createChatCheckpointStore(storage: CheckpointStorage) {
           await storage.removeItem(key)
         }
       })
+    },
+    subscribeInvalidation: (listener: () => void) => {
+      invalidationListeners.add(listener)
+      return () => {
+        invalidationListeners.delete(listener)
+      }
     },
     allowed: (entry: ChatCheckpoint) => ![...denied.values()].some((test) => test(entry)),
     clearGuard: (id: string) => {
