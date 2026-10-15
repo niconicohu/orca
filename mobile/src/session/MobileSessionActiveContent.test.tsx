@@ -40,15 +40,17 @@ it('shows creation failures above the chat overlay rather than inside its covere
       )
     })
     const root = renderer!.root
-      .findAllByType('View')
+      .findAll((node) => String(node.type) === 'View')
       .find((node) =>
-        node.children.some((child) => typeof child !== 'string' && child.type === 'ChatOverlay')
+        node.children.some(
+          (child) => typeof child !== 'string' && String(child.type) === 'ChatOverlay'
+        )
       )!
     const layers = root.children
       .filter((child) => typeof child !== 'string')
-      .map((child) => child.type)
+      .map((child) => String(child.type))
     expect(layers.indexOf('Toast')).toBeGreaterThan(layers.indexOf('ChatOverlay'))
-    expect(renderer!.root.findAllByType('Toast')).toHaveLength(1)
+    expect(renderer!.root.findAll((node) => String(node.type) === 'Toast')).toHaveLength(1)
   } finally {
     act(() => renderer?.unmount())
   }

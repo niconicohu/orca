@@ -10,6 +10,7 @@ const device = vi.hoisted(() => ({
 }))
 vi.mock('react-native', () => ({
   Platform: { OS: 'android' },
+  AppState: { addEventListener: () => ({ remove() {} }) },
   Pressable: 'Pressable',
   Text: 'Text',
   View: 'View',
@@ -44,7 +45,7 @@ it('offers three choices, persists selection and only follows the system when se
   try {
     const choices = () =>
       tree.root.findAll(
-        (node) => node.type === 'Pressable' && node.props.accessibilityRole === 'radio'
+        (node) => String(node.type) === 'Pressable' && node.props.accessibilityRole === 'radio'
       )
     expect(choices().map((node) => node.props.accessibilityLabel)).toEqual([
       'Follow system',

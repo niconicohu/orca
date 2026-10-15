@@ -36,7 +36,9 @@ describe('restored native chat surface', () => {
       list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
       list().props.onContentSizeChange(320, 1200)
     })
-    await act(async () => vi.advanceTimersByTime(60))
+    await act(async () => {
+      vi.advanceTimersByTime(60)
+    })
     expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 700 })
   })
   it('does not page older history during the initial programmatic layout scroll', async () => {
@@ -180,7 +182,9 @@ describe('restored native chat surface', () => {
       })
     })
     expect(list().props.pointerEvents).toBe('none')
-    await act(async () => vi.advanceTimersByTime(160))
+    await act(async () => {
+      vi.advanceTimersByTime(160)
+    })
     expect(list().props.pointerEvents).toBe('auto')
     expect(
       renderer!.root.findAll((node) => node.props.testID === 'chat-initial-position-loading')
@@ -199,7 +203,9 @@ describe('restored native chat surface', () => {
       list().props.onContentSizeChange(320, 400)
       list().props.onViewableItemsChanged({ viewableItems: [{ isViewable: true, index: 0 }] })
     })
-    await act(async () => vi.advanceTimersByTime(160))
+    await act(async () => {
+      vi.advanceTimersByTime(160)
+    })
     expect(list().props.pointerEvents).toBe('auto')
   })
   it('retries positioning under the cover until the delayed native acknowledgement arrives', async () => {
@@ -213,7 +219,9 @@ describe('restored native chat surface', () => {
       list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
       list().props.onContentSizeChange(320, 1200)
     })
-    await act(async () => vi.advanceTimersByTime(300))
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
     expect(list().props.pointerEvents).toBe('none')
     expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 700 })
     act(() => {
@@ -226,7 +234,9 @@ describe('restored native chat surface', () => {
         }
       })
     })
-    await act(async () => vi.advanceTimersByTime(160))
+    await act(async () => {
+      vi.advanceTimersByTime(160)
+    })
     expect(list().props.pointerEvents).toBe('auto')
   })
 })

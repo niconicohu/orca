@@ -23,7 +23,11 @@ describe('chat runtime capture', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(client.requests[0]?.method).toBe('nativeChat.readSession')
     await vi.advanceTimersByTimeAsync(1234)
-    client.requests[0]?.resolve({ ok: true, result: { messages: [], secret: 'private-body' } })
+    client.requests[0]?.resolve({
+      id: 'request',
+      ok: true,
+      result: { messages: [], secret: 'private-body' }
+    })
     await vi.advanceTimersByTimeAsync(0)
     const report = chatRuntimeDiagnosticLines('trace-host').join('\n')
     expect(report).toContain('nativeChat.readSession phase=start')

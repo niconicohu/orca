@@ -46,7 +46,7 @@ afterEach(() => {
 })
 it('repaints the mounted machine screen without rebuilding its controller', () => {
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: child views are stubbed; this view only reads state.error.
-  const controller = { state: { error: null } } as HostScreenController
+  const controller = { state: { error: null } } as unknown as HostScreenController
   act(() => {
     tree = create(createElement(HostScreenView, { controller }))
   })
@@ -73,7 +73,7 @@ it('uses a light surface behind all three home statistics', () => {
     )
   })
   const cards = tree!.root.findAll(
-    (node) => node.type === 'View' && node.props.style?.borderWidth === 1
+    (node) => String(node.type) === 'View' && node.props.style?.borderWidth === 1
   )
   expect(cards).toHaveLength(3)
   expect(cards.map((node) => node.props.style.backgroundColor)).toEqual(

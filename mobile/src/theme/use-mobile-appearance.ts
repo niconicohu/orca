@@ -1,7 +1,10 @@
 import { useEffect, useSyncExternalStore } from 'react'
-import { Appearance, Platform } from 'react-native'
+import { AppState, Appearance, Platform } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { applyNativeWindowAppearance } from '../platform/native-window-appearance'
+import {
+  applyNativeWindowAppearance,
+  getNativeSystemColorScheme
+} from '../platform/native-window-appearance'
 import { applyMobileColorScheme } from './mobile-theme'
 import {
   createMobileAppearanceController,
@@ -13,7 +16,7 @@ let nativePreference: MobileAppearance | null = null
 const controller = createMobileAppearanceController({
   read: () => AsyncStorage.getItem(APPEARANCE_KEY),
   write: (value) => AsyncStorage.setItem(APPEARANCE_KEY, value),
-  systemScheme: () => Appearance.getColorScheme(),
+  systemScheme: () => getNativeSystemColorScheme() ?? Appearance.getColorScheme(),
   setNativePreference: (preference) => {
     // The Android shell handles uiMode changes in place; native controls can follow too.
     if (Platform.OS !== 'web' && nativePreference !== preference) {
@@ -23,7 +26,30 @@ const controller = createMobileAppearanceController({
   },
   onSystemChange: (listener) => {
     const subscription = Appearance.addChangeListener(listener)
-    return () => subscription.remove()
+    let frame: number | null = null
+    const foreground = AppState.addEventListener('change', (state) => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame)
+        frame = null
+      }
+      if (state === 'active') {
+        frame = requestAnimationFrame(() => {
+          frame = null
+          // Wait for the resumed Activity context, then refresh the JS Appearance cache.
+          if (nativePreference === 'system' && Platform.OS !== 'web') {
+            Appearance.setColorScheme('unspecified')
+          }
+          listener()
+        })
+      }
+    })
+    return () => {
+      subscription.remove()
+      foreground.remove()
+      if (frame !== null) {
+        cancelAnimationFrame(frame)
+      }
+    }
   },
   apply: (scheme) => {
     applyMobileColorScheme(scheme)

@@ -11,7 +11,7 @@ vi.mock('react-native', () => ({
 
 let renderer: ReactTestRenderer | null = null
 let layout: ReturnType<typeof useMobileChatNativeLayout>
-function Harness({ scope = 'host\0a', lastIndex = 501 } = {}) {
+function Harness({ scope = 'host\0a', lastIndex = 501 }: { scope?: string; lastIndex?: number }) {
   layout = useMobileChatNativeLayout(scope, lastIndex)
   return null
 }
@@ -26,7 +26,7 @@ function view(top: number, height: number, width = 320) {
 afterEach(() => act(() => renderer?.unmount()))
 async function mount() {
   await act(async () => {
-    renderer = create(createElement(Harness))
+    renderer = create(createElement(Harness, {}))
   })
   layout.viewportRef.current = view(100, 400)
   layout.footerRef.current = view(492, 0)

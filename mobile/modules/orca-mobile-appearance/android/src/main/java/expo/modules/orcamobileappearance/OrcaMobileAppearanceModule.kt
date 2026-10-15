@@ -1,5 +1,7 @@
 package expo.modules.orcamobileappearance
 
+import android.content.res.Configuration
+import android.content.res.Resources
 import android.graphics.Color
 import android.os.Build
 import android.view.View
@@ -16,6 +18,10 @@ class OrcaMobileAppearanceModule : Module() {
   private var background: Int? = null
   override fun definition() = ModuleDefinition {
     Name("OrcaMobileAppearance")
+    Function("getSystemColorScheme") {
+      // Activity/JS Appearance caches can lag behind a background configuration change.
+      if (Resources.getSystem().configuration.uiMode.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) "dark" else "light"
+    }
     AsyncFunction("setColorScheme") { scheme: String, surface: String ->
       light = scheme != "dark"
       background = Color.parseColor(surface)
