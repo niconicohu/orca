@@ -247,4 +247,4 @@ const baseStyles = createThemedStyles(() =>
   })
 )
 
-export const styles = { ...baseStyles, ...listStyles, ...diffStyles }
+export const styles = createThemedStyles(() => ({ ...baseStyles, ...listStyles, ...diffStyles }))

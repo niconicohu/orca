@@ -108,10 +108,11 @@ const hash = (parts: string[] | string): string =>
 // Nothing else in the family moves.
 
 const SCREEN_RPC_SCREEN_HOOKS = '0f66df2141117dfec2f8a0adb3f598312e6fda8e80833a365a645796f5ab48c3'
-const PRE_REFACTOR_DIFF_HOOKS = '93c7189b32bed8456cc51814fffa8ce80cf62011ef968a9d53ddec2b9686f58f'
+// Appearance adds one presentation subscription to the diff; execution and style tokens hold.
+const THEMED_DIFF_HOOKS = '2151250d13a7eaa836443eff84cdf89fe3cc1af92c1c2fd7ad72705364442a80'
 const SCREEN_RPC_STATEMENTS = 'dd8f33cb3cf96f5c39abac397cb77e35f59079291033a1866ead462b041ab979'
 // Saved Linear selections now accept unknown persisted values; reconciliation tests cover them.
-const MAIN_REBASED_DECLARATIONS = 'ec77d34712c7c4ab19ac6a4d57878f32d22aba790d2420cc14c2c0f000d120e9'
+const MAIN_REBASED_DECLARATIONS = '1f060806a68b80eca43974ef0398754b901fa4e0ed9d75db68c2ae9ffe3568c8'
 const SCREEN_RPC_SEMANTICS = 'e07a63387d57106483ee703ec6c19dea593e0eca5c651758f42bcb36254850b7'
 // StatusDot's spacing moved to the tasks title row as `gap: spacing.sm`; same 8 px.
 const PRE_REFACTOR_STYLES = '11504e9f655d4d45deb25d942158a0ee99a1f98007ad1630bb03e1bdfe1e73de'
@@ -124,8 +125,8 @@ describe('Mobile Tasks refactor parity', () => {
     expect(hash(screenHooks)).toBe(SCREEN_RPC_SCREEN_HOOKS)
 
     const diffHooks = readFlattenedMobileTasksHookSignatures('GitHubPrFileDiff')
-    expect(diffHooks).toHaveLength(3)
-    expect(hash(diffHooks)).toBe(PRE_REFACTOR_DIFF_HOOKS)
+    expect(diffHooks).toHaveLength(4)
+    expect(hash(diffHooks)).toBe(THEMED_DIFF_HOOKS)
   })
 
   it('preserves every screen statement in execution order', () => {

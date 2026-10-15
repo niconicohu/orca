@@ -16,7 +16,10 @@ export function MobileAppearanceSettings() {
   const { preference, setPreference, error } = useMobileAppearance()
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Theme</Text>
+      <View style={styles.content}>
+        <Text style={styles.heading}>Theme</Text>
+        <Text style={styles.description}>Choose an appearance or match your device.</Text>
+      </View>
       <View style={styles.section}>
         {choices.map(({ value, label }) => (
           <Pressable
@@ -48,32 +51,52 @@ export function MobileAppearanceSettings() {
 
 const styles = createThemedStyles(() =>
   StyleSheet.create({
-    container: { marginBottom: spacing.lg },
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      padding: spacing.md,
+      backgroundColor: colors.bgPanel,
+      borderRadius: radii.card
+    },
+    content: { flexGrow: 1, flexShrink: 1, flexBasis: 120 },
     heading: {
+      color: colors.textPrimary,
+      fontSize: typography.bodySize,
+      fontWeight: '500'
+    },
+    description: {
       color: colors.textSecondary,
-      fontSize: typography.metaSize,
-      marginBottom: spacing.sm
+      fontSize: typography.bodySize - 2,
+      marginTop: 2
     },
     section: {
       flexDirection: 'row',
-      borderWidth: 1,
-      borderColor: colors.borderSubtle,
+      flexShrink: 0,
+      maxWidth: '100%',
+      marginLeft: 'auto',
       backgroundColor: colors.bgBase,
       borderRadius: radii.button,
-      padding: spacing.xs
+      padding: 2
     },
     segment: {
-      flex: 1,
+      flexShrink: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 44,
+      minHeight: 36,
       paddingHorizontal: spacing.sm,
       borderRadius: radii.button - 1
     },
     segmentActive: { backgroundColor: colors.bgRaised },
     pressed: { backgroundColor: colors.bgPanel },
-    label: { color: colors.textSecondary, fontSize: typography.bodySize },
+    label: { color: colors.textSecondary, fontSize: typography.metaSize, fontWeight: '600' },
     labelActive: { color: colors.textPrimary, fontWeight: '600' },
-    error: { marginTop: spacing.sm, fontSize: typography.metaSize, color: colors.statusRed }
+    error: {
+      width: '100%',
+      marginTop: spacing.sm,
+      fontSize: typography.metaSize,
+      color: colors.statusRed
+    }
   })
 )

@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import type { ConnectionPresentationModel } from './use-mobile-tasks-connection-presentation'
 import {
   SafeAreaView,
@@ -77,6 +78,8 @@ import {
 import { renderMobileTasksItemDetailDrawer } from './mobile-tasks-item-detail-drawer'
 
 export function MobileTasksLegacySurface({ model }: { model: ConnectionPresentationModel }) {
+  useMobileTheme()
+
   const {
     error,
     githubMode,
