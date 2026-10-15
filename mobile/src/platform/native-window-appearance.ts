@@ -6,3 +6,7 @@ export function refreshNativeWindowAppearance(): void {}
 export function getNativeSystemColorScheme(): MobileColorScheme | null {
   return null
 }
+
+export function subscribeNativeSystemAppearance(_listener: () => void): () => void {
+  return () => {}
+}

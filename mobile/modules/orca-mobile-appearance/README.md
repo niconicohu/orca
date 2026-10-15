@@ -10,3 +10,8 @@ In System mode it also reads Android system resources directly, because React Na
 can retain an old Activity/JS appearance cache across a background configuration
 change. Manual preferences still use the shared controller. The query is optional
 so older shells retain the React Native fallback.
+
+System configuration changes and Activity foreground transitions also notify the
+controller directly. This covers fast background/resume transitions that AppState
+can coalesce before JS observes them. The application context reads the OS scheme
+without the Activity-level manual override.

@@ -7,6 +7,7 @@ const native = vi.hoisted(() => ({
   cached: 'light',
   active: null as ((state: string) => void) | null,
   direct: null as string | null,
+  changed: null as (() => void) | null,
   set: vi.fn()
 }))
 vi.mock('react-native', () => ({
@@ -28,7 +29,11 @@ vi.mock('react-native', () => ({
 }))
 vi.mock('../platform/native-window-appearance', () => ({
   applyNativeWindowAppearance: vi.fn(),
-  getNativeSystemColorScheme: () => native.direct
+  getNativeSystemColorScheme: () => native.direct,
+  subscribeNativeSystemAppearance: (listener: () => void) => {
+    native.changed = listener
+    return () => {}
+  }
 }))
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: async () => 'system', setItem: vi.fn(async () => {}) }
@@ -72,7 +77,8 @@ it('refreshes a missed background system change on resume while retaining manual
     expect(getMobileColorScheme()).toBe('dark')
     // The native system query remains authoritative even if Activity/JS caches lag.
     native.direct = 'light'
-    resume()
+    // A fast background/resume may not produce any AppState transition in JS.
+    act(() => native.changed!())
     expect(getMobileColorScheme()).toBe('light')
     native.direct = null
     native.system = 'light'

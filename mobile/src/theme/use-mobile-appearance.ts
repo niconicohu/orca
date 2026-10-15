@@ -3,7 +3,8 @@ import { AppState, Appearance, Platform } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
   applyNativeWindowAppearance,
-  getNativeSystemColorScheme
+  getNativeSystemColorScheme,
+  subscribeNativeSystemAppearance
 } from '../platform/native-window-appearance'
 import { applyMobileColorScheme } from './mobile-theme'
 import {
@@ -26,6 +27,7 @@ const controller = createMobileAppearanceController({
   },
   onSystemChange: (listener) => {
     const subscription = Appearance.addChangeListener(listener)
+    const stopNative = subscribeNativeSystemAppearance(listener)
     let frame: number | null = null
     const foreground = AppState.addEventListener('change', (state) => {
       if (frame !== null) {
@@ -45,6 +47,7 @@ const controller = createMobileAppearanceController({
     })
     return () => {
       subscription.remove()
+      stopNative()
       foreground.remove()
       if (frame !== null) {
         cancelAnimationFrame(frame)
