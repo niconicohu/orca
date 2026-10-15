@@ -1,3 +1,4 @@
+import { normalizeNativeChatFontWeight } from '../../../shared/native-chat-font-weight'
 import type { GlobalSettings } from '../../../shared/global-settings-types'
 import { normalizeDisabledTuiAgents } from '../../../shared/tui-agent-selection'
 import { resolveNestedWorkerMaxDepth } from '../../../shared/nested-worker-depth'
@@ -130,6 +131,11 @@ export function updateSettings(
   }
   // Why here: every writer (desktop IPC, web RPC, CLI) crosses this boundary, so xterm can never be
   // handed an out-of-range floor, and undefined stays undefined to mean "automatic" (#10754).
+  if ('nativeChatFontWeight' in updates) {
+    sanitizedUpdates.nativeChatFontWeight = normalizeNativeChatFontWeight(
+      updates.nativeChatFontWeight
+    )
+  }
   if ('terminalMinimumContrastRatio' in updates) {
     sanitizedUpdates.terminalMinimumContrastRatio = normalizeTerminalMinimumContrastRatio(
       updates.terminalMinimumContrastRatio

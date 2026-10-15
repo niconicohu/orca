@@ -3277,7 +3277,7 @@
             "missing": {
               "tui": {
                 "title": "This ZCode build has no terminal UI",
-                "description": "Orca's hooks installed correctly \u2014 the zcode on your PATH just cannot open a session. The ZCode desktop app bundles the agent runtime without its terminal UI. Install a zcode that ships the TUI, then run zcode outside Orca to confirm."
+                "description": "Orca's hooks installed correctly — the zcode on your PATH just cannot open a session. The ZCode desktop app bundles the agent runtime without its terminal UI. Install a zcode that ships the TUI, then run zcode outside Orca to confirm."
               }
             }
           },
@@ -3976,7 +3976,9 @@
             }
           },
           "tooltip": {
-            "zcode": { "mcp": "MCP" },
+            "zcode": {
+              "mcp": "MCP"
+            },
             "cedb7b99e3": "% used",
             "6d6df77f41": "No data available",
             "7f7f208060": "Monthly",
@@ -18197,6 +18199,16 @@
             "spaces": "spaces"
           }
         }
+      },
+      "chatFontWeight": {
+        "title": "Font weight",
+        "description": "Adjust message text in five steps. Headings and bold text keep their emphasis.",
+        "regular": "Regular",
+        "medium": "Medium",
+        "reset": "Reset font weight",
+        "resetAction": "Reset",
+        "preview": "Chat text stays readable. **Bold emphasis** remains distinct, and `inline code` keeps its weight.",
+        "search": "font weight typography thickness"
       }
     }
   },

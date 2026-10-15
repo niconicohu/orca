@@ -1,3 +1,4 @@
+import { DEFAULT_NATIVE_CHAT_FONT_WEIGHT } from './native-chat-font-weight'
 import type { GlobalSettings } from './global-settings-types'
 import type { NotificationSettings } from './notification-settings-types'
 import type { VoiceSettings } from './speech-types'
@@ -136,6 +137,7 @@ export function buildDefaultSettings(args: {
     experimentalNativeChat: false,
     experimentalStructuredNativeChat: false,
     nativeChatResumeWorkOnRestart: false,
+    nativeChatFontWeight: DEFAULT_NATIVE_CHAT_FONT_WEIGHT,
     nativeChatInheritShellEnvironment: true,
     nativeChatShellEnvironmentVariables: [],
     nativeChatSessionOptions: {},

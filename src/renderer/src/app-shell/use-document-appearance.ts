@@ -1,3 +1,4 @@
+import { normalizeNativeChatFontWeight } from '../../../shared/native-chat-font-weight'
 import { useEffect } from 'react'
 import { buildAppFontFamily } from '@/lib/app-font-family'
 import { applyDocumentTheme } from '../lib/document-theme'
@@ -7,6 +8,7 @@ import { useAppStore } from '../store'
 /** Applies the settings-driven theme and app font to the document root. */
 export function useDocumentAppearance(): void {
   const theme = useAppStore((s) => s.settings?.theme)
+  const nativeChatFontWeight = useAppStore((s) => s.settings?.nativeChatFontWeight)
   const appFontFamily = useAppStore((s) => s.settings?.appFontFamily)
 
   useEffect(() => {
@@ -32,6 +34,13 @@ export function useDocumentAppearance(): void {
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [theme])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--native-chat-font-weight',
+      String(normalizeNativeChatFontWeight(nativeChatFontWeight))
+    )
+  }, [nativeChatFontWeight])
 
   useEffect(() => {
     document.documentElement.style.setProperty(

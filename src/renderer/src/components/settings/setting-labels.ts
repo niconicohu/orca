@@ -1,6 +1,7 @@
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
 
 export const SETTING_LABELS: Partial<Record<keyof GlobalSettings, string>> = {
+  nativeChatFontWeight: 'Chat Font Weight',
   terminalFontSize: 'Font Size',
   terminalFontFamily: 'Font Family',
   editorFontFamily: 'Editor Font Family',

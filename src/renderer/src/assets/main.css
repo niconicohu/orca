@@ -3194,3 +3194,16 @@ html.native-shell .app-layout {
     inset 0 1px 0 0 color-mix(in srgb, var(--foreground) 5%, transparent),
     0 10px 24px rgba(0, 0, 0, 0.18);
 }
+
+/* Chat weight applies to prose; code and semantic emphasis keep their own hierarchy. */
+.native-chat-message-body {
+  font-weight: var(--native-chat-font-weight, 400);
+}
+
+.native-chat-message-body :where(pre, code) {
+  font-weight: 400;
+}
+
+.native-chat-message-body :where(strong, b) {
+  font-weight: 700;
+}

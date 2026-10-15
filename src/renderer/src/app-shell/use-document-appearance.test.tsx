@@ -59,6 +59,22 @@ describe('useDocumentAppearance', () => {
     unmount()
   })
 
+  it('updates chat prose weight live and clamps values from older or hand-edited profiles', () => {
+    const { unmount } = renderHook(() => useDocumentAppearance())
+    expect(document.documentElement.style.getPropertyValue('--native-chat-font-weight')).toBe('400')
+    act(() => {
+      const settings = useAppStore.getState().settings!
+      useAppStore.setState({ settings: { ...settings, nativeChatFontWeight: 475 } })
+    })
+    expect(document.documentElement.style.getPropertyValue('--native-chat-font-weight')).toBe('475')
+    act(() => {
+      const settings = useAppStore.getState().settings!
+      useAppStore.setState({ settings: { ...settings, nativeChatFontWeight: 900 } })
+    })
+    expect(document.documentElement.style.getPropertyValue('--native-chat-font-weight')).toBe('500')
+    unmount()
+  })
+
   it('still applies changed theme and font values', () => {
     const { unmount } = renderHook(() => useDocumentAppearance())
 

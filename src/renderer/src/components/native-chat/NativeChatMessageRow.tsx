@@ -149,7 +149,7 @@ export const MessageRow = memo(function MessageRow({
               <CommentMarkdown
                 content={markdown}
                 variant="document"
-                className="text-sm"
+                className="native-chat-message-body text-sm"
                 renderCodeBlock={NativeChatCodeBlock}
                 onLinkClick={onLinkClick}
                 allowFileUriLinks={allowFileUriLinks}
@@ -249,7 +249,7 @@ export const MessageRow = memo(function MessageRow({
         <CommentMarkdown
           content={markdown}
           variant="document"
-          className="text-sm"
+          className="native-chat-message-body text-sm"
           renderCodeBlock={NativeChatCodeBlock}
           onLinkClick={onLinkClick}
           allowFileUriLinks={allowFileUriLinks}

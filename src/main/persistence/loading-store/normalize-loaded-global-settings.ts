@@ -1,3 +1,4 @@
+import { normalizeNativeChatFontWeight } from '../../../shared/native-chat-font-weight'
 import { getDefaultVoiceSettings } from '../../../shared/constants'
 import { normalizePRBotAuthorOverrides } from '../../../shared/pr-bot-author-overrides'
 import { normalizeTerminalQuickCommands } from '../../../shared/terminal-quick-commands'
@@ -119,6 +120,7 @@ export function normalizeLoadedGlobalSettings(
     uiLanguage: normalizeUiLanguage(parsed.settings?.uiLanguage),
     // Why: the structured runtime reads these per launch; a malformed hand-edited value must not fail a chat.
     nativeChatInheritShellEnvironment: parsed.settings?.nativeChatInheritShellEnvironment !== false,
+    nativeChatFontWeight: normalizeNativeChatFontWeight(parsed.settings?.nativeChatFontWeight),
     nativeChatShellEnvironmentVariables: normalizeNativeChatShellEnvironmentVariables(
       parsed.settings?.nativeChatShellEnvironmentVariables
     ),

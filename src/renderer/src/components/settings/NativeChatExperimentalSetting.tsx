@@ -3,6 +3,7 @@ import { translate } from '@/i18n/i18n'
 import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { NativeChatShellEnvironmentSetting } from './NativeChatShellEnvironmentSetting'
+import { NativeChatFontWeightSetting } from './NativeChatFontWeightSetting'
 import { NativeChatSupportedAgents } from './NativeChatSupportedAgents'
 import { SearchableSetting } from './SearchableSetting'
 import { SettingsSwitch } from './SettingsFormControls'
@@ -66,6 +67,7 @@ export function NativeChatExperimentalSetting({
       </div>
       {nativeChatEnabled ? (
         <div className="ml-4 space-y-4 border-l border-border pl-4">
+          <NativeChatFontWeightSetting settings={settings} updateSettings={updateSettings} />
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 shrink space-y-0.5">
               <Label>

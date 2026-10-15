@@ -11,6 +11,10 @@ export function getNativeChatExperimentalSearchEntry(): SettingsSearchEntry {
     ),
     keywords: [
       ...translateSearchKeyword(
+        'components.settings.chatFontWeight.search',
+        'font weight typography thickness'
+      ),
+      ...translateSearchKeyword(
         'auto.components.settings.experimental.search.0d24759f14',
         'experimental'
       ),

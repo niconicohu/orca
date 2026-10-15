@@ -76,3 +76,9 @@ describe('machine name setting', () => {
     expect(normalizeLegacyProfile({ machineName: 'x'.repeat(300) }).machineName).toHaveLength(255)
   })
 })
+
+it('loads chat weight from old profiles and clamps out-of-range persisted values', () => {
+  expect(normalizeLegacyProfile({ nativeChatFontWeight: undefined }).nativeChatFontWeight).toBe(400)
+  expect(normalizeLegacyProfile({ nativeChatFontWeight: 900 }).nativeChatFontWeight).toBe(500)
+  expect(normalizeLegacyProfile({ nativeChatFontWeight: 472 }).nativeChatFontWeight).toBe(475)
+})
