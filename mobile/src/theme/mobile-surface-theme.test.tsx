@@ -4,6 +4,18 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { applyMobileColorScheme, darkColors, lightColors } from './mobile-theme'
 
 vi.mock('react-native', () => ({
+  Animated: {
+    View: 'AnimatedView',
+    Value: class {
+      setValue() {}
+      interpolate() {
+        return 'rotation'
+      }
+    },
+    loop: () => ({ start() {}, stop() {} }),
+    timing: () => ({})
+  },
+  Easing: { linear: 'linear' },
   Text: 'Text',
   View: 'View',
   Platform: {
@@ -12,10 +24,13 @@ vi.mock('react-native', () => ({
   },
   StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 }
 }))
+vi.mock('lucide-react-native', () => ({ Activity: 'Activity' }))
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }))
 vi.mock('../host-screen/host-screen-header', () => ({ HostScreenHeader: () => null }))
 vi.mock('../host-screen/host-screen-overlays', () => ({ HostScreenOverlays: () => null }))
 vi.mock('../host-screen/host-workspace-list', () => ({ HostWorkspaceList: () => null }))
+import { AgentStateDot } from '../components/AgentStateDot'
+import { AgentSpinner } from '../components/AgentSpinner'
 import { styles as sessionStyles } from '../session/mobile-session-styles'
 import { styles as sourceStyles } from '../source-control/mobile-source-control-styles'
 import { styles as taskStyles } from '../tasks/mobile-tasks-legacy-styles'
@@ -76,4 +91,23 @@ it.each([
   expect(surface().backgroundColor).toBe(lightColors.bgBase)
   applyMobileColorScheme('dark')
   expect(surface().backgroundColor).toBe(darkColors.bgBase)
+})
+
+it('repaints running indicators in place without restarting their state', () => {
+  act(() => {
+    tree = create(createElement(AgentSpinner, { status: 'working' }))
+  })
+  const color = () => tree!.root.findByType('AnimatedView' as never).props.style[1].borderColor
+  expect(color()).toBe(darkColors.agentWorking)
+  act(() => applyMobileColorScheme('light'))
+  expect(color()).toBe(lightColors.agentWorking)
+})
+it('uses theme contrast for the per-agent indicator too', () => {
+  act(() => {
+    tree = create(createElement(AgentStateDot, { state: 'working' }))
+  })
+  const color = () => tree!.root.findByType('AnimatedView' as never).props.style[0].borderColor
+  expect(color()).toBe(darkColors.agentWorking)
+  act(() => applyMobileColorScheme('light'))
+  expect(color()).toBe(lightColors.agentWorking)
 })

@@ -121,7 +121,7 @@ const styles = createThemedStyles(() =>
     destructiveText: {
       fontSize: typography.bodySize,
       fontWeight: '600',
-      color: '#fff'
+      color: colors.onAccent
     }
   })
 )

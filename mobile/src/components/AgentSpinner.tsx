@@ -1,3 +1,6 @@
+import { colors } from '../theme/mobile-theme'
+import { createThemedStyles } from '../theme/mobile-themed-styles'
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useEffect, useRef } from 'react'
 import { Activity } from 'lucide-react-native'
 import { Animated, Easing, StyleSheet, View } from 'react-native'
@@ -5,19 +8,14 @@ import type { AgentWorkingMode } from '../../../src/shared/agent-status-types'
 
 type WorktreeStatus = 'working' | 'active' | 'permission' | 'done' | 'inactive'
 
-// Why: colors and sizing are 1:1 with the desktop StatusIndicator
-// (src/renderer/src/components/sidebar/StatusIndicator.tsx) so the mobile
-// worktree list reads identically to the sidebar — same yellow spinner for
-// 'working', same emerald dot for 'active'/'done', same neutral-500 @ 40%
-// for 'inactive', same red for 'permission'. Diverging palettes here lose
-// the design intent ('moving' vs 'alive' vs 'completed') the desktop encodes.
-const STATUS_COLORS: Record<WorktreeStatus, string> = {
-  working: '#eab308',
-  active: '#10b981',
-  done: '#10b981',
-  permission: '#ef4444',
-  inactive: 'rgba(115,115,115,0.4)'
-}
+// Keep the desktop state vocabulary while adapting indicator contrast.
+const STATUS_COLORS = createThemedStyles(() => ({
+  working: colors.agentWorking,
+  active: colors.agentDone,
+  done: colors.agentDone,
+  permission: colors.agentAttention,
+  inactive: colors.agentInactive
+})) satisfies Record<WorktreeStatus, string>
 
 export function AgentSpinner({
   status,
@@ -26,6 +24,8 @@ export function AgentSpinner({
   status: WorktreeStatus
   workingMode?: AgentWorkingMode
 }) {
+  useMobileTheme()
+
   const spinValue = useRef(new Animated.Value(0)).current
   const monitoring = status === 'working' && workingMode === 'monitoring'
 

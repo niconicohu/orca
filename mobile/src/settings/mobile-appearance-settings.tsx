@@ -60,7 +60,7 @@ const styles = createThemedStyles(() =>
       backgroundColor: colors.bgPanel,
       borderRadius: radii.card
     },
-    content: { flexGrow: 1, flexShrink: 1, flexBasis: 120 },
+    content: { flexGrow: 1, flexShrink: 1, flexBasis: 120, minWidth: 120 },
     heading: {
       color: colors.textPrimary,
       fontSize: typography.bodySize,

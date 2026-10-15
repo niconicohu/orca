@@ -29,6 +29,10 @@ export const darkColors = {
   onMergeGreen: '#ffffff',
   // Merged-PR purple, mirroring the desktop ReviewIcon's purple-400/70 tone.
   statusPurple: '#a78bfa',
+  agentWorking: '#eab308',
+  agentDone: '#10b981',
+  agentAttention: '#ef4444',
+  agentInactive: 'rgba(115,115,115,0.4)',
   gitDecorationAdded: '#81b88b',
   gitDecorationDeleted: '#c74e39',
   diffAddedBg: 'rgba(129, 184, 139, 0.1)',

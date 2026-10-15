@@ -170,7 +170,8 @@ export const customKeyModalStyles = createThemedStyles(() =>
       fontFamily: typography.monoFamily
     },
     chipGlyphSelected: {
-      color: 'rgba(10,10,10,0.5)'
+      color: colors.bgBase,
+      opacity: 0.7
     },
     moreLink: {
       paddingVertical: spacing.sm,

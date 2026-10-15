@@ -34,6 +34,16 @@ describe('mobile text contrast', () => {
     }
     expect(contrastRatio(palette.onAccent, palette.accentBlue)).toBeGreaterThanOrEqual(3)
   })
+  it.each([
+    ['light', lightColors],
+    ['dark', darkColors]
+  ] as const)('keeps %s agent status indicators distinct from the surface', (_name, palette) => {
+    for (const indicator of [palette.agentWorking, palette.agentDone, palette.agentAttention]) {
+      for (const surface of [palette.bgBase, palette.bgPanel, palette.bgRaised]) {
+        expect(contrastRatio(indicator, surface)).toBeGreaterThanOrEqual(3)
+      }
+    }
+  })
   it('keeps muted text readable on every standard dark surface', () => {
     for (const surface of [colors.bgBase, colors.bgPanel, colors.bgRaised]) {
       expect(contrastRatio(colors.textMuted, surface)).toBeGreaterThanOrEqual(4.5)
