@@ -1,3 +1,4 @@
+import { MobileMarkdownCodeBlock } from '../MobileMarkdownCodeBlock'
 import { MobileMarkdownNativeText as Text } from '../MobileMarkdownNativeText'
 import { createThemedStyles } from '../../theme/mobile-themed-styles'
 import { useMobileTheme } from '../../theme/use-mobile-theme'
@@ -105,13 +106,12 @@ function BlockView({ block, base }: { block: MarkdownBlock; base: number }) {
         return <MermaidDiagram source={block.text} base={base} />
       }
       return (
-        <View style={styles.codeBlock}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Text selectable style={[styles.codeText, { fontSize: base - 1 }]}>
-              {block.text}
-            </Text>
-          </ScrollView>
-        </View>
+        <MobileMarkdownCodeBlock
+          code={block.text}
+          language={block.lang}
+          fontSize={base - 1}
+          style={{ marginBottom: spacing.sm }}
+        />
       )
     case 'table':
       return <TableBlock block={block} base={base} />
@@ -274,15 +274,6 @@ const styles = createThemedStyles(() =>
       fontFamily: typography.monoFamily,
       backgroundColor: colors.bgRaised
     },
-    codeBlock: {
-      backgroundColor: colors.bgRaised,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.borderSubtle,
-      borderRadius: radii.row,
-      padding: spacing.sm,
-      marginBottom: spacing.sm
-    },
-    codeText: { color: colors.textPrimary, fontFamily: typography.monoFamily },
     quote: {
       borderLeftWidth: 3,
       borderLeftColor: colors.borderSubtle,

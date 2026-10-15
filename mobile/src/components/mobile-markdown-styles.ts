@@ -57,25 +57,6 @@ export const styles = createThemedStyles(() =>
       lineHeight: 19,
       color: colors.textSecondary
     },
-    codeBlock: {
-      backgroundColor: colors.bgRaised,
-      borderWidth: 1,
-      borderColor: colors.borderSubtle,
-      borderRadius: radii.input,
-      padding: spacing.sm
-    },
-    codeLanguage: {
-      fontSize: 10,
-      color: colors.textMuted,
-      marginBottom: spacing.xs,
-      textTransform: 'uppercase'
-    },
-    codeText: {
-      fontFamily: typography.monoFamily,
-      fontSize: 12,
-      lineHeight: 17,
-      color: colors.textPrimary
-    },
     imageFrame: {
       borderWidth: 1,
       borderColor: colors.borderSubtle,

@@ -1,6 +1,7 @@
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { openExternalLink } from '../platform/external-link'
 import { createMarkdownInlineMatcher, type MarkdownInlineMatch } from './markdown-inline-matcher'
+import { MobileMarkdownCodeBlock } from './MobileMarkdownCodeBlock'
 import { MobileMarkdownNativeText } from './MobileMarkdownNativeText'
 import { nativeMarkdownCode } from './mobile-markdown-native-code'
 import type { MarkdownTextProps } from './mobile-markdown-inline-code-ranges'
@@ -295,16 +296,13 @@ function MobileMarkdownContent({
             )
           }
           return (
-            <View key={index} style={styles.codeBlock}>
-              {block.language ? (
-                <NativeText style={styles.codeLanguage}>{block.language}</NativeText>
-              ) : null}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <MarkdownText selectable style={[styles.codeText, codeScale]}>
-                  {block.text}
-                </MarkdownText>
-              </ScrollView>
-            </View>
+            <MobileMarkdownCodeBlock
+              key={index}
+              code={block.text}
+              language={block.language}
+              fontSize={12 * textScale}
+              lineHeight={17 * textScale}
+            />
           )
         }
         if (block.type === 'image') {

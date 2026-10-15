@@ -8,6 +8,10 @@ vi.mock('react-native', () => ({
   ScrollView: 'ScrollView',
   StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 }
 }))
+vi.mock('../platform/clipboard', () => ({
+  useClipboardWriter: () => ({ writeText: async () => {} })
+}))
+vi.mock('lucide-react-native', () => ({ Copy: 'Copy', Check: 'Check' }))
 vi.mock('./pr-sidebar/MermaidDiagram', () => ({ MermaidDiagram: () => null }))
 import { MobileMarkdown } from './MobileMarkdown'
 function text(node: ReactTestInstance): string {
@@ -32,7 +36,7 @@ it('scales headings, prose, lists, tables and fenced code together and retains i
     )
   })
   try {
-    const nodes = tree.root.findAll((node) => node.type === 'Text')
+    const nodes = tree.root.findAll((node) => String(node.type) === 'Text')
     const style = (value: string) => flat(nodes.find((node) => text(node) === value)!.props.style)
     expect(style('Heading').fontSize).toBeGreaterThan(Number(style('Read src/a.ts now.').fontSize))
     expect(style('Quoted').fontSize).toBe(16.25)
@@ -42,7 +46,11 @@ it('scales headings, prose, lists, tables and fenced code together and retains i
     expect(style('src/a.ts').fontSize).toBeUndefined()
     expect(nodes.find((node) => text(node) === 'Read src/a.ts now.')!.props.selectable).toBe(true)
     const code = nodes.find((node) => text(node) === 'const value = 1')!
-    expect(code.parent!.parent!.props.horizontal).toBe(true)
+    let parent = code.parent
+    while (parent && !parent.props.horizontal) {
+      parent = parent.parent
+    }
+    expect(parent?.props.horizontal).toBe(true)
   } finally {
     act(() => tree.unmount())
   }
