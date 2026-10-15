@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useEffect, useState } from 'react'
 import { Pressable, Switch, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -30,6 +31,8 @@ const HYBRID_SHELL_LABELS = {
 } as const
 
 export function MobileWebShellDevRow() {
+  useMobileTheme()
+
   const router = useRouter()
   const [enabled, setEnabled] = useState<boolean | null>(null)
   const [saving, setSaving] = useState(false)

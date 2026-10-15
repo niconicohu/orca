@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../../../../src/theme/use-mobile-theme'
 import { useLocalSearchParams } from 'expo-router'
 import { MobileFileExplorerPanel } from '../../../../src/files/MobileFileExplorerPanel'
 import { firstParam } from '../../../../src/navigation/route-param-reader'
@@ -21,6 +22,8 @@ import { useShellSwitchDecision } from '../../../../src/mobile-web-shell/shell-s
  * whitespace would build a pathname the page refuses and mount nothing.
  */
 export default function MobileFileExplorerScreen() {
+  useMobileTheme()
+
   // Through `firstParam`, as the tasks and agent-history switches do: expo-router answers a
   // repeated query key with an array, and a bare read puts it straight into the template, where
   // `String(['a','b'])` is `a,b` and `encodeURIComponent` makes it the single segment `a%2Cb` —

@@ -1,3 +1,5 @@
+import { createThemedStyles } from '../../src/theme/mobile-themed-styles'
+import { useMobileTheme } from '../../src/theme/use-mobile-theme'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { View, StyleSheet, PanResponder } from 'react-native'
 import { Stack, useGlobalSearchParams, usePathname } from 'expo-router'
@@ -28,6 +30,8 @@ function clampSidebarToWindow(width: number, windowWidth: number): number {
 }
 
 function HostStack({ animation }: { animation: 'none' | 'default' }) {
+  useMobileTheme()
+
   return (
     <Stack
       screenOptions={{
@@ -65,6 +69,8 @@ function HostStack({ animation }: { animation: 'none' | 'default' }) {
 }
 
 export default function HostGroupLayout() {
+  useMobileTheme()
+
   // Wide layout = tablet/foldable canvas (see responsive-layout-metrics).
   const { isWideLayout, width: windowWidth } = useResponsiveLayout()
   const { hostId, action } = useGlobalSearchParams<{ hostId?: string; action?: string }>()
@@ -167,29 +173,31 @@ export default function HostGroupLayout() {
   )
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: colors.bgBase
-  },
-  sidebar: {
-    borderRightWidth: 1,
-    borderRightColor: colors.borderSubtle
-  },
-  // Invisible grab strip over the sidebar's right edge. Absolute + elevated so it
-  // sits above the worktree list and reliably owns the drag on Android.
-  resizeHandle: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    right: 0,
-    width: RESIZE_EDGE_WIDTH,
-    zIndex: 20,
-    elevation: 20
-  },
-  detail: {
-    flex: 1,
-    minWidth: 0
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    row: {
+      flex: 1,
+      flexDirection: 'row',
+      backgroundColor: colors.bgBase
+    },
+    sidebar: {
+      borderRightWidth: 1,
+      borderRightColor: colors.borderSubtle
+    },
+    // Invisible grab strip over the sidebar's right edge. Absolute + elevated so it
+    // sits above the worktree list and reliably owns the drag on Android.
+    resizeHandle: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      right: 0,
+      width: RESIZE_EDGE_WIDTH,
+      zIndex: 20,
+      elevation: 20
+    },
+    detail: {
+      flex: 1,
+      minWidth: 0
+    }
+  })
+)

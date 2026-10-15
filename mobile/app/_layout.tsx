@@ -1,3 +1,5 @@
+import { createThemedStyles } from '../src/theme/mobile-themed-styles'
+import { useMobileTheme } from '../src/theme/use-mobile-theme'
 import { startAndroidForegroundPushPresentation } from '../src/notifications/android-foreground-push'
 import { registerPushDismissalTask } from '../src/notifications/push-background-dismissal'
 import { readNativeNotificationData } from '../src/notifications/native-notification-data'
@@ -10,6 +12,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import * as Notifications from 'expo-notifications'
 import * as Linking from 'expo-linking'
 import { colors } from '../src/theme/mobile-theme'
+import { useMobileAppearance } from '../src/theme/use-mobile-appearance'
 import { OrcaLogo } from '../src/components/OrcaLogo'
 import { RpcClientProvider } from '../src/transport/client-context'
 import { getNotificationNavigationTarget } from '../src/notifications/notification-routing'
@@ -42,6 +45,9 @@ Notifications.setNotificationHandler({
 })
 
 export default function RootLayout() {
+  const colorScheme = useMobileTheme()
+  const appearance = useMobileAppearance()
+
   const router = useRouter()
   const pathname = usePathname()
   const { hostId, worktreeId } = useGlobalSearchParams<{ hostId?: string; worktreeId?: string }>()
@@ -189,10 +195,13 @@ export default function RootLayout() {
     await SplashScreen.hideAsync()
   }, [])
 
+  if (!appearance.ready) {
+    return null
+  }
   return (
     <RpcClientProvider>
       <View style={styles.root} onLayout={onNavigatorLayout}>
-        <StatusBar style="light" />
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         <Stack
           screenOptions={{
             headerStyle: { backgroundColor: colors.bgPanel },
@@ -222,6 +231,7 @@ export default function RootLayout() {
             options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }}
           />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="appearance-settings" options={{ headerShown: false }} />
           <Stack.Screen name="terminal-settings" options={{ headerShown: false }} />
           <Stack.Screen name="native-chat-settings" options={{ headerShown: false }} />
           <Stack.Screen name="browser-settings" options={{ headerShown: false }} />
@@ -237,9 +247,11 @@ export default function RootLayout() {
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.bgBase
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: colors.bgBase
+    }
+  })
+)

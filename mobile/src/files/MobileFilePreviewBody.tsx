@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native'
 import { colors } from '../theme/mobile-theme'
 import type { MobileFilePreviewResult } from './mobile-file-preview-request'
@@ -24,6 +25,8 @@ type Props = {
 }
 
 export function MobileFilePreviewBody({ preview, ...options }: Props) {
+  useMobileTheme()
+
   if (preview.status === 'loading') {
     return (
       <View style={styles.state}>
@@ -121,6 +124,8 @@ function EditablePreviewSource(options: {
   lineColumn: MobileFilePreviewLineColumn | null
   onDraftChange: (content: string) => void
 }) {
+  useMobileTheme()
+
   return (
     <MobileFilePreviewEditableSource
       title={options.title}

@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import {
   ChevronDown,
@@ -22,6 +23,8 @@ type Props = {
 }
 
 export function MobileFileExplorerRow(props: Props) {
+  useMobileTheme()
+
   const { item, expanded, onPreviewFile, onRetryDirectory, onToggleDirectory } = props
 
   if (item.kind === 'loading') {
@@ -79,6 +82,8 @@ function TreeRow(props: {
   onPreviewFile: (relativePath: string, displayName: string) => void
   onToggleDirectory: (relativePath: string) => void
 }) {
+  useMobileTheme()
+
   const { item, expanded, onPreviewFile, onToggleDirectory } = props
   const isDirectory = item.kind === 'directory'
   const isExpanded = expanded.has(item.relativePath)

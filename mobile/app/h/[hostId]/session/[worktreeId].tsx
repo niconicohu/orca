@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../../../../src/theme/use-mobile-theme'
 import { useCallback } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { MobileSessionRouteScreen } from '../../../../src/session/MobileSessionRouteScreen'
@@ -27,6 +28,8 @@ import { useShellSwitchDecision } from '../../../../src/mobile-web-shell/shell-s
  * later `init` can replay a spent tap.
  */
 export default function MobileSessionScreen() {
+  useMobileTheme()
+
   // Through `firstParam` on every param, as every switch does: expo-router answers a repeated query
   // key with an array, and a bare read puts `String(['a','b'])` into the template, where
   // `encodeURIComponent` makes it the single segment `a%2Cb` — which the bridge's segment rule

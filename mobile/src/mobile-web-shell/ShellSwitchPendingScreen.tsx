@@ -1,3 +1,5 @@
+import { createThemedStyles } from '../theme/mobile-themed-styles'
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { colors } from '../theme/mobile-theme'
 
@@ -11,6 +13,8 @@ import { colors } from '../theme/mobile-theme'
  * state to the pixel, which is the surface directly above every switch that uses this one.
  */
 export function ShellSwitchPendingScreen() {
+  useMobileTheme()
+
   return (
     <View style={styles.pending}>
       <ActivityIndicator color={colors.textSecondary} accessibilityLabel="Loading" />
@@ -18,11 +22,13 @@ export function ShellSwitchPendingScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  pending: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bgBase
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    pending: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.bgBase
+    }
+  })
+)

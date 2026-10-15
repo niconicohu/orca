@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import type { AskAnswerSelection, AskPrompt } from '../../../src/shared/native-chat-ask'
 import { MobileNativeChatAsk } from './MobileNativeChatAsk'
 import { MobileNativeChatPermission } from './MobileNativeChatPermission'
@@ -32,6 +33,8 @@ export function MobileNativeChatPromptCard({
   question?: MobileChatQuestion | null
   onAnswerQuestion?: (text: string) => Promise<boolean>
 }): React.JSX.Element | null {
+  useMobileTheme()
+
   if (ask) {
     return (
       <MobileNativeChatAsk

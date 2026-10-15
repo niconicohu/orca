@@ -1,3 +1,5 @@
+import { createThemedStyles } from '../theme/mobile-themed-styles'
+import { useMobileTheme } from '../theme/use-mobile-theme'
 // The pill and choice-row primitives the session-option card is built from, kept
 // beside it so the card file stays about layout and apply wiring.
 
@@ -13,6 +15,8 @@ import {
 
 /** Muted one-liner above a group — dispatch state, or why a row is locked. */
 export function SessionOptionCaption({ children }: { children: string }): React.JSX.Element {
+  useMobileTheme()
+
   return <Text style={styles.caption}>{children}</Text>
 }
 
@@ -27,6 +31,8 @@ export function Pill({
   disabled: boolean
   onPress: () => void
 }): React.JSX.Element {
+  useMobileTheme()
+
   return (
     <Pressable
       accessibilityLabel={accessibleName}
@@ -66,6 +72,8 @@ function ChoiceRow({
   divided: boolean
   onPress: () => void
 }): React.JSX.Element {
+  useMobileTheme()
+
   return (
     <Pressable
       accessibilityRole="radio"
@@ -111,6 +119,8 @@ function ToggleRow({
   grouped: boolean
   onToggle: (next: boolean) => void
 }): React.JSX.Element {
+  useMobileTheme()
+
   return (
     <View style={[styles.row, grouped && styles.rowGrouped, disabled && styles.rowDisabled]}>
       <View style={styles.rowBody}>
@@ -142,6 +152,8 @@ function ActionRow({
   grouped: boolean
   onPress: () => void
 }): React.JSX.Element {
+  useMobileTheme()
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -170,6 +182,8 @@ export function SessionOptionSummaryRow({
   divided: boolean
   onPress: () => void
 }): React.JSX.Element {
+  useMobileTheme()
+
   return (
     <Pressable
       accessibilityLabel={`${label}, ${value}`}
@@ -206,6 +220,8 @@ export function DescriptorRows({
   onSetOption: (value: SessionOptionValue) => void
   onInvokeAction: () => void
 }): React.JSX.Element {
+  useMobileTheme()
+
   const locked = disabled || !descriptor.settable
   // Why: flip-only without a baseline is an action — never claim On/Off.
   if (descriptor.action?.type === 'toggle-command') {
@@ -263,113 +279,115 @@ export function DescriptorRows({
   )
 }
 
-const styles = StyleSheet.create({
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    maxWidth: 180,
-    minHeight: 28,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radii.button,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderSubtle,
-    backgroundColor: colors.bgRaised
-  },
-  pillText: {
-    color: colors.textSecondary,
-    fontSize: typography.metaSize,
-    fontWeight: '600',
-    flexShrink: 1
-  },
-  pillTextDisabled: {
-    color: colors.textMuted
-  },
-  pressed: {
-    opacity: 0.7
-  },
-  caption: {
-    color: colors.textMuted,
-    fontSize: typography.metaSize,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xs
-  },
-  rowMarker: {
-    color: colors.textMuted,
-    fontSize: typography.metaSize
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    padding: spacing.sm,
-    minHeight: 44,
-    alignItems: 'center',
-    borderRadius: radii.card,
-    backgroundColor: colors.bgRaised,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    marginBottom: spacing.xs
-  },
-  rowSelected: {
-    borderColor: colors.statusGreen
-  },
-  rowGrouped: {
-    marginBottom: 0,
-    borderWidth: 0,
-    borderRadius: 0,
-    backgroundColor: 'transparent'
-  },
-  rowDivided: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderSubtle
-  },
-  rowDisabled: {
-    opacity: 0.5
-  },
-  radio: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
-    borderColor: colors.textMuted,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  radioOn: {
-    backgroundColor: colors.statusGreen,
-    borderColor: colors.statusGreen
-  },
-  rowBody: {
-    flex: 1,
-    gap: 2
-  },
-  rowLabel: {
-    color: colors.textPrimary,
-    fontSize: typography.bodySize,
-    fontWeight: '600'
-  },
-  rowDescription: {
-    color: colors.textSecondary,
-    fontSize: typography.metaSize
-  },
-  summaryRow: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
-  },
-  summaryLabel: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: typography.bodySize,
-    fontWeight: '600'
-  },
-  summaryValue: {
-    maxWidth: 160,
-    color: colors.textSecondary,
-    fontSize: typography.bodySize
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      maxWidth: 180,
+      minHeight: 28,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radii.button,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.borderSubtle,
+      backgroundColor: colors.bgRaised
+    },
+    pillText: {
+      color: colors.textSecondary,
+      fontSize: typography.metaSize,
+      fontWeight: '600',
+      flexShrink: 1
+    },
+    pillTextDisabled: {
+      color: colors.textMuted
+    },
+    pressed: {
+      opacity: 0.7
+    },
+    caption: {
+      color: colors.textMuted,
+      fontSize: typography.metaSize,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.xs
+    },
+    rowMarker: {
+      color: colors.textMuted,
+      fontSize: typography.metaSize
+    },
+    row: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      padding: spacing.sm,
+      minHeight: 44,
+      alignItems: 'center',
+      borderRadius: radii.card,
+      backgroundColor: colors.bgRaised,
+      borderWidth: 1,
+      borderColor: colors.borderSubtle,
+      marginBottom: spacing.xs
+    },
+    rowSelected: {
+      borderColor: colors.statusGreen
+    },
+    rowGrouped: {
+      marginBottom: 0,
+      borderWidth: 0,
+      borderRadius: 0,
+      backgroundColor: 'transparent'
+    },
+    rowDivided: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.borderSubtle
+    },
+    rowDisabled: {
+      opacity: 0.5
+    },
+    radio: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 1.5,
+      borderColor: colors.textMuted,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    radioOn: {
+      backgroundColor: colors.statusGreen,
+      borderColor: colors.statusGreen
+    },
+    rowBody: {
+      flex: 1,
+      gap: 2
+    },
+    rowLabel: {
+      color: colors.textPrimary,
+      fontSize: typography.bodySize,
+      fontWeight: '600'
+    },
+    rowDescription: {
+      color: colors.textSecondary,
+      fontSize: typography.metaSize
+    },
+    summaryRow: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm
+    },
+    summaryLabel: {
+      flex: 1,
+      color: colors.textPrimary,
+      fontSize: typography.bodySize,
+      fontWeight: '600'
+    },
+    summaryValue: {
+      maxWidth: 160,
+      color: colors.textSecondary,
+      fontSize: typography.bodySize
+    }
+  })
+)

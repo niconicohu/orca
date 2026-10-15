@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { Pressable, Text, View } from 'react-native'
 import { ChevronsDownUp, ChevronsUpDown, Square } from 'lucide-react-native'
 import { colors } from '../theme/mobile-theme'
@@ -14,6 +15,8 @@ export function MobileNativeChatToolbar({
   canStop?: boolean
   onStop?: () => void
 }) {
+  useMobileTheme()
+
   return (
     <View style={styles.chromeRow}>
       <View style={styles.chromeLeft}>

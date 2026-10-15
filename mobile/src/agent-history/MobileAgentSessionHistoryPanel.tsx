@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { optionalSettingsRead } from '../transport/settings-read-operations'
 import { interpretOrThrowRefusalMessage } from '../transport/rpc-refusal-message'
 import { rpcPayloadMember } from '../transport/rpc-reader-payload'
@@ -65,6 +66,8 @@ export function MobileAgentSessionHistoryPanel({
   worktreeId,
   name = ''
 }: MobileAgentSessionHistoryPanelProps) {
+  useMobileTheme()
+
   // Not `useRouter`: inside the shell's page this screen is one document standing in for one
   // screen, and the session it resumes into is a native route the shell has to push.
   const router = useRouteHandoff()
@@ -430,6 +433,5 @@ async function loadMobileResumeMetadata(client: RpcClient): Promise<{
 
 function createMobileAiVaultResumeMutationId(sessionId: string): string {
   const sessionPart = sessionId.replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 64) || 'session'
-  const randomPart = Math.random().toString(36).slice(2, 10)
-  return `ai-vault-resume:${sessionPart}:${Date.now().toString(36)}:${randomPart}`
+  return `ai-vault-resume:${sessionPart}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 10)}`
 }

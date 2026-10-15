@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../../../../../src/theme/use-mobile-theme'
 import { useLocalSearchParams } from 'expo-router'
 import { MobileFilePreviewScreen } from '../../../../../src/files/MobileFilePreviewScreen'
 import {
@@ -24,6 +25,8 @@ import { useShellSwitchDecision } from '../../../../../src/mobile-web-shell/shel
  * bridge holds a route to.
  */
 export default function MobileFilePreviewRoute() {
+  useMobileTheme()
+
   const params = useLocalSearchParams<{
     hostId?: string | string[]
     worktreeId?: string | string[]

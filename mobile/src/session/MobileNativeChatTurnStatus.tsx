@@ -1,3 +1,5 @@
+import { createThemedStyles } from '../theme/mobile-themed-styles'
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { ChevronRight } from 'lucide-react-native'
@@ -12,6 +14,8 @@ import { colors, spacing, typography } from '../theme/mobile-theme'
 /** Seconds tick only while a turn is actually counting, so a settled transcript
  *  holds no timers. */
 function useElapsedSeconds(startedAt: number | null, counting: boolean): number {
+  useMobileTheme()
+
   // Preserves the pre-stamp epoch for the frame before the turn's startedAt lands.
   const [mountedAt] = useState(() => Date.now())
   const [now, setNow] = useState(() => Date.now())
@@ -42,6 +46,8 @@ export function MobileNativeChatTurnStatus({
   expanded?: boolean
   onToggleExpanded?: () => void
 }): React.JSX.Element {
+  useMobileTheme()
+
   const settled = detailsOnly || workedSeconds != null
   const elapsedSeconds = useElapsedSeconds(startedAt, !settled)
   const label = detailsOnly
@@ -87,6 +93,8 @@ export function MobileNativeChatTurnActivity({
   thinking: boolean
   activityText?: string | null
 }): React.JSX.Element {
+  useMobileTheme()
+
   return (
     <View
       style={styles.row}
@@ -101,27 +109,29 @@ export function MobileNativeChatTurnActivity({
   )
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    minHeight: 28,
-    paddingHorizontal: spacing.md
-  },
-  bar: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderSubtle
-  },
-  pressed: {
-    opacity: 0.6
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: typography.bodySize,
-    flexShrink: 1
-  },
-  caretOpen: {
-    transform: [{ rotate: '90deg' }]
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      minHeight: 28,
+      paddingHorizontal: spacing.md
+    },
+    bar: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.borderSubtle
+    },
+    pressed: {
+      opacity: 0.6
+    },
+    label: {
+      color: colors.textMuted,
+      fontSize: typography.bodySize,
+      flexShrink: 1
+    },
+    caretOpen: {
+      transform: [{ rotate: '90deg' }]
+    }
+  })
+)

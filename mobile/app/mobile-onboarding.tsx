@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../src/theme/use-mobile-theme'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Animated, BackHandler, Text, useWindowDimensions, View } from 'react-native'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
@@ -21,6 +22,8 @@ import { setRemotePushEnabled } from '../src/notifications/push-registration'
 const SLIDE_DURATION_MS = 280
 
 export default function MobileOnboardingScreen() {
+  useMobileTheme()
+
   const params = useLocalSearchParams<{
     hostId?: string | string[]
     steps?: string | string[]
@@ -44,6 +47,8 @@ function MobileOnboardingFlow({
   hostId: string | undefined
   rawSteps: string | undefined
 }) {
+  useMobileTheme()
+
   const router = useRouter()
   const steps = useMemo(() => parseMobileOnboardingSteps(rawSteps), [rawSteps])
   const { width } = useWindowDimensions()

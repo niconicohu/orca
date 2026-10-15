@@ -1,3 +1,5 @@
+import { createThemedStyles } from '../theme/mobile-themed-styles'
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Animated, Easing, StyleSheet, Text } from 'react-native'
 import { colors, spacing, typography } from '../theme/mobile-theme'
@@ -14,6 +16,8 @@ export const SHELL_PAGE_COVER_FADE_MS = 220
 
 /** The shell's neutral frame: one spinner and what it is waiting on. */
 export function ShellWaitingFrame({ label }: { label: string }) {
+  useMobileTheme()
+
   return (
     <>
       <ActivityIndicator color={colors.textSecondary} accessibilityLabel={label} />
@@ -29,6 +33,8 @@ export function ShellWaitingFrame({ label }: { label: string }) {
  * never arrives strands a spinner over a usable page rather than a dead one.
  */
 export function ShellPageCover({ label, visible }: { label: string; visible: boolean }) {
+  useMobileTheme()
+
   const opacity = useRef(new Animated.Value(1)).current
   const [mounted, setMounted] = useState(visible)
 
@@ -70,18 +76,20 @@ export function ShellPageCover({ label, visible }: { label: string; visible: boo
   )
 }
 
-const styles = StyleSheet.create({
-  cover: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bgBase,
-    paddingHorizontal: spacing.lg
-  },
-  label: {
-    fontSize: typography.bodySize,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-    textAlign: 'center'
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    cover: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.bgBase,
+      paddingHorizontal: spacing.lg
+    },
+    label: {
+      fontSize: typography.bodySize,
+      color: colors.textSecondary,
+      marginTop: spacing.md,
+      textAlign: 'center'
+    }
+  })
+)

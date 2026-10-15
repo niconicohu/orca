@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Pressable, Text, View } from 'react-native'
 import { ChevronDown, SquareChevronRight, SquareTerminal, Wrench } from 'lucide-react-native'
@@ -25,6 +26,8 @@ const MAX_VISIBLE_TOOL_PAIRS = 6
 const MAX_TOOL_RUN_DIFF_ROWS = 240
 
 function DiffView({ lines }: { lines: DiffLine[] }): React.JSX.Element {
+  useMobileTheme()
+
   return (
     <View style={styles.diff}>
       {lines.map((line, i) => (
@@ -57,6 +60,8 @@ function ResultBody({
   isError?: boolean
   diff: DiffLine[] | null
 }): React.JSX.Element {
+  useMobileTheme()
+
   if (diff) {
     return <DiffView lines={diff} />
   }
@@ -80,6 +85,8 @@ function ToolLine({
   diffLineLimit: number
   onOpenFile?: (relativePath: string) => void
 }): React.JSX.Element {
+  useMobileTheme()
+
   const [expanded, setExpanded] = useState(defaultExpanded)
   const { call, result } = pair
   const name = call ? call.name : 'Result'
@@ -146,6 +153,8 @@ function PulsingText({
   numberOfLines?: number
   children: React.ReactNode
 }): React.JSX.Element {
+  useMobileTheme()
+
   const pulse = useRef(new Animated.Value(1)).current
   useEffect(() => {
     const animation = Animated.loop(
@@ -182,6 +191,8 @@ export function ToolRun({
   activeCall: ReturnType<typeof selectActiveToolCall>
   onOpenFile?: (relativePath: string) => void
 }): React.JSX.Element {
+  useMobileTheme()
+
   const [open, setOpen] = useState(defaultExpanded)
   const pairs = pairToolBlocks(blocks, MAX_VISIBLE_TOOL_PAIRS)
   const diffLineLimit = Math.max(1, Math.floor(MAX_TOOL_RUN_DIFF_ROWS / (pairs.length * 2 || 1)))

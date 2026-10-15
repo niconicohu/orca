@@ -1,3 +1,5 @@
+import { createThemedStyles } from '../theme/mobile-themed-styles'
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { useHostClient } from '../transport/client-context'
@@ -13,6 +15,8 @@ type Props = {
 const HostStatusGatesContext = createContext<HostStatusGates | null>(null)
 
 export function useHostProtocolGates(): HostStatusGates {
+  useMobileTheme()
+
   const gates = useContext(HostStatusGatesContext)
   if (!gates) {
     throw new Error('useHostProtocolGates must be used inside <HostProtocolGate>')
@@ -23,6 +27,8 @@ export function useHostProtocolGates(): HostStatusGates {
 // Why: single choke point above every /h/[hostId] route so a blocked verdict replaces the
 // whole host UI (sidebar + detail stack) while the host list and other hosts stay usable.
 export function HostProtocolGate({ hostId, children }: Props) {
+  useMobileTheme()
+
   const { client, state } = useHostClient(hostId)
   const gates = useHostStatusGates({ hostId, client, connState: state })
   const { compatVerdict, statusPending } = gates
@@ -99,23 +105,25 @@ export function HostProtocolGate({ hostId, children }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  pending: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bgBase
-  },
-  // Stays mounted across the overlay toggling so the routes below keep their identity.
-  host: {
-    flex: 1
-  },
-  pendingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bgBase,
-    zIndex: 1000,
-    elevation: 1000
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    pending: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.bgBase
+    },
+    // Stays mounted across the overlay toggling so the routes below keep their identity.
+    host: {
+      flex: 1
+    },
+    pendingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.bgBase,
+      zIndex: 1000,
+      elevation: 1000
+    }
+  })
+)

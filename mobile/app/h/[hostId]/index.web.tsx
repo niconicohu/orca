@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../../../src/theme/use-mobile-theme'
 import { WorkspaceDetailPlaceholder } from '../../../src/components/WorkspaceDetailPlaceholder'
 import { HostScreen } from '../../../src/host-screen/HostScreen'
 import { useResponsiveLayout } from '../../../src/layout/responsive-layout'
@@ -12,6 +13,8 @@ import { useResponsiveLayout } from '../../../src/layout/responsive-layout'
  * them all.
  */
 export default function HostWorktreeRoute() {
+  useMobileTheme()
+
   const { isWideLayout } = useResponsiveLayout()
   if (isWideLayout) {
     return <WorkspaceDetailPlaceholder />

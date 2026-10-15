@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
@@ -41,6 +42,8 @@ export function MobileFileExplorerPanel(props: {
   embedded?: boolean
   onRequestClose?: () => void
 }) {
+  useMobileTheme()
+
   const { hostId, worktreeId, name, embedded, onRequestClose } = props
   const router = useRouteHandoff()
   const { client, state: connState } = useHostClient(hostId)

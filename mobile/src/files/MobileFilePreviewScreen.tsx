@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, Text, View, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -35,6 +36,8 @@ type Props = {
 }
 
 export function MobileFilePreviewScreen({ route }: Props) {
+  useMobileTheme()
+
   const router = useRouteHandoff()
   const previewParams = route.ok ? route.params : null
   const { client, state: connState } = useHostClient(previewParams?.hostId)

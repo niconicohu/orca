@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useCallback } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
 import { Bot } from 'lucide-react-native'
@@ -11,6 +12,8 @@ import { MobileAgentIcon } from '../components/MobileAgentIcon'
 import type { MobileSessionPresentationModel } from './use-mobile-session-presentation'
 
 export function useMobileSessionPanelRouteActions(scope: MobileSessionPresentationModel) {
+  useMobileTheme()
+
   const {
     hostId,
     worktreeId,

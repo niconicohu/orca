@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useMemo } from 'react'
 import { KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native'
 import { Check, Copy, FileText, Plus, Send, Trash2, X } from 'lucide-react-native'
@@ -23,6 +24,8 @@ type Props = {
 }
 
 export function MobileDiffReviewDrawers({ controller }: Props) {
+  useMobileTheme()
+
   // One drawer for every review sheet: iOS cannot present a sheet while another is still closing.
   return (
     <KeyedBottomDrawer
@@ -36,6 +39,8 @@ export function MobileDiffReviewDrawers({ controller }: Props) {
 }
 
 function ReviewSheetContent({ controller, sheet }: Props & { sheet: ReviewSheet }) {
+  useMobileTheme()
+
   switch (sheet.kind) {
     case 'actions':
       return <ReviewActionsContent controller={controller} />
@@ -63,6 +68,8 @@ function ReviewSheetContent({ controller, sheet }: Props & { sheet: ReviewSheet 
 }
 
 function ReviewActionsContent({ controller }: Props) {
+  useMobileTheme()
+
   const overflowActions = useOverflowActions(controller)
   return (
     <ActionSheetContent
@@ -79,6 +86,8 @@ function ReviewActionsContent({ controller }: Props) {
 }
 
 function SendNotesContent({ controller, load }: Props & { load: SendSheetState }) {
+  useMobileTheme()
+
   const sendActions = useSendActions(controller, load)
   return (
     <ActionSheetContent
@@ -94,6 +103,8 @@ function useSendActions(
   controller: ReturnType<typeof useMobileDiffReviewController>,
   load: SendSheetState
 ) {
+  useMobileTheme()
+
   return useMemo<ActionSheetAction[]>(() => {
     const comments = controller.unsentComments
     const terminalActions =
@@ -132,6 +143,8 @@ function useSendActions(
 }
 
 function useOverflowActions(controller: ReturnType<typeof useMobileDiffReviewController>) {
+  useMobileTheme()
+
   return useMemo<ActionSheetAction[]>(
     () => [
       {
@@ -196,6 +209,8 @@ function sendSheetMessage(
 }
 
 function NoteComposerContent({ controller, composer }: Props & { composer: ComposerState }) {
+  useMobileTheme()
+
   return (
     <KeyboardAvoidingView behavior={hostOs() === 'ios' ? 'padding' : undefined}>
       <View style={styles.composerHeader}>
@@ -245,6 +260,8 @@ function composerLabel(
 }
 
 function DeleteNoteButton({ onPress }: { onPress: () => Promise<void> }) {
+  useMobileTheme()
+
   return (
     <Pressable
       style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
@@ -265,6 +282,8 @@ function SaveNoteButton({
   controller: ReturnType<typeof useMobileDiffReviewController>
   composer: ReturnType<typeof useMobileDiffReviewController>['composer']
 }) {
+  useMobileTheme()
+
   const disabled = controller.composerBody.trim().length === 0
   return (
     <Pressable
@@ -285,6 +304,8 @@ function SaveNoteButton({
 }
 
 function CompletionContent({ controller }: Props) {
+  useMobileTheme()
+
   const noteCount =
     controller.screenState.kind === 'ready' ? controller.screenState.comments.length : 0
   return (

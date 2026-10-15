@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { Pressable, RefreshControl, SectionList, Text, View } from 'react-native'
 import { ChevronDown, ChevronRight, Pin } from 'lucide-react-native'
 import { AuthFailedBanner } from '../components/AuthFailedBanner'
@@ -16,6 +17,8 @@ import { hostScreenStyles as styles } from './host-screen-styles'
 import type { HostScreenController } from './use-host-screen-controller'
 
 export function HostWorkspaceList({ controller }: { controller: HostScreenController }) {
+  useMobileTheme()
+
   const {
     actions,
     activeWorktreeScroll,
@@ -205,5 +208,7 @@ export function HostWorkspaceList({ controller }: { controller: HostScreenContro
 }
 
 function ListSeparator() {
+  useMobileTheme()
+
   return <View style={styles.separator} />
 }

@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../../../src/theme/use-mobile-theme'
 import { Redirect, useLocalSearchParams } from 'expo-router'
 import { MobileWebShellScreen } from '../../../src/mobile-web-shell/MobileWebShellScreen'
 import { ShellSwitchPendingScreen } from '../../../src/mobile-web-shell/ShellSwitchPendingScreen'
@@ -14,6 +15,8 @@ import { useShellSwitchDecision } from '../../../src/mobile-web-shell/shell-swit
  * Reachable by deep link and from the Troubleshoot row only; no screen links here.
  */
 export default function MobileWebShellRoute() {
+  useMobileTheme()
+
   const { hostId } = useLocalSearchParams<{ hostId: string }>()
   // Encoded here rather than in the JSX below so the decision holds the route the shell is handed:
   // `hostId` arrives decoded from the URL, so one carrying `?`, `#` or whitespace would build a

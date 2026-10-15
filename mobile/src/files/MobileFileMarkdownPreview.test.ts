@@ -23,7 +23,8 @@ vi.mock('./MobileFilePreviewSourceText', () => ({
   MobileFilePreviewTruncatedNote: 'MobileFilePreviewTruncatedNote'
 }))
 
-vi.mock('../theme/mobile-theme', () => ({
+vi.mock('../theme/mobile-theme', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../theme/mobile-theme')>()),
   colors: { textPrimary: '#fff', textSecondary: '#999' }
 }))
 

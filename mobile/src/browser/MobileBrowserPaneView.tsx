@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import {
   ActivityIndicator,
@@ -84,6 +85,8 @@ type MobileBrowserPaneViewProps = {
  * exists to keep from happening.
  */
 export function MobileBrowserPaneView(props: MobileBrowserPaneViewProps) {
+  useMobileTheme()
+
   const {
     addressFocused,
     addressValue,

@@ -1,3 +1,5 @@
+import { createThemedStyles } from '../theme/mobile-themed-styles'
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { memo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { ShieldQuestion, X } from 'lucide-react-native'
@@ -17,6 +19,8 @@ function MobileNativeChatPermissionImpl({
   onRespond: (send: string) => Promise<boolean>
   onCancel?: (prompt?: NonNullable<MobileChatPermission['prompt']>) => Promise<boolean>
 }): React.JSX.Element {
+  useMobileTheme()
+
   const [submitting, setSubmitting] = useState(false)
   const submittingRef = useRef(false)
   const hasContext = Boolean(
@@ -133,91 +137,93 @@ function MobileNativeChatPermissionImpl({
 
 export const MobileNativeChatPermission = memo(MobileNativeChatPermissionImpl)
 
-const styles = StyleSheet.create({
-  card: {
-    marginHorizontal: spacing.lg,
-    marginVertical: spacing.sm,
-    padding: spacing.md,
-    gap: spacing.sm,
-    borderRadius: radii.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderSubtle,
-    backgroundColor: colors.bgPanel,
-    flexShrink: 1,
-    minHeight: 0
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flexShrink: 0
-  },
-  title: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: typography.bodySize,
-    fontWeight: '600'
-  },
-  cancel: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  detail: {
-    color: colors.textSecondary,
-    fontSize: typography.metaSize,
-    lineHeight: typography.metaSize + 5
-  },
-  planFile: {
-    marginTop: spacing.sm,
-    color: colors.textSecondary,
-    fontFamily: typography.monoFamily,
-    fontSize: typography.metaSize,
-    lineHeight: typography.metaSize + 5
-  },
-  contextLabel: {
-    color: colors.textPrimary,
-    fontWeight: '600'
-  },
-  contentScroll: {
-    maxHeight: 240,
-    minHeight: 0,
-    flexShrink: 1
-  },
-  content: {
-    gap: spacing.sm
-  },
-  options: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    flexShrink: 0
-  },
-  option: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.button
-  },
-  optionPrimary: {
-    backgroundColor: colors.accentBlue
-  },
-  optionSecondary: {
-    backgroundColor: colors.bgRaised,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderSubtle
-  },
-  optionPressed: {
-    opacity: 0.7
-  },
-  optionText: {
-    color: colors.textPrimary,
-    fontSize: typography.bodySize,
-    fontWeight: '600'
-  },
-  optionTextPrimary: {
-    color: colors.onAccent
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    card: {
+      marginHorizontal: spacing.lg,
+      marginVertical: spacing.sm,
+      padding: spacing.md,
+      gap: spacing.sm,
+      borderRadius: radii.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.borderSubtle,
+      backgroundColor: colors.bgPanel,
+      flexShrink: 1,
+      minHeight: 0
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      flexShrink: 0
+    },
+    title: {
+      flex: 1,
+      color: colors.textPrimary,
+      fontSize: typography.bodySize,
+      fontWeight: '600'
+    },
+    cancel: {
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    detail: {
+      color: colors.textSecondary,
+      fontSize: typography.metaSize,
+      lineHeight: typography.metaSize + 5
+    },
+    planFile: {
+      marginTop: spacing.sm,
+      color: colors.textSecondary,
+      fontFamily: typography.monoFamily,
+      fontSize: typography.metaSize,
+      lineHeight: typography.metaSize + 5
+    },
+    contextLabel: {
+      color: colors.textPrimary,
+      fontWeight: '600'
+    },
+    contentScroll: {
+      maxHeight: 240,
+      minHeight: 0,
+      flexShrink: 1
+    },
+    content: {
+      gap: spacing.sm
+    },
+    options: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      flexShrink: 0
+    },
+    option: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.button
+    },
+    optionPrimary: {
+      backgroundColor: colors.accentBlue
+    },
+    optionSecondary: {
+      backgroundColor: colors.bgRaised,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.borderSubtle
+    },
+    optionPressed: {
+      opacity: 0.7
+    },
+    optionText: {
+      color: colors.textPrimary,
+      fontSize: typography.bodySize,
+      fontWeight: '600'
+    },
+    optionTextPrimary: {
+      color: colors.onAccent
+    }
+  })
+)

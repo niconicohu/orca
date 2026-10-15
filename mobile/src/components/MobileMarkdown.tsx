@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { openExternalLink } from '../platform/external-link'
 import { createMarkdownInlineMatcher, type MarkdownInlineMatch } from './markdown-inline-matcher'
 import { MobileSelectableText } from './MobileSelectableText'
@@ -50,6 +51,8 @@ const MERMAID_BASE = 13
 const MarkdownTextContext = createContext<ComponentType<TextProps>>(NativeText)
 
 function MarkdownText(props: TextProps): React.JSX.Element {
+  useMobileTheme()
+
   const TextComponent = useContext(MarkdownTextContext)
   return createElement(TextComponent, props)
 }
@@ -215,6 +218,8 @@ function MobileMarkdownContent({
   textScale = 1,
   onOpenFile
 }: Props) {
+  useMobileTheme()
+
   const text = content?.trim() ?? ''
   const previewText = useMemo(() => normalizeMobileMarkdownPreviewHtml(text), [text])
   const blocks = useMemo(() => parseMobileMarkdown(previewText), [previewText])
@@ -380,6 +385,8 @@ function MobileMarkdownContent({
 }
 
 function MobileMarkdownInner(props: Props): React.JSX.Element | null {
+  useMobileTheme()
+
   const TextComponent = props.rangeSelectable ? MobileSelectableText : NativeText
   return (
     <MarkdownTextContext.Provider value={TextComponent}>

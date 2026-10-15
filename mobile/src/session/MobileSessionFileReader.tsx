@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   FlatList,
@@ -44,6 +45,8 @@ export function FileReader({
   language?: string
   diffCommentActions?: DiffCommentActions
 }) {
+  useMobileTheme()
+
   const syntaxLanguage = useMemo(
     () => resolveMobileSyntaxLanguage(relativePath || title, language),
     [language, relativePath, title]

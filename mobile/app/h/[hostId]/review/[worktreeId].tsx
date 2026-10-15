@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../../../../src/theme/use-mobile-theme'
 import { useLocalSearchParams } from 'expo-router'
 import { MobileDiffReviewRouteScreen } from '../../../../src/session/MobileDiffReviewRouteScreen'
 import { firstReviewParam } from '../../../../src/session/mobile-diff-review-screen-model'
@@ -21,6 +22,8 @@ import { useShellSwitchDecision } from '../../../../src/mobile-web-shell/shell-s
  * these five segments collide with nothing: the explorer's five carry `files`.
  */
 export default function MobileDiffReviewScreen() {
+  useMobileTheme()
+
   // Through `firstReviewParam`, which is this domain's spelling of the rule every switch follows:
   // expo-router answers a repeated query key with an array, and a bare read would build a single
   // segment out of `String(['a','b'])` that the bridge's segment rule accepts.

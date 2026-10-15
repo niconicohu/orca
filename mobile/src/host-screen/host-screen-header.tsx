@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { Pressable, Text, View } from 'react-native'
 import {
   ChevronLeft,
@@ -23,6 +24,8 @@ function isErrorVerdict(v: ConnectionVerdict): boolean {
 }
 
 export function HostScreenHeader({ controller }: { controller: HostScreenController }) {
+  useMobileTheme()
+
   const {
     actions,
     connState,

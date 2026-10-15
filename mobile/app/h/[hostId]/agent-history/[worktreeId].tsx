@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../../../../src/theme/use-mobile-theme'
 import { useLocalSearchParams } from 'expo-router'
 import { MobileAgentSessionHistoryPanel } from '../../../../src/agent-history/MobileAgentSessionHistoryPanel'
 import { MobileWebShellScreen } from '../../../../src/mobile-web-shell/MobileWebShellScreen'
@@ -30,6 +31,8 @@ import { firstParam } from '../../../../src/navigation/route-param-reader'
  * rather than carrying its own copy of the call.
  */
 export default function MobileAgentSessionHistoryScreen() {
+  useMobileTheme()
+
   const params = useLocalSearchParams<{
     hostId?: string | string[]
     worktreeId?: string | string[]

@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../../../../src/theme/use-mobile-theme'
 import { useLocalSearchParams } from 'expo-router'
 import { MobileSourceControlPanel } from '../../../../src/source-control/MobileSourceControlPanel'
 import { firstParam } from '../../../../src/navigation/route-param-reader'
@@ -23,6 +24,8 @@ import { useShellSwitchDecision } from '../../../../src/mobile-web-shell/shell-s
  * native they replace into this route, whose switch then mounts the shell. One extra native frame.
  */
 export default function MobileSourceControlScreen() {
+  useMobileTheme()
+
   // Through `firstParam` on every param, as the files switch does: expo-router answers a repeated
   // query key with an array, and a bare read puts `String(['a','b'])` into the template, where
   // `encodeURIComponent` makes it the single segment `a%2Cb` — which the bridge's segment rule

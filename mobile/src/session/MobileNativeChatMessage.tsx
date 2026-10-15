@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { MobileSelectableText as Text } from '../components/MobileSelectableText'
 import { memo, type RefObject } from 'react'
 import { Image, Text as NativeText, View, type LayoutChangeEvent } from 'react-native'
@@ -25,6 +26,8 @@ function Prose({
   fontScale: number
   onOpenFile?: (relativePath: string) => void
 }): React.JSX.Element | null {
+  useMobileTheme()
+
   if (isTextBlock(block)) {
     if (block.presentation === 'compaction') {
       return (
@@ -117,6 +120,8 @@ function MobileNativeChatMessageImpl({
   /** The roster's name for the subagent that wrote this row, when one names it. */
   subagentLabel?: string
 }): React.JSX.Element {
+  useMobileTheme()
+
   const isUser = message.role === 'user'
   const isReasoning = message.role === 'reasoning'
   // Separate the agent's words from its tool activity: prose renders first, the

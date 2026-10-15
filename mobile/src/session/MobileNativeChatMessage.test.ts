@@ -3,6 +3,7 @@ import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'rea
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MAX_TOOL_DETAIL_LENGTH } from '../../../src/shared/native-chat-tool-summary'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
+import { applyMobileColorScheme, lightColors } from '../theme/mobile-theme'
 
 vi.mock('react-native', async () => {
   const React = await import('react')
@@ -55,6 +56,7 @@ describe('MobileNativeChatMessage', () => {
 
   afterEach(() => {
     act(() => renderer?.unmount())
+    applyMobileColorScheme('dark')
     renderer = null
   })
 
@@ -81,6 +83,37 @@ describe('MobileNativeChatMessage', () => {
 
   const textIn = (node: ReactTestInstance): string[] =>
     node.findAllByType('Text' as never).map((text) => String(text.children.join('')))
+
+  it('keeps an expanded tool group open across palette changes', () => {
+    const tree = render(
+      toolMessage([{ type: 'tool-call', name: 'Read', input: { file_path: 'kept.ts' } }])
+    )
+    const toggle = tree.root.findAll((node) => node.type === 'Pressable')[0]
+    act(() => toggle.props.onPress())
+    expect(textIn(tree.root)).toContain('kept.ts')
+    act(() => applyMobileColorScheme('light'))
+    expect(textIn(tree.root)).toContain('kept.ts')
+    act(() => applyMobileColorScheme('dark'))
+    expect(textIn(tree.root)).toContain('kept.ts')
+  })
+
+  it('repaints an already mounted memoized message when appearance changes', () => {
+    const tree = render(userMessage([{ type: 'text', text: 'Keep this message' }]))
+    act(() => applyMobileColorScheme('light'))
+    expect(
+      tree.root
+        .findAllByType('View' as never)
+        .some(
+          (node) =>
+            Array.isArray(node.props.style) &&
+            node.props.style.some(
+              (style: { backgroundColor?: string } | undefined) =>
+                style?.backgroundColor === lightColors.textPrimary
+            )
+        )
+    ).toBe(true)
+    expect(textIn(tree.root)).toContain('Keep this message')
+  })
 
   it('renders a structured compaction marker as a divider instead of markdown prose', () => {
     const tree = render({

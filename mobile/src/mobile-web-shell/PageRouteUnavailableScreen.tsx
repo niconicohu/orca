@@ -1,3 +1,5 @@
+import { createThemedStyles } from '../theme/mobile-themed-styles'
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { hostStackHostRoute } from '../navigation/host-stack-navigation'
 import { useRouteHandoff } from '../navigation/route-handoff'
@@ -27,6 +29,8 @@ import { colors, radii, spacing, typography } from '../theme/mobile-theme'
  * does not carry instead of leaving it. The seam posts the target to the shell.
  */
 export function PageRouteUnavailableScreen({ hostId }: { hostId: string }) {
+  useMobileTheme()
+
   const router = useRouteHandoff()
   const target = hostId === '' ? '/' : hostStackHostRoute(hostId)
   const label = hostId === '' ? 'Back to hosts' : 'Back to workspaces'
@@ -45,32 +49,34 @@ export function PageRouteUnavailableScreen({ hostId }: { hostId: string }) {
   )
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bgBase,
-    paddingHorizontal: spacing.lg
-  },
-  message: {
-    fontSize: typography.bodySize,
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: spacing.lg
-  },
-  button: {
-    backgroundColor: colors.bgRaised,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.button
-  },
-  buttonLabel: {
-    fontSize: typography.bodySize,
-    fontWeight: '600',
-    color: colors.textPrimary
-  },
-  pressed: {
-    opacity: 0.7
-  }
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.bgBase,
+      paddingHorizontal: spacing.lg
+    },
+    message: {
+      fontSize: typography.bodySize,
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginBottom: spacing.lg
+    },
+    button: {
+      backgroundColor: colors.bgRaised,
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radii.button
+    },
+    buttonLabel: {
+      fontSize: typography.bodySize,
+      fontWeight: '600',
+      color: colors.textPrimary
+    },
+    pressed: {
+      opacity: 0.7
+    }
+  })
+)

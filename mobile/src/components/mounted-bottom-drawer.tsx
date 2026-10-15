@@ -1,3 +1,4 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { View, Pressable, useWindowDimensions, ScrollView, Keyboard, Modal } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -57,6 +58,8 @@ export function MountedBottomDrawer({
   interactive = true,
   zIndex = 1000
 }: MountedBottomDrawerProps) {
+  useMobileTheme()
+
   const translateY = useSharedValue(0)
   const progress = useSharedValue(0)
   const keyboardOffset = useSharedValue(0)
