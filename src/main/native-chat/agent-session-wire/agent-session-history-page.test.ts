@@ -720,56 +720,6 @@ describe('identity bounding at admission', () => {
   })
 })
 
-it('bounds opted-in mobile snapshots to 40 while preserving legacy 200-entry hydration', async () => {
-  await appendItems(240)
-  const { readAgentSessionHydrationPage } = await import('./agent-session-history-page')
-  const recent = readAgentSessionHydrationPage(journal, 1, undefined, 40)
-  expect(recent.items).toHaveLength(40)
-  expect(recent.items[0]?.sequence).toBe(journal.cursor().sequence - 39)
-  expect(recent.window.nextCursor).toEqual(recent.window.oldest)
-  expect(recent.liveCursor).toEqual(journal.cursor())
-  expect(recent.hasOlder).toBe(true)
-  expect(readAgentSessionHydrationPage(journal, 1).items).toHaveLength(200)
-})
-
-it('keeps separate mobile and legacy subscriber limits across host snapshots and resets', async () => {
-  await appendItems(240)
-  const { AgentSessionSubscribers } = await import('./structured-agent-session-subscribers')
-  const subscribers = new AgentSessionSubscribers()
-  const sizes: Record<'mobile' | 'legacy', number[]> = { mobile: [], legacy: [] }
-  for (const mode of ['mobile', 'legacy'] as const) {
-    subscribers.open({
-      id: mode,
-      sessionId: IDENTITY.sessionId,
-      journal,
-      fence: 1,
-      ...(mode === 'mobile' ? { snapshotLimit: 40 } : {}),
-      emit: (event) => {
-        if (event.type === 'snapshot' || event.type === 'reset') {
-          sizes[mode].push(event.page.items.length)
-        }
-      }
-    })
-  }
-  subscribers.snapshot(IDENTITY.sessionId, journal, 1)
-  for (const mode of ['mobile', 'legacy'] as const) {
-    subscribers.open({
-      id: mode,
-      sessionId: IDENTITY.sessionId,
-      journal,
-      fence: 1,
-      cursor: { epoch: 'previous', sequence: 1 },
-      ...(mode === 'mobile' ? { snapshotLimit: 40 } : {}),
-      emit: (event) => {
-        if (event.type === 'snapshot' || event.type === 'reset') {
-          sizes[mode].push(event.page.items.length)
-        }
-      }
-    })
-  }
-  expect(sizes).toEqual({ mobile: [40, 40, 40], legacy: [200, 200, 200] })
-})
-
 it('keeps the running turn checkpoint when tools push its record outside the latest forty', async () => {
   await journal.appendItem(
     item(0),

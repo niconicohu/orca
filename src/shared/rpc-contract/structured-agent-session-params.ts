@@ -352,11 +352,7 @@ export const HistoryParams = z
   .strict()
 
 export const SubscribeParams = z
-  .object({
-    sessionId: SessionId,
-    cursor: JournalCursor.optional(),
-    snapshotLimit: z.number().int().positive().max(AGENT_SESSION_HISTORY_MAX_LIMIT).optional()
-  })
+  .object({ sessionId: SessionId, cursor: JournalCursor.optional() })
   .strict()
 
 // Not strict: an older host ignores these params entirely, and this host must ignore a newer client's.

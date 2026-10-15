@@ -90,8 +90,7 @@ export function useMobileStructuredAgentSession(args: {
     sessionId,
     sessionKey,
     enabled,
-    connected,
-    snapshotLimit: hostSupport?.snapshotLimit === true
+    connected
   }
   const { state, stateRef, queuedMessages, queuePause, loadingOlder, loadEarlier } =
     useMobileStructuredAgentState(stateArgs)

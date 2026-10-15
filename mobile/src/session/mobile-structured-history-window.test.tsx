@@ -18,14 +18,13 @@ client.sendRequest = (method, ...args) =>
     : request(method, ...args)
 let state!: ReturnType<typeof useMobileStructuredAgentState>
 let renderer: ReactTestRenderer | undefined
-function Harness({ id, snapshotLimit }: { id: string; snapshotLimit?: boolean }) {
+function Harness({ id }: { id: string }) {
   state = useMobileStructuredAgentState({
     client,
     sessionKey: id,
     sessionId: id,
     connected: true,
-    enabled: true,
-    snapshotLimit
+    enabled: true
   })
   return null
 }
@@ -216,9 +215,32 @@ it('shows a far-behind persisted checkpoint without waiting for the latest remot
   ).toHaveLength(1)
 })
 
-it('sends the optional snapshot limit only after the host advertises support', async () => {
+it('accepts upstream hydration without custom parameters and retains child rows alongside the recent root window', async () => {
   await act(async () => {
-    renderer = create(createElement(Harness, { id: 'bounded', snapshotLimit: true }))
+    renderer = create(createElement(Harness, { id: 'upstream-hydration' }))
   })
-  expect(client.streams[0]!.params).toEqual({ sessionId: 'bounded', snapshotLimit: 40 })
+  expect(client.streams[0]!.params).toEqual({ sessionId: 'upstream-hydration' })
+  const upstream = page(1, 200, 401)
+  upstream.items = upstream.items.flatMap((row) => {
+    const root = { ...row, sequence: row.sequence * 2 }
+    return row.sequence % 5 === 0
+      ? [
+          root,
+          { ...root, itemId: `child-${row.itemId}`, sequence: root.sequence + 1, agentId: 'child' }
+        ]
+      : [root]
+  })
+  act(() =>
+    client.streams[0]!.emit({
+      type: 'snapshot',
+      sessionId: 'upstream-hydration',
+      fence: 1,
+      page: upstream
+    })
+  )
+  expect(state.state.status).toBe('ready')
+  expect(state.state.items.filter((row) => row.agentId === undefined)).toHaveLength(40)
+  expect(state.state.items.length).toBeGreaterThan(40)
+  expect(state.state.items.at(-1)?.itemId).toBe('child-200')
+  expect(state.state.hasOlder).toBe(true)
 })

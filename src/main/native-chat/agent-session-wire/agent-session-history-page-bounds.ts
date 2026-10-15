@@ -68,7 +68,6 @@ export function oversizedHistoryItem(item: AgentJournalRenderItem): AgentJournal
 /** How a reader receives each item, and the bytes its page may hold of them. A page is measured
  *  in that form, so it carries what it will actually send. */
 export type HistoryReader = {
-  snapshotLimit?: number
   form: (item: AgentJournalRenderItem) => AgentJournalRenderItem
   budgetBytes: number
 }

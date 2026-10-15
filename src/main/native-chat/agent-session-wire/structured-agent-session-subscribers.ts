@@ -1,4 +1,3 @@
-import type { QueuePublication } from './structured-agent-session-queued-publication'
 // Per-subscriber cursors over one session's journal.
 //
 // Each subscriber advances independently: a client that connected two epochs
@@ -8,14 +7,17 @@ import type { QueuePublication } from './structured-agent-session-queued-publica
 import type { AgentJournalCursor } from '../../../shared/agent-session-journal-types'
 import type {
   AgentSessionHistoryPage,
+  AgentSessionSlashCommand,
   AgentSessionSubscribeEvent,
   AgentSessionTurnActivity
 } from '../../../shared/agent-session-wire'
 import {
   backgroundTaskFingerprint,
   buildSubscriberFrame,
-  subscriberCommandsChanged
+  subscriberCommandsChanged,
+  type SubscriberFieldHooks
 } from './agent-session-subscriber-frame-fields'
+import type { QueuePublication } from './structured-agent-session-queued-publication'
 import { deliverToSubscriber } from './agent-session-subscriber-catch-up'
 import type { AgentSessionJournal } from '../agent-session-journal/journal-store'
 import { emptyAgentSessionBatch } from './agent-session-empty-batch'
@@ -24,18 +26,52 @@ import { withPublishedWork } from './agent-session-published-work'
 import { subscriberHistoryReader } from './agent-session-bounded-frames'
 import { rememberSessionActivity } from './structured-agent-session-activity-retention'
 import { refreshDerivedStopNotes } from './agent-session-stop-note-refresh'
+import type { StructuredAgentSessionCurrentWork } from './structured-agent-session-current-work'
 
-export type {
-  AgentSessionSubscriberEmit,
-  AgentSessionSubscribeInput,
-  Subscriber,
-  AgentSessionSubscribersHooks
-} from './agent-session-subscriber-types'
-import type {
-  AgentSessionSubscriberEmit,
-  Subscriber,
-  AgentSessionSubscribersHooks
-} from './agent-session-subscriber-types'
+export type AgentSessionSubscriberEmit = (event: AgentSessionSubscribeEvent) => void
+export type AgentSessionSubscribeInput = {
+  id: string
+  sessionId: string
+  emit: AgentSessionSubscriberEmit
+  cursor?: AgentJournalCursor
+  /** Every frame to fit a phone's bridge frame; the RPC sets it for every phone. */
+  boundedFrames?: boolean
+}
+
+export type Subscriber = {
+  id: string
+  sessionId: string
+  emit: AgentSessionSubscriberEmit
+  cursor: AgentJournalCursor
+  fence: number
+  boundedFrames: boolean
+  commands?: AgentSessionSlashCommand[] | null
+  /** The last draft list actually SENT — never advanced on a page that withheld
+   *  it, or the final replacement would be suppressed by the identity dedup. */
+  queuePublication?: QueuePublication
+  /** Fingerprint of the background-task roster last SENT. */
+  backgroundTasks?: string
+  /** The current-work view the last frame's fields were read under
+   *  (`StructuredAgentSessionCurrentWork.viewKey`); a change with no row still owes a frame. */
+  workView?: string
+}
+
+export type AgentSessionSubscribersHooks = {
+  readCommands?: (sessionId: string) => AgentSessionSlashCommand[] | undefined
+  /** Revision-stable per emit: an unchanged list keeps its reference, so token
+   *  streams never re-serialize it; any draft-table write changes it. */
+  readQueuePublication?: (sessionId: string) => QueuePublication | undefined
+  readBackgroundTasks?: SubscriberFieldHooks['readBackgroundTasks']
+  /** Fires after publications that can change journal content. */
+  onJournalPublished?: (sessionId: string, journal: AgentSessionJournal) => void
+  /** The host's projection of current work (`structuredAgentSessionCurrentWork`), which every
+   *  page and frame states as its turn and prompt fields. */
+  readCurrentWork?: (
+    sessionId: string,
+    journal: AgentSessionJournal
+  ) => StructuredAgentSessionCurrentWork | undefined
+  now?: () => number
+}
 
 export class AgentSessionSubscribers {
   private readonly bySession = new Map<string, Map<string, Subscriber>>()
@@ -58,7 +94,6 @@ export class AgentSessionSubscribers {
     fence: number
     emit: AgentSessionSubscriberEmit
     cursor?: AgentJournalCursor
-    snapshotLimit?: number
     boundedFrames?: boolean
   }): () => void {
     const liveCursor = input.journal.cursor()
@@ -68,7 +103,6 @@ export class AgentSessionSubscribers {
       emit: input.emit,
       cursor: input.cursor ?? { epoch: liveCursor.epoch, sequence: 0 },
       fence: input.fence,
-      snapshotLimit: input.snapshotLimit,
       boundedFrames: input.boundedFrames === true
     }
     const session = this.bySession.get(input.sessionId) ?? new Map<string, Subscriber>()
@@ -94,8 +128,7 @@ export class AgentSessionSubscribers {
         readAgentSessionHydrationPage(
           input.journal,
           input.fence,
-          subscriberHistoryReader(subscriber),
-          subscriber.snapshotLimit
+          subscriberHistoryReader(subscriber)
         ),
         work
       )
@@ -167,26 +200,17 @@ export class AgentSessionSubscribers {
   snapshot(sessionId: string, journal: AgentSessionJournal, fence: number): void {
     const work = this.hooks.readCurrentWork?.(sessionId, journal)
     // Read once per item form, since bounded-frame subscribers size their page by theirs.
-    const pages = new Map<string, AgentSessionHistoryPage>()
+    let storedPage: AgentSessionHistoryPage | undefined
+    let boundedPage: AgentSessionHistoryPage | undefined
     const read = (subscriber: Subscriber): AgentSessionHistoryPage =>
       withPublishedWork(
-        readAgentSessionHydrationPage(
-          journal,
-          fence,
-          subscriberHistoryReader(subscriber),
-          subscriber.snapshotLimit
-        ),
+        readAgentSessionHydrationPage(journal, fence, subscriberHistoryReader(subscriber)),
         work
       )
-    const pageFor = (subscriber: Subscriber): AgentSessionHistoryPage => {
-      const key = `${subscriber.boundedFrames}:${subscriber.snapshotLimit ?? 'legacy'}`
-      let page = pages.get(key)
-      if (!page) {
-        page = read(subscriber)
-        pages.set(key, page)
-      }
-      return page
-    }
+    const pageFor = (subscriber: Subscriber): AgentSessionHistoryPage =>
+      subscriber.boundedFrames
+        ? (boundedPage ??= read(subscriber))
+        : (storedPage ??= read(subscriber))
     const hostNow = this.now()
     for (const subscriber of this.subscribers(sessionId)) {
       const page = pageFor(subscriber)

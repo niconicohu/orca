@@ -29,7 +29,6 @@ export function subscribeMobileStructuredChat({
   sessionId,
   sessionKey,
   wasReady,
-  snapshotLimit,
   getCurrent,
   markReady,
   update
@@ -37,7 +36,6 @@ export function subscribeMobileStructuredChat({
   client: RpcClient
   sessionId: string
   sessionKey: string
-  snapshotLimit?: boolean
   wasReady: boolean
   getCurrent: () => MobileStructuredChatState | null
   markReady: () => void
@@ -132,7 +130,6 @@ export function subscribeMobileStructuredChat({
         'agentSession.subscribe',
         {
           sessionId,
-          ...(snapshotLimit ? { snapshotLimit: 40 } : {}),
           ...(wasReady && getCurrent()?.cursor ? { cursor: getCurrent()?.cursor } : {})
         },
         (raw) => {

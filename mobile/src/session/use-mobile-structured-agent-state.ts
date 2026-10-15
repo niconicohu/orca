@@ -21,7 +21,7 @@ import { callAgentSession } from './mobile-structured-agent-session-rpc'
 export function useMobileStructuredAgentState(
   args: MobileStructuredAgentStateArgs
 ): MobileStructuredAgentState {
-  const { client, connected, enabled, sessionId, sessionKey, snapshotLimit } = args
+  const { client, connected, enabled, sessionId, sessionKey } = args
   const cacheClient = useRef(client)
   const clientChanged = cacheClient.current !== client
   const cached = client && sessionKey ? routeReads.get(client, sessionKey) : null
@@ -154,7 +154,6 @@ export function useMobileStructuredAgentState(
       client,
       sessionId,
       sessionKey: sessionKey ?? '',
-      snapshotLimit,
       wasReady: !!sessionKey && readyKeys.current.has(sessionKey),
       getCurrent: () => (sessionKeyRef.current === sessionKey ? stateRef.current : null),
       markReady: () => {
@@ -164,7 +163,7 @@ export function useMobileStructuredAgentState(
       },
       update
     })
-  }, [update, client, connected, enabled, sessionId, sessionKey, snapshotLimit])
+  }, [update, client, connected, enabled, sessionId, sessionKey])
 
   const loadEarlier = useCallback(() => {
     const current = stateRef.current

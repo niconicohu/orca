@@ -167,19 +167,17 @@ export function createAgentSessionCatchUpReader(
 export function readAgentSessionHydrationPage(
   journal: AgentSessionJournal,
   fence?: number,
-  reader: HistoryReader = STORED_HISTORY_READER,
-  snapshotLimit?: number
+  reader: HistoryReader = STORED_HISTORY_READER
 ): AgentSessionHistoryPage {
-  return buildHydrationPage(journal.snapshot(), fence, reader, snapshotLimit)
+  return buildHydrationPage(journal.snapshot(), fence, reader)
 }
 
 function buildHydrationPage(
   snapshot: AgentJournalSnapshot,
   fence: number | undefined,
-  reader: HistoryReader,
-  snapshotLimit = reader.snapshotLimit ?? AGENT_SESSION_HISTORY_MAX_LIMIT
+  reader: HistoryReader
 ): AgentSessionHistoryPage {
-  const items = conversationWindow(snapshot.items, resolveHistoryLimit(snapshotLimit))
+  const items = conversationWindow(snapshot.items, AGENT_SESSION_HISTORY_MAX_LIMIT)
   const bounded = boundHistoryItemsByBytes(
     items,
     'newest',
