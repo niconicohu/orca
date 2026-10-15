@@ -232,6 +232,7 @@ export function renderTabBarItems({
         ptyId: null,
         worktreeId,
         title: item.data.label,
+        generatedTitle: item.data.generatedLabel,
         customTitle: item.data.customLabel,
         color: item.data.color,
         sortOrder: item.data.sortOrder,

@@ -40,6 +40,7 @@ vi.mock('lucide-react-native', () => ({
 vi.mock('../components/MobileMarkdown', () => ({ MobileMarkdown: 'MobileMarkdown' }))
 
 import { MobileNativeChatMessage } from './MobileNativeChatMessage'
+import { useMobileNativeChatTurnDisclosure } from './use-mobile-native-chat-turn-disclosure'
 
 function userMessage(blocks: NativeChatMessage['blocks']): NativeChatMessage {
   return { id: 'u1', role: 'user', blocks, timestamp: null, source: 'transcript' }
@@ -80,6 +81,67 @@ describe('MobileNativeChatMessage', () => {
 
   const textIn = (node: ReactTestInstance): string[] =>
     node.findAllByType('Text' as never).map((text) => String(text.children.join('')))
+
+  it('renders a structured compaction marker as a divider instead of markdown prose', () => {
+    const tree = render({
+      ...toolMessage([{ type: 'text', text: 'Context compacted', presentation: 'compaction' }]),
+      role: 'system'
+    })
+    expect(
+      tree.root.findAll(
+        (node) => node.type === 'View' && node.props.accessibilityLabel === 'Context compacted'
+      )
+    ).toHaveLength(1)
+    expect(tree.root.findAllByType('MobileMarkdown' as never)).toHaveLength(0)
+    expect(textIn(tree.root)).toContain('Context compacted')
+  })
+
+  it('keeps ordinary prose mentioning compaction as prose', () => {
+    const tree = render(toolMessage([{ type: 'text', text: 'Context compacted' }]))
+    expect(tree.root.findAllByType('MobileMarkdown' as never)).toHaveLength(1)
+    expect(tree.root.findAllByProps({ accessibilityLabel: 'Context compacted' })).toHaveLength(0)
+  })
+
+  it('keeps restored tool activity expandable without a recorded turn duration', () => {
+    const messages = [
+      userMessage([{ type: 'text', text: 'Run checks' }]),
+      toolMessage([
+        { type: 'text', text: 'Checks passed' },
+        { type: 'tool-call', name: 'Read', input: { file_path: 'a/b.ts' }, state: 'completed' }
+      ])
+    ]
+    function RestoredTurn() {
+      const disclosure = useMobileNativeChatTurnDisclosure({
+        messages,
+        enabled: true,
+        isWorking: false,
+        scopeKey: 'restored-without-timing'
+      })
+      return createElement(
+        'messages',
+        {},
+        ...messages.map((message, index) =>
+          createElement(MobileNativeChatMessage, {
+            key: message.id,
+            message,
+            structuredActivityUi: true,
+            onToggleTurn: disclosure.onToggleTurn,
+            ...disclosure.resolveRow(index, message)
+          })
+        )
+      )
+    }
+    act(() => {
+      renderer = create(createElement(RestoredTurn))
+    })
+    const toggle = renderer!.root.findAll(
+      (node) => node.type === 'Pressable' && node.props.accessibilityLabel === 'Toggle turn details'
+    )
+    expect(toggle).toHaveLength(1)
+    expect(textIn(renderer!.root)).not.toContain('1×')
+    act(() => toggle[0].props.onPress())
+    expect(textIn(renderer!.root)).toContain('1×')
+  })
 
   it('renders a loadable preview URI as an image thumbnail', () => {
     const tree = render(userMessage([{ type: 'image-ref', url: 'file:///a.jpg', alt: 'a photo' }]))

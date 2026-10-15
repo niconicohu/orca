@@ -204,7 +204,7 @@ export function MobileNativeChatView({
   // `data` is the list source: folded transcript + synthetic streaming bubble +
   // route-owned accepted echoes. Memoize on the same deps so the
   // downstream autoscroll effects/`renderItem` keep referential stability.
-  const { data } = useMemo(
+  const { data: allData } = useMemo(
     () =>
       buildMobileNativeChatTransientData({
         messages,
@@ -215,6 +215,18 @@ export function MobileNativeChatView({
       }),
     [messages, folded, streaming, pending, imagePreviewsByMessageId]
   )
+  const turns = useMobileNativeChatTurnDisclosure({
+    messages: allData,
+    enabled: structuredActivityUi,
+    isWorking: agentWorking === true,
+    workingStartedAt,
+    settledTurns,
+    thinking: turnIndicator?.thinking === true,
+    activityText: turnIndicator?.activityText ?? null,
+    scopeKey: sendSurfaceId,
+    allActivityExpanded: toolsExpanded
+  })
+  const data = turns.visibleMessages
   const nativeLayout = useMobileChatNativeLayout(sendSurfaceId, data.length - 1)
   const subagentLabels = useMemo(() => nativeChatSubagentLabels(messages), [messages])
   const {
@@ -274,18 +286,6 @@ export function MobileNativeChatView({
   // Per-turn status rows: one live indicator while the turn runs, then a settled
   // "Worked for N" row. The structured lane owns them; the bridge lane keeps its
   // three-dot indicator.
-  const turns = useMobileNativeChatTurnDisclosure({
-    messages: data,
-    enabled: structuredActivityUi,
-    isWorking: agentWorking === true,
-    workingStartedAt,
-    settledTurns,
-    thinking: turnIndicator?.thinking === true,
-    activityText: turnIndicator?.activityText ?? null,
-    scopeKey: sendSurfaceId
-  })
-  const hasPendingStructuredInteraction =
-    structuredActivityUi && (ask != null || permission != null || question != null)
 
   const renderItem = useCallback(
     ({ item, index }: { item: NativeChatMessage; index: number }) => (
@@ -369,7 +369,7 @@ export function MobileNativeChatView({
                   <View>
                     {agentWorking &&
                     (!structuredActivityUi || turns.active) &&
-                    !hasPendingStructuredInteraction ? (
+                    !(structuredActivityUi && (ask || permission || question)) ? (
                       <MobileNativeChatTurnActivity
                         thinking={turns.active?.thinking ?? turnIndicator?.thinking ?? false}
                         activityText={turns.activeActivityText}

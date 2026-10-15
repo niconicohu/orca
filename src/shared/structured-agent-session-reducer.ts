@@ -8,7 +8,8 @@ import type {
   AgentSessionSlashCommand,
   AgentSessionHistoryPage,
   AgentSessionSubscribeEvent,
-  AgentSessionTurnActivity
+  AgentSessionTurnActivity,
+  AgentSessionLatestTurn
 } from './agent-session-wire'
 import type { AgentSessionRefusalReference } from './agent-session-wire-refusals'
 import { backgroundTaskStatesEqual } from './agent-session-background-task-state-equality'
@@ -24,6 +25,7 @@ export type StructuredAgentHostClock = {
 }
 
 export type StructuredAgentSessionState = {
+  latestTurn?: AgentSessionLatestTurn | null
   epoch: string | null
   cursor: AgentJournalCursor | null
   fence: number | null
@@ -87,6 +89,7 @@ function replacePage(
   activity?: AgentSessionTurnActivity | null
 ): StructuredAgentSessionState {
   return {
+    ...(page.latestTurn !== undefined ? { latestTurn: page.latestTurn } : {}),
     epoch: page.epoch,
     cursor: page.liveCursor ?? page.window.nextCursor,
     fence,
@@ -221,6 +224,7 @@ export function reduceStructuredAgentSession(
   if (event.type === 'snapshot' || event.type === 'reset') {
     return {
       ...replacePage(event.page, event.fence, event.backgroundTasks, event.activity),
+      ...(event.latestTurn !== undefined ? { latestTurn: event.latestTurn } : {}),
       commands: event.commands,
       ...hostClockField(event.hostNow, receivedAt, state.hostClock)
     }
@@ -245,6 +249,7 @@ export function reduceStructuredAgentSession(
     (event.fence === undefined || event.fence === state.fence) &&
     (event.commands === undefined || event.commands === state.commands) &&
     backgroundTaskStatesEqual(backgroundTasks, state.backgroundTasks) &&
+    (event.latestTurn === undefined || event.latestTurn === state.latestTurn) &&
     activity?.turnId === state.activity?.turnId &&
     activity?.text === state.activity?.text &&
     state.status === 'ready' &&
@@ -265,6 +270,7 @@ export function reduceStructuredAgentSession(
   const lostTurnRow = outsideWindow.some((item) => readAgentJournalTurn(item.body) !== null)
   return {
     ...state,
+    ...(event.latestTurn !== undefined ? { latestTurn: event.latestTurn } : {}),
     cursor: event.batch.cursor,
     fence: event.fence ?? state.fence,
     items,

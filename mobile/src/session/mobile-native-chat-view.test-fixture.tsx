@@ -111,6 +111,7 @@ export function chatViewElement(overrides: Overrides): ReturnType<typeof createE
     onSend: vi.fn().mockResolvedValue(true),
     sendSurfaceId: 'tab-a',
     getSendCompletionGeneration: () => 0,
+    getComposerEditGeneration: () => 0,
     pending: [],
     composerText: '',
     onComposerTextChange: vi.fn(),

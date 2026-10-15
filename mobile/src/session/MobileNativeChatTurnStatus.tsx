@@ -32,17 +32,23 @@ function useElapsedSeconds(startedAt: number | null, counting: boolean): number 
 export function MobileNativeChatTurnStatus({
   startedAt,
   workedSeconds,
+  detailsOnly = false,
   expanded = false,
   onToggleExpanded
 }: {
   startedAt: number | null
   workedSeconds?: number | null
+  detailsOnly?: boolean
   expanded?: boolean
   onToggleExpanded?: () => void
 }): React.JSX.Element {
-  const settled = workedSeconds != null
+  const settled = detailsOnly || workedSeconds != null
   const elapsedSeconds = useElapsedSeconds(startedAt, !settled)
-  const label = formatNativeChatTurnStatusLabel({ workedSeconds, elapsedSeconds })
+  const label = detailsOnly
+    ? expanded
+      ? 'Hide activity'
+      : 'Show activity'
+    : formatNativeChatTurnStatusLabel({ workedSeconds, elapsedSeconds })
 
   if (settled && onToggleExpanded) {
     return (

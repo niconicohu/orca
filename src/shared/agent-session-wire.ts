@@ -22,7 +22,8 @@ import type {
   AgentJournalResolution,
   AgentJournalSubmission,
   AgentJournalThreadGoal,
-  AgentJournalTurnOutcome
+  AgentJournalTurnOutcome,
+  AgentJournalTurnLifecycle
 } from './agent-session-journal-types'
 import {
   agentSessionScopeKey,
@@ -51,6 +52,13 @@ export type {
 } from './agent-session-background-task-wire'
 export { agentSessionBackgroundTasksEqual } from './agent-session-background-task-wire'
 
+/** Whole-journal lifecycle checkpoint, independent of the bounded history window. */
+export type AgentSessionLatestTurn = {
+  itemId: string
+  observedAt: number
+  turn: AgentJournalTurnLifecycle
+}
+
 export type AgentSessionTurnActivity = {
   turnId: string
   text: string
@@ -78,6 +86,7 @@ export type AgentSessionHistoryRequest = {
 }
 
 export type AgentSessionHistoryPage = {
+  latestTurn?: AgentSessionLatestTurn | null
   sessionId: string
   epoch: string
   /** Optional for mixed-version readers; write-capable clients use the
@@ -131,7 +140,7 @@ export type AgentSessionJournalBatch = {
 }
 
 /** Host wall clock (ms epoch) stamped once per published frame; see `AgentSessionHistoryPage`. */
-type AgentSessionHostClockField = { hostNow?: number }
+type AgentSessionHostClockField = { hostNow?: number; latestTurn?: AgentSessionLatestTurn | null }
 
 export type AgentSessionSubscribeEvent =
   | ({

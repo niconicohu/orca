@@ -1,3 +1,4 @@
+import { activeStructuredAgentSessionTurnId } from '../../../src/shared/structured-agent-session-live-turn'
 import type {
   AgentSessionSubscribeEvent,
   AgentSessionHistoryPage
@@ -63,7 +64,16 @@ export function reduceMobileStructuredChatCheckpoint(
   now: number
 ): StructuredAgentSessionState {
   if (action.type === 'history-page') {
-    const page = retainedPage(state, action.page)
+    let page = retainedPage(state, action.page)
+    const incomingHead = action.page.liveCursor ?? action.page.window.nextCursor
+    if (
+      state.epoch === page.epoch &&
+      state.latestTurn !== undefined &&
+      state.cursor &&
+      state.cursor.sequence > incomingHead.sequence
+    ) {
+      page = { ...page, latestTurn: state.latestTurn }
+    }
     const next = reduceStructuredAgentSession(state, { ...action, page }, now)
     return { ...next, fence: state.fence }
   }
@@ -81,4 +91,12 @@ export function isResumedBatchForCheckpoint(
     event.batch.cursor.epoch === state.epoch &&
     event.batch.cursor.sequence >= (state.cursor?.sequence ?? 0)
   )
+}
+
+export function mobileStructuredActiveTurnId(state: StructuredAgentSessionState): string | null {
+  return state.latestTurn === undefined
+    ? activeStructuredAgentSessionTurnId(state.items)
+    : state.latestTurn?.turn.state === 'running'
+      ? state.latestTurn.turn.turnId
+      : null
 }

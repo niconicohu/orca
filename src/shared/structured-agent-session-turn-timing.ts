@@ -28,7 +28,9 @@ export type StructuredAgentTurnTiming = {
   observedAt: number
 }
 
-function readTiming(item: AgentJournalRenderItem): StructuredAgentTurnTiming | null {
+export function readStructuredAgentTurnTiming(
+  item: Pick<AgentJournalRenderItem, 'body' | 'observedAt'>
+): StructuredAgentTurnTiming | null {
   const turn = readAgentJournalTurn(item.body)
   if (!turn) {
     return null
@@ -86,7 +88,7 @@ export function selectStructuredAgentTurnTimings(
       continue
     }
     const turn = readAgentJournalTurn(item.body)
-    const timing = readTiming(item)
+    const timing = readStructuredAgentTurnTiming(item)
     if (!timing && turn?.state !== 'unverifiable') {
       continue
     }
@@ -109,7 +111,7 @@ export function selectStructuredAgentRunningTurnTiming(
   for (let index = items.length - 1; index >= 0; index -= 1) {
     const item = items[index]
     if (item && readAgentJournalTurn(item.body)?.turnId === turnId) {
-      return readTiming(item)
+      return readStructuredAgentTurnTiming(item)
     }
   }
   return null

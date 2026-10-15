@@ -32,6 +32,21 @@ export const styles = StyleSheet.create({
   reasoning: {
     opacity: 0.7
   },
+  compaction: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  compactionLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.borderSubtle
+  },
+  compactionLabel: {
+    color: colors.textMuted
+  },
   // A subagent's row is an aside to the conversation, set off the way desktop sets it off.
   subagent: {
     borderLeftWidth: 2,

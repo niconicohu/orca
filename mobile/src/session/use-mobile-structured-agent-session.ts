@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { mobileStructuredActiveTurnId } from './mobile-structured-chat-checkpoint'
 import { dispatchMobileStructuredCommand } from './mobile-structured-composer-command'
 import {
   structuredAgentSessionSendBody,
@@ -8,10 +9,7 @@ import { encodeNativeChatTranscriptIdentity } from '../../../src/shared/native-c
 import type { MobileNativeChatSendOutcome } from './mobile-native-chat-send'
 import { projectStructuredAgentSessionMessages } from '../../../src/shared/structured-agent-session-message-projection'
 import { hasUnansweredStructuredAgentSessionDispatch } from '../../../src/shared/structured-agent-session-projection'
-import {
-  activeStructuredAgentSessionTurnId,
-  isStructuredAgentSessionThinking
-} from '../../../src/shared/structured-agent-session-live-turn'
+import { isStructuredAgentSessionThinking } from '../../../src/shared/structured-agent-session-live-turn'
 import { selectStructuredAgentTurnActivity } from '../../../src/shared/native-chat-turn-activity'
 import {
   pendingStructuredApproval,
@@ -95,7 +93,6 @@ export function useMobileStructuredAgentSession(args: {
     onSendError,
     hostSupport
   } = args
-  const promptCancelSupported = hostSupport?.promptCancel ?? null
   const sessionKey = encodeNativeChatTranscriptIdentity([sourceIdentity, agent, sessionId])
   const operationIdsRef = useRef(new Map<string, string>())
   const commandPendingRef = useRef(false)
@@ -199,7 +196,7 @@ export function useMobileStructuredAgentSession(args: {
           conversationCommands
         },
         canRun: () =>
-          !activeStructuredAgentSessionTurnId(stateRef.current.items) &&
+          !mobileStructuredActiveTurnId(stateRef.current) &&
           !stateRef.current.items.some(
             (item) => pendingStructuredApproval(item) || pendingStructuredQuestion(item)
           ),
@@ -255,19 +252,19 @@ export function useMobileStructuredAgentSession(args: {
         onSendError,
         operationIds: operationIdsRef.current,
         prompt,
-        promptCancelSupported,
+        promptCancelSupported: hostSupport?.promptCancel ?? null,
         sessionId,
         sessionKey,
         stateRef
       }),
-    [client, enabled, onSendError, promptCancelSupported, sessionId, sessionKey, stateRef]
+    [client, enabled, onSendError, hostSupport?.promptCancel, sessionId, sessionKey, stateRef]
   )
 
   const messages = useMemo(
     () => projectStructuredAgentSessionMessages(state.items, [], state.submissions),
     [state.items, state.submissions]
   )
-  const turnId = activeStructuredAgentSessionTurnId(state.items)
+  const turnId = mobileStructuredActiveTurnId(state)
   const turnTiming = useMobileStructuredAgentTurnTiming(state, turnId)
   const activityText =
     selectStructuredAgentTurnActivity(state.items, turnId, state.activity)?.text ?? null

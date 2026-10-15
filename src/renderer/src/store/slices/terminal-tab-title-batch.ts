@@ -1,3 +1,4 @@
+import { structuredGeneratedTabTitles } from './structured-generated-tab-title'
 import { deriveGeneratedTabTitle } from '../../../../shared/agent-tab-title'
 import { isDecorativeAgentTitleFrameChange } from '../../../../shared/agent-decorative-title-signature'
 import { parseLegacyNumericPaneKey, parsePaneKey } from '../../../../shared/stable-pane-id'
@@ -240,5 +241,12 @@ export function applyGeneratedTabTitleUpdates(
     updateStageTabs(stage, tabIndexes, (tab) => ({ ...tab, generatedTitle }))
     updateStageUnifiedLabel(stage, tabId, 'generatedLabel', generatedTitle)
   }
-  return finishTitleStages(state, stages)
+  const result = finishTitleStages(state, stages)
+  const structured = structuredGeneratedTabTitles({ ...state, ...result.patch }, updates)
+  return structured
+    ? {
+        patch: { ...result.patch, unifiedTabsByWorktree: structured },
+        runtimeGraphChanged: true
+      }
+    : result
 }

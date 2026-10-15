@@ -91,6 +91,7 @@ export function createTerminalTabPresentationActions(
       }
       const ownerWorktreeId = getTerminalTabOwnerWorktreeId(state.tabsByWorktree, tabId)
       if (!ownerWorktreeId) {
+        get().setGeneratedTabTitlesFromAgentPrompts([{ paneKey, prompt, options }])
         return
       }
       const tabs = state.tabsByWorktree[ownerWorktreeId] ?? []

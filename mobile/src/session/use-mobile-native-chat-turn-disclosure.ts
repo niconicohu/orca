@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { mobileNativeChatTurnPresentation } from './mobile-native-chat-turn-presentation'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import type { NativeChatSettledTurns } from '../../../src/shared/native-chat-turn-status'
 import {
@@ -8,10 +9,10 @@ import {
 } from './use-mobile-native-chat-turn-status'
 
 const EMPTY_TURN_IDS: ReadonlySet<string> = new Set()
-const EMPTY_TURN_KEYS: readonly undefined[] = []
 const MAX_EXPANDED_TURNS = 128
 
 export type MobileNativeChatTurnRow = {
+  activityHidden?: boolean
   turnStatus: NativeChatTurnStatus | null
   turnExpanded: boolean
   /** Set only on a settled turn — the one row that has activity to disclose. */
@@ -30,7 +31,8 @@ export function useMobileNativeChatTurnDisclosure({
   settledTurns,
   thinking = false,
   activityText = null,
-  scopeKey
+  scopeKey,
+  allActivityExpanded = false
 }: {
   messages: readonly NativeChatMessage[]
   enabled: boolean
@@ -44,7 +46,9 @@ export function useMobileNativeChatTurnDisclosure({
   activityText?: string | null
   /** Host/worktree/tab identity for timing and disclosure isolation. */
   scopeKey: string
+  allActivityExpanded?: boolean
 }): {
+  visibleMessages: readonly NativeChatMessage[]
   active: NativeChatTurnStatus | null
   /** The live turn's provider activity copy, for the footer row. */
   activeActivityText: string | null
@@ -84,41 +88,47 @@ export function useMobileNativeChatTurnDisclosure({
     },
     [scopeKey]
   )
-  // Resolve each row's turn boundary once — a findLast per row is quadratic on a
-  // long transcript.
-  const turnKeys = useMemo(() => {
-    if (!enabled) {
-      return EMPTY_TURN_KEYS
-    }
-    let turnKey: string | undefined
-    return messages.map((message) => {
-      if (message.role === 'user') {
-        turnKey = message.id
-      }
-      return turnKey
-    })
-  }, [enabled, messages])
-
   const { active, activeTurnKey, completedByTurn } = turnStatuses
+  const presentation = useMemo(
+    () =>
+      enabled
+        ? mobileNativeChatTurnPresentation(
+            messages,
+            isWorking ? activeTurnKey : null,
+            expandedTurnIds,
+            allActivityExpanded
+          )
+        : null,
+    [enabled, messages, isWorking, activeTurnKey, expandedTurnIds, allActivityExpanded]
+  )
   const activeActivityText = enabled && isWorking ? (activityText ?? null) : null
+  const isWorkingTurn = (key: string) => isWorking && key === activeTurnKey
   const resolveRow = useCallback(
-    (index: number, message: NativeChatMessage): MobileNativeChatTurnRow => {
-      const turnKey = turnKeys[index]
+    (_index: number, message: NativeChatMessage): MobileNativeChatTurnRow => {
+      const row = presentation?.rows.get(message.id)
+      const turnKey = row?.turnKey
       // The live turn's bar carries its running clock; it settles in place.
       const turnStatus =
-        !enabled || message.role !== 'user' || !turnKey
+        !enabled || !row?.anchor || !turnKey
           ? null
           : turnKey === activeTurnKey
             ? active
             : (completedByTurn[turnKey] ?? null)
       return {
         turnStatus,
+        activityHidden: row?.activityHidden,
         turnExpanded: turnKey ? expandedTurnIds.has(turnKey) : false,
         // Why: the key travels and the row calls one stable handler with it. A
         // closure per row would be a new identity every render of a streaming
         // transcript, defeating the row's memo; caching one per turn would mean
         // writing a ref during render, which react-freeze can discard.
-        turnKey: turnKey && turnStatus?.workedSeconds != null ? turnKey : undefined,
+        turnKey:
+          turnKey &&
+          row?.anchor &&
+          !isWorkingTurn(turnKey) &&
+          (row?.hasDetails || turnStatus?.workedSeconds != null)
+            ? turnKey
+            : undefined,
         // With no user boundary at all, the session's working state stays authoritative.
         activeTurnIsWorking:
           enabled &&
@@ -127,10 +137,11 @@ export function useMobileNativeChatTurnDisclosure({
             (turnKey === undefined && activeTurnKey === MOBILE_UNANCHORED_TURN_KEY))
       }
     },
-    [turnKeys, enabled, activeTurnKey, active, completedByTurn, expandedTurnIds, isWorking]
+    [presentation, enabled, activeTurnKey, active, completedByTurn, expandedTurnIds, isWorking]
   )
 
   return {
+    visibleMessages: presentation?.visibleMessages ?? messages,
     active,
     activeActivityText,
     /** Stable for a given chat scope, so it never disturbs a row's memo. */

@@ -95,3 +95,42 @@ it('does not infer deletion from an item missing inside a bounded recent page', 
   )
   expect(next.items.map((item) => item.itemId)).toEqual(['1', '2', '3'])
 })
+
+it('keeps a newer live latest-turn checkpoint when an older history read returns late', () => {
+  const latestTurn = {
+    itemId: 'turn',
+    observedAt: 1,
+    turn: { turnId: 't', state: 'completed' as const, startedAt: 1, completedAt: 3 }
+  }
+  const state = {
+    ...EMPTY_STRUCTURED_AGENT_SESSION,
+    epoch: 'e',
+    cursor: { epoch: 'e', sequence: 4 },
+    latestTurn
+  }
+  const incoming = {
+    ...page(1),
+    latestTurn: { ...latestTurn, turn: { turnId: 't', state: 'running' as const, startedAt: 1 } }
+  }
+  const next = reduceMobileStructuredChatCheckpoint(
+    state,
+    { type: 'history-page', page: incoming },
+    5
+  )
+  expect(next.latestTurn?.turn.state).toBe('completed')
+  expect(incoming.latestTurn.turn.state).toBe('running')
+})
+it('accepts explicit null latest-turn checkpoints rather than reviving an old running row', () => {
+  const event = {
+    type: 'snapshot' as const,
+    sessionId: 's',
+    fence: 1,
+    page: { ...page(1), latestTurn: null }
+  }
+  const next = reduceMobileStructuredChatCheckpoint(
+    EMPTY_STRUCTURED_AGENT_SESSION,
+    { type: 'event', event },
+    1
+  )
+  expect(next.latestTurn).toBeNull()
+})

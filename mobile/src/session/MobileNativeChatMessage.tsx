@@ -12,7 +12,7 @@ import { MobileNativeChatTurnStatus } from './MobileNativeChatTurnStatus'
 import { ToolRun } from './MobileNativeChatToolRun'
 import type { NativeChatTurnStatus } from './use-mobile-native-chat-turn-status'
 import { isRenderableImageUri } from './mobile-native-chat-image-preview'
-import { styles, TEXT_SIZE } from './mobile-native-chat-message-styles'
+import { styles, TEXT_SIZE, MONO_SIZE } from './mobile-native-chat-message-styles'
 
 function Prose({
   block,
@@ -26,6 +26,17 @@ function Prose({
   onOpenFile?: (relativePath: string) => void
 }): React.JSX.Element | null {
   if (isTextBlock(block)) {
+    if (block.presentation === 'compaction') {
+      return (
+        <View style={styles.compaction} accessible accessibilityLabel={block.text}>
+          <View style={styles.compactionLine} />
+          <NativeText style={[styles.compactionLabel, { fontSize: MONO_SIZE * fontScale }]}>
+            {block.text}
+          </NativeText>
+          <View style={styles.compactionLine} />
+        </View>
+      )
+    }
     // Inverted (user) bubbles use a fixed dark-on-light text rather than the
     // markdown renderer's light-on-dark palette.
     if (invert) {
@@ -73,6 +84,7 @@ function MobileNativeChatMessageImpl({
   fontScale = 1,
   onOpenFile,
   turnStatus,
+  activityHidden = false,
   turnExpanded,
   turnKey,
   onToggleTurn,
@@ -90,6 +102,7 @@ function MobileNativeChatMessageImpl({
   fontScale?: number
   onOpenFile?: (relativePath: string) => void
   /** This settled turn's status row, rendered under its user message. */
+  activityHidden?: boolean
   turnStatus?: NativeChatTurnStatus | null
   /** Whether the turn caret has disclosed this turn's activity. */
   turnExpanded?: boolean
@@ -134,62 +147,65 @@ function MobileNativeChatMessageImpl({
   return (
     <>
       <View
-        style={[styles.row, isUser && styles.rowUser]}
+        style={activityHidden ? undefined : [styles.row, isUser && styles.rowUser]}
         ref={nativeRowRef}
         onLayout={onNativeRowLayout}
         collapsable={nativeRowRef ? false : undefined}
       >
-        <View
-          style={[
-            styles.content,
-            isUser && styles.userBubble,
-            isReasoning && styles.reasoning,
-            subagentName !== null && styles.subagent
-          ]}
-        >
-          {subagentName !== null ? (
-            <NativeText
-              style={styles.subagentCaption}
-              accessibilityLabel={
-                subagentLabel === undefined
-                  ? subagentName
-                  : NATIVE_CHAT_SUBAGENT_ATTRIBUTION_COPY.writtenBy.replaceAll(
-                      '{{value0}}',
-                      subagentLabel
-                    )
-              }
-              numberOfLines={1}
-            >
-              {subagentName}
-            </NativeText>
-          ) : null}
-          {prose.map((block, index) => (
-            <Prose
-              key={index}
-              block={block}
-              invert={isUser}
-              fontScale={fontScale}
-              onOpenFile={onOpenFile}
-            />
-          ))}
-          {showToolRun ? (
-            <ToolRun
-              // Why: a global toggle intentionally resets all per-run/per-line
-              // overrides in one remount, avoiding an effect-driven second render.
-              key={`${toolsExpanded ? 'expanded' : 'collapsed'}:${turnExpanded ? 'turn' : 'flat'}`}
-              blocks={tools}
-              defaultExpanded={turnExpanded || toolsExpanded}
-              expandChildren={turnExpanded ? false : toolsExpanded}
-              activeCall={activeCall}
-              onOpenFile={onOpenFile}
-            />
-          ) : null}
-        </View>
+        {activityHidden ? null : (
+          <View
+            style={[
+              styles.content,
+              isUser && styles.userBubble,
+              isReasoning && styles.reasoning,
+              subagentName !== null && styles.subagent
+            ]}
+          >
+            {subagentName !== null ? (
+              <NativeText
+                style={styles.subagentCaption}
+                accessibilityLabel={
+                  subagentLabel === undefined
+                    ? subagentName
+                    : NATIVE_CHAT_SUBAGENT_ATTRIBUTION_COPY.writtenBy.replaceAll(
+                        '{{value0}}',
+                        subagentLabel
+                      )
+                }
+                numberOfLines={1}
+              >
+                {subagentName}
+              </NativeText>
+            ) : null}
+            {prose.map((block, index) => (
+              <Prose
+                key={index}
+                block={block}
+                invert={isUser}
+                fontScale={fontScale}
+                onOpenFile={onOpenFile}
+              />
+            ))}
+            {showToolRun ? (
+              <ToolRun
+                // Why: a global toggle intentionally resets all per-run/per-line
+                // overrides in one remount, avoiding an effect-driven second render.
+                key={`${toolsExpanded ? 'expanded' : 'collapsed'}:${turnExpanded ? 'turn' : 'flat'}`}
+                blocks={tools}
+                defaultExpanded={turnExpanded || toolsExpanded}
+                expandChildren={turnExpanded ? false : toolsExpanded}
+                activeCall={activeCall}
+                onOpenFile={onOpenFile}
+              />
+            ) : null}
+          </View>
+        )}
       </View>
-      {turnStatus ? (
+      {turnStatus || (turnKey && onToggleTurn) ? (
         <MobileNativeChatTurnStatus
-          startedAt={turnStatus.startedAt}
-          workedSeconds={turnStatus.workedSeconds}
+          startedAt={turnStatus?.startedAt ?? null}
+          workedSeconds={turnStatus?.workedSeconds}
+          detailsOnly={!turnStatus}
           expanded={turnExpanded ?? false}
           onToggleExpanded={turnKey && onToggleTurn ? () => onToggleTurn(turnKey) : undefined}
         />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { isRootAgentJournalItem } from '../../../src/shared/agent-session-journal-producer'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import {
   reduceNativeChatTurnTiming,
@@ -45,7 +46,9 @@ export function useMobileNativeChatTurnStatus({
   activeTurnKey: string
 } {
   const latestUserIndex = enabled
-    ? messages.findLastIndex((message) => message.role === 'user')
+    ? messages.findLastIndex(
+        (message) => message.role === 'user' && isRootAgentJournalItem(message)
+      )
     : -1
   const latestUserId = latestUserIndex !== -1 ? (messages[latestUserIndex]?.id ?? null) : null
   const activeTurnKey = latestUserId ?? MOBILE_UNANCHORED_TURN_KEY
@@ -68,7 +71,9 @@ export function useMobileNativeChatTurnStatus({
       return
     }
     const validTurnKeys = new Set(
-      messages.filter((message) => message.role === 'user').map((message) => message.id)
+      messages
+        .filter((message) => message.role === 'user' && isRootAgentJournalItem(message))
+        .map((message) => message.id)
     )
     const previousActiveTurnKey =
       previousActiveTurn.current?.scopeKey === scopeKey
