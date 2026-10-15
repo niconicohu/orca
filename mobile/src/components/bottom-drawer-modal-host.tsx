@@ -1,3 +1,4 @@
+import { refreshNativeWindowAppearance } from '../platform/native-window-appearance'
 import { createContext, useContext, type ReactNode } from 'react'
 import { Modal } from 'react-native'
 
@@ -30,6 +31,8 @@ export function BottomDrawerModalHost({ visible, onRequestClose, children }: Pro
       transparent
       animationType="none"
       statusBarTranslucent
+      navigationBarTranslucent
+      onShow={refreshNativeWindowAppearance}
       onRequestClose={onRequestClose}
     >
       <BottomDrawerModalHostContext.Provider value={true}>

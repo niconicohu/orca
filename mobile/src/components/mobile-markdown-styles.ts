@@ -38,7 +38,6 @@ export const styles = createThemedStyles(() =>
     },
     inlineCode: {
       fontFamily: typography.monoFamily,
-      fontSize: 12,
       color: colors.textPrimary,
       backgroundColor: colors.bgRaised,
       borderRadius: radii.row,

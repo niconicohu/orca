@@ -1,6 +1,9 @@
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { openExternalLink } from '../platform/external-link'
 import { createMarkdownInlineMatcher, type MarkdownInlineMatch } from './markdown-inline-matcher'
+import { MobileMarkdownNativeText } from './MobileMarkdownNativeText'
+import { nativeMarkdownCode } from './mobile-markdown-native-code'
+import type { MarkdownTextProps } from './mobile-markdown-inline-code-ranges'
 import { MobileSelectableText } from './MobileSelectableText'
 import {
   Fragment,
@@ -48,13 +51,19 @@ const MAX_TABLE_ROWS = 40
 const MAX_TABLE_COLUMNS = 8
 /** Prose base size — passed to MermaidDiagram fallback mono text. */
 const MERMAID_BASE = 13
-const MarkdownTextContext = createContext<ComponentType<TextProps>>(NativeText)
+const MarkdownTextContext = createContext<ComponentType<TextProps>>(MobileMarkdownNativeText)
 
-function MarkdownText(props: TextProps): React.JSX.Element {
+function MarkdownText({ inlineCode, ...props }: MarkdownTextProps): React.JSX.Element {
   useMobileTheme()
 
   const TextComponent = useContext(MarkdownTextContext)
-  return createElement(TextComponent, props)
+  return createElement(TextComponent, {
+    ...props,
+    style:
+      inlineCode && nativeMarkdownCode
+        ? [props.style, { backgroundColor: 'transparent', paddingHorizontal: 0 }]
+        : props.style
+  })
 }
 
 // Web/mail hrefs open the system handler; file-target hrefs (file: URIs and
@@ -171,6 +180,7 @@ function renderInline(text: string, onOpenFile?: (pathText: string) => void): Re
         parts.push(
           <MarkdownText
             key={key}
+            inlineCode
             style={[styles.inlineCode, styles.inlineCodeLink]}
             onPress={() => onOpenFile(normalizeFilePath(code.trim()))}
           >
@@ -179,7 +189,7 @@ function renderInline(text: string, onOpenFile?: (pathText: string) => void): Re
         )
       } else {
         parts.push(
-          <MarkdownText key={key} style={styles.inlineCode}>
+          <MarkdownText key={key} inlineCode style={styles.inlineCode}>
             {code}
           </MarkdownText>
         )
@@ -224,10 +234,14 @@ function MobileMarkdownContent({
   const previewText = useMemo(() => normalizeMobileMarkdownPreviewHtml(text), [text])
   const blocks = useMemo(() => parseMobileMarkdown(previewText), [previewText])
   // Scale prose sizes; inline spans inherit fontSize from the wrapping Text.
-  const scaled = (size: number): { fontSize: number; lineHeight: number } | null =>
-    textScale !== 1 ? { fontSize: size * textScale, lineHeight: (size + 6) * textScale } : null
+  const scaled = (
+    size: number,
+    lineHeight = size + 6
+  ): { fontSize: number; lineHeight: number } | null =>
+    textScale !== 1 ? { fontSize: size * textScale, lineHeight: lineHeight * textScale } : null
   const proseScale = scaled(13)
-  const listScale = scaled(14)
+  const listScale = proseScale
+  const codeScale = scaled(12, 17)
   if (!text) {
     return fallback ? (
       <MarkdownText selectable={rangeSelectable} style={styles.paragraph}>
@@ -246,7 +260,11 @@ function MobileMarkdownContent({
             <MarkdownText
               key={index}
               selectable
-              style={[styles.heading, block.level <= 2 ? styles.headingLarge : null]}
+              style={[
+                styles.heading,
+                block.level <= 2 ? styles.headingLarge : null,
+                scaled(block.level <= 2 ? 15 : 14)
+              ]}
             >
               {renderInline(block.text, onOpenFile)}
             </MarkdownText>
@@ -255,7 +273,7 @@ function MobileMarkdownContent({
         if (block.type === 'quote') {
           return (
             <View key={index} style={styles.quote}>
-              <MarkdownText selectable style={styles.quoteText}>
+              <MarkdownText selectable style={[styles.quoteText, proseScale]}>
                 {renderInline(block.text, onOpenFile)}
               </MarkdownText>
             </View>
@@ -281,9 +299,11 @@ function MobileMarkdownContent({
               {block.language ? (
                 <NativeText style={styles.codeLanguage}>{block.language}</NativeText>
               ) : null}
-              <MarkdownText selectable style={styles.codeText}>
-                {block.text}
-              </MarkdownText>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <MarkdownText selectable style={[styles.codeText, codeScale]}>
+                  {block.text}
+                </MarkdownText>
+              </ScrollView>
             </View>
           )
         }
@@ -314,7 +334,7 @@ function MobileMarkdownContent({
                     <MarkdownText
                       key={cellIndex}
                       selectable
-                      style={[styles.tableCell, styles.tableHeader]}
+                      style={[styles.tableCell, styles.tableHeader, codeScale]}
                     >
                       {renderInline(header, onOpenFile)}
                     </MarkdownText>
@@ -323,7 +343,11 @@ function MobileMarkdownContent({
                 {visibleRows.map((row, rowIndex) => (
                   <View key={rowIndex} style={styles.tableRow}>
                     {visibleHeaders.map((_, cellIndex) => (
-                      <MarkdownText key={cellIndex} selectable style={styles.tableCell}>
+                      <MarkdownText
+                        key={cellIndex}
+                        selectable
+                        style={[styles.tableCell, codeScale]}
+                      >
                         {renderInline(row[cellIndex] ?? '', onOpenFile)}
                       </MarkdownText>
                     ))}
@@ -345,7 +369,7 @@ function MobileMarkdownContent({
             <View key={index} style={styles.list}>
               {block.items.map((item, itemIndex) => (
                 <View key={itemIndex} style={styles.listItem}>
-                  <NativeText style={styles.listMarker}>
+                  <NativeText style={[styles.listMarker, listScale]}>
                     {item.checked == null
                       ? block.ordered
                         ? `${itemIndex + 1}.`
@@ -387,7 +411,7 @@ function MobileMarkdownContent({
 function MobileMarkdownInner(props: Props): React.JSX.Element | null {
   useMobileTheme()
 
-  const TextComponent = props.rangeSelectable ? MobileSelectableText : NativeText
+  const TextComponent = props.rangeSelectable ? MobileSelectableText : MobileMarkdownNativeText
   return (
     <MarkdownTextContext.Provider value={TextComponent}>
       <MobileMarkdownContent {...props} />

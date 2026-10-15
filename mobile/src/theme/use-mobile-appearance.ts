@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { Appearance, Platform } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { applyNativeWindowAppearance } from '../platform/native-window-appearance'
 import { applyMobileColorScheme } from './mobile-theme'
 import {
   createMobileAppearanceController,
@@ -24,7 +25,10 @@ const controller = createMobileAppearanceController({
     const subscription = Appearance.addChangeListener(listener)
     return () => subscription.remove()
   },
-  apply: applyMobileColorScheme
+  apply: (scheme) => {
+    applyMobileColorScheme(scheme)
+    applyNativeWindowAppearance(scheme)
+  }
 })
 
 export function useMobileAppearance() {

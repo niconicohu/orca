@@ -1,3 +1,4 @@
+import { refreshNativeWindowAppearance } from '../platform/native-window-appearance'
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { View, Pressable, useWindowDimensions, ScrollView, Keyboard, Modal } from 'react-native'
@@ -420,7 +421,15 @@ export function MountedBottomDrawer({
   }
 
   return (
-    <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={dismiss}>
+    <Modal
+      visible
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onShow={refreshNativeWindowAppearance}
+      onRequestClose={dismiss}
+    >
       {overlay}
     </Modal>
   )

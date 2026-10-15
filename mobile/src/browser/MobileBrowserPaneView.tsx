@@ -1,3 +1,4 @@
+import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import {
@@ -7,9 +8,7 @@ import {
   Text,
   TextInput,
   View,
-  type PanResponderInstance,
-  type StyleProp,
-  type ViewStyle
+  type PanResponderInstance
 } from 'react-native'
 import { ArrowUp, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react-native'
 import { colors } from '../theme/mobile-theme'
@@ -34,10 +33,10 @@ import type { MobileBrowserTab } from './MobileBrowserPane'
 import type { BrowserDialogState } from './mobile-browser-stream-events'
 
 // Why: seeds layer 0 as the visible one; the pacer owns opacity after mount, so a render must not.
-const FRAME_LAYER_STYLES: [StyleProp<ViewStyle>, StyleProp<ViewStyle>] = [
-  styles.browserImageLayer,
-  [styles.browserImageLayer, styles.browserImageLayerHidden]
-]
+const FRAME_LAYER_STYLES = createThemedStyles(() => ({
+  visible: styles.browserImageLayer,
+  hidden: [styles.browserImageLayer, styles.browserImageLayerHidden]
+}))
 
 type MobileBrowserPaneViewProps = {
   addressFocused: boolean
@@ -206,7 +205,7 @@ export function MobileBrowserPaneView(props: MobileBrowserPaneViewProps) {
                       key={layer}
                       ref={frameLayers[layer].attachView}
                       pointerEvents="none"
-                      style={FRAME_LAYER_STYLES[layer]}
+                      style={layer === 0 ? FRAME_LAYER_STYLES.visible : FRAME_LAYER_STYLES.hidden}
                     >
                       <Image
                         ref={frameLayers[layer].attachImage}
@@ -233,7 +232,7 @@ export function MobileBrowserPaneView(props: MobileBrowserPaneViewProps) {
                   key={layer}
                   ref={frameLayers[layer].attachView}
                   pointerEvents="none"
-                  style={FRAME_LAYER_STYLES[layer]}
+                  style={layer === 0 ? FRAME_LAYER_STYLES.visible : FRAME_LAYER_STYLES.hidden}
                 >
                   <Image
                     ref={frameLayers[layer].attachImage}
