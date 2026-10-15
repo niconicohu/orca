@@ -40,9 +40,9 @@ it('updates prose, code, quotes, tools, status and native placeholders in place'
       roles.map(() => weight)
     )
     expect(text.at(-1)?.props.style).toEqual({ fontWeight: '700' })
-    expect(tree!.root.find((node) => String(node.type) === 'TextInput').props.style.at(-1).fontWeight).toBe(
-      weight
-    )
+    expect(
+      tree!.root.find((node) => String(node.type) === 'TextInput').props.style.at(-1).fontWeight
+    ).toBe(weight)
   }
   act(() => publishMobileChatFontWeight({ weight: 400, ready: true }))
   expect(tree!.root.find((node) => String(node.type) === 'TextInput').props.style).toBeUndefined()

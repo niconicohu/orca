@@ -1,3 +1,4 @@
+import type { QueuePublication } from './structured-agent-session-queued-publication'
 // Per-subscriber cursors over one session's journal.
 //
 // Each subscriber advances independently: a client that connected two epochs

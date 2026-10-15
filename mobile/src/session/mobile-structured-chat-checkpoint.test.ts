@@ -474,18 +474,38 @@ it('does not carry row revisions or write authority across a journal epoch chang
   expect(next.fence).toBeNull()
 })
 
-
 it('does not roll an accepted send back to pending from a late read or replay batch', () => {
   const accepted = acceptedSubmission('send')
   const pending = { ...accepted, dispatchState: 'pending' as const, resolvedAt: null }
-  const state = { ...EMPTY_STRUCTURED_AGENT_SESSION, epoch: 'e',
-    cursor: { epoch: 'e', sequence: 5 }, items: page(1).items, submissions: [accepted] }
-  const read = reduceMobileStructuredChatCheckpoint(state, { type: 'history-page',
-    page: { ...page(1), submissions: [pending] } }, 5)
+  const state = {
+    ...EMPTY_STRUCTURED_AGENT_SESSION,
+    epoch: 'e',
+    cursor: { epoch: 'e', sequence: 5 },
+    items: page(1).items,
+    submissions: [accepted]
+  }
+  const read = reduceMobileStructuredChatCheckpoint(
+    state,
+    { type: 'history-page', page: { ...page(1), submissions: [pending] } },
+    5
+  )
   expect(read.submissions[0]?.dispatchState).toBe('accepted')
-  const replay = reduceMobileStructuredChatCheckpoint(state, { type: 'event', event: {
-    type: 'batch', sessionId: 's', batch: { cursor: { epoch: 'e', sequence: 1 },
-      items: [], removedItemIds: [], submissions: [pending] }
-  } }, 6)
+  const replay = reduceMobileStructuredChatCheckpoint(
+    state,
+    {
+      type: 'event',
+      event: {
+        type: 'batch',
+        sessionId: 's',
+        batch: {
+          cursor: { epoch: 'e', sequence: 1 },
+          items: [],
+          removedItemIds: [],
+          submissions: [pending]
+        }
+      }
+    },
+    6
+  )
   expect(replay.submissions[0]?.dispatchState).toBe('accepted')
 })

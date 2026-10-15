@@ -34,7 +34,8 @@ export function beginDesktopAgentLaunchFeedback(args: {
       return (
         desktopAgentLaunchFeedback.read(scope).selectedId === args.id &&
         latest.activeWorktreeId === state.activeWorktreeId &&
-        latest.activeGroupIdByWorktree[args.worktreeId] === state.activeGroupIdByWorktree[args.worktreeId] &&
+        latest.activeGroupIdByWorktree[args.worktreeId] ===
+          state.activeGroupIdByWorktree[args.worktreeId] &&
         currentMarker === marker
       )
     },

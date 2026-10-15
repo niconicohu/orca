@@ -100,8 +100,8 @@ export function orderedMobileHistoryAction(
   }
   const stale = state.epoch === epoch && sequence < (state.cursor?.sequence ?? 0)
   const submissions = new Map(state.submissions.map((entry) => [entry.clientMessageId, entry]))
-  const orderedSubmissions = (incoming: typeof state.submissions) => stale
-    ? incoming.map((entry) => submissions.get(entry.clientMessageId) ?? entry) : incoming
+  const orderedSubmissions = (incoming: typeof state.submissions) =>
+    stale ? incoming.map((entry) => submissions.get(entry.clientMessageId) ?? entry) : incoming
   const filter = (items: typeof state.items) =>
     items.filter((item) => deleted[item.itemId] === undefined)
   if (page) {
