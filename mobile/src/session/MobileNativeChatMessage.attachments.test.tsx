@@ -1,4 +1,4 @@
-import { createElement } from 'react'
+import { createElement, type ReactNode } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, expect, it, vi } from 'vitest'
 import { MobileNativeChatMessage } from './MobileNativeChatMessage'
@@ -8,7 +8,7 @@ import type { RpcResponse } from '../transport/types'
 
 vi.mock('react-native', async () => {
   const React = await import('react')
-  const Text = ({ children, ...props }: { children?: unknown }): unknown =>
+  const Text = ({ children, ...props }: { children?: ReactNode }): unknown =>
     React.createElement('Text', props, children)
   return {
     ActivityIndicator: 'ActivityIndicator',
@@ -24,10 +24,10 @@ vi.mock('react-native', async () => {
     Image: 'Image',
     Platform: { OS: 'ios' },
     Pressable: 'Pressable',
-    ScrollView: ({ children, ...props }: { children?: unknown }) =>
+    ScrollView: ({ children, ...props }: { children?: ReactNode }) =>
       React.createElement('ScrollView', props, children),
     Text,
-    View: ({ children, ...props }: { children?: unknown }) =>
+    View: ({ children, ...props }: { children?: ReactNode }) =>
       React.createElement('View', props, children),
     StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 }
   }
