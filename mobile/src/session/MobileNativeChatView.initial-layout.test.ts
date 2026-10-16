@@ -61,19 +61,27 @@ describe('MobileNativeChatView: initial measured position', () => {
       list().props.onContentSizeChange(320, 1200)
       list().props.onScroll({ nativeEvent: measured(1200, 0) })
     })
-    await act(async () => vi.runAllTimers())
+    await act(async () => {
+      vi.runAllTimers()
+    })
     expect(list().props.style).toMatchObject({ opacity: 0 })
     act(() => list().props.onScroll({ nativeEvent: measured(1200, 700) }))
     // Markdown layout grows while the first pin is settling.
     act(() => list().props.onContentSizeChange(320, 1400))
-    await act(async () => vi.runAllTimers())
+    await act(async () => {
+      vi.runAllTimers()
+    })
     expect(list().props.style).toMatchObject({ opacity: 0 })
     // An old scroll acknowledgement must not reveal the new layout.
     act(() => list().props.onScroll({ nativeEvent: measured(1200, 700) }))
-    await act(async () => vi.runAllTimers())
+    await act(async () => {
+      vi.runAllTimers()
+    })
     expect(list().props.style).toMatchObject({ opacity: 0 })
     act(() => list().props.onScroll({ nativeEvent: measured(1400, 900) }))
-    await act(async () => vi.runAllTimers())
+    await act(async () => {
+      vi.runAllTimers()
+    })
     expect(list().props.style).toBeUndefined()
   })
 
@@ -85,16 +93,22 @@ describe('MobileNativeChatView: initial measured position', () => {
       list().props.onContentSizeChange(320, 400)
     }
     act(layout)
-    await act(async () => vi.runAllTimers())
+    await act(async () => {
+      vi.runAllTimers()
+    })
     expect(list().props.style).toBeUndefined()
     await update({ ...transcript, sendSurfaceId: 'tab-b' })
     expect(list().props.style).toMatchObject({ opacity: 0 })
     act(layout)
-    await act(async () => vi.runAllTimers())
+    await act(async () => {
+      vi.runAllTimers()
+    })
     await update(transcript)
     expect(list().props.style).toMatchObject({ opacity: 0 })
     act(layout)
-    await act(async () => vi.runAllTimers())
+    await act(async () => {
+      vi.runAllTimers()
+    })
     expect(list().props.style).toBeUndefined()
   })
 
@@ -106,7 +120,9 @@ describe('MobileNativeChatView: initial measured position', () => {
       list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
       list().props.onContentSizeChange(320, 1200)
     })
-    await act(async () => vi.runAllTimers())
+    await act(async () => {
+      vi.runAllTimers()
+    })
     expect(list().props.style).toBeUndefined()
   })
 })
