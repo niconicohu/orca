@@ -277,7 +277,7 @@ it('shows stored files above the text, expands additional files, and opens the o
 })
 
 it.each(['user', 'assistant'] as const)(
-  'shows three %s images plus a fourth tile that opens all images at the first hidden one',
+  'shows three %s thumbnails with overflow on the third and opens the tapped image in the full gallery',
   async (role) => {
     await act(async () => {
       renderer = create(
@@ -296,11 +296,15 @@ it.each(['user', 'assistant'] as const)(
     expect(renderer!.root.findAll((node) => String(node.type) === 'Image')).toHaveLength(3)
     const more = renderer!.root.find(
       (node) =>
-        String(node.type) === 'Pressable' && node.props.accessibilityLabel === 'View all 5 images'
+        String(node.type) === 'Pressable' && node.props.accessibilityLabel === 'Open image 3 of 5'
     )
+    expect(renderer!.root.findAll((node) => String(node.type) === 'Pressable')).toHaveLength(3)
+    expect(
+      more.findAll((node) => String(node.type) === 'Text' && node.props.children?.[0] === '+')
+    ).toHaveLength(1)
     await act(async () => more.props.onPress())
     const gallery = renderer!.root.find((node) => String(node.type) === 'FlatList')
     expect(gallery.props.data).toHaveLength(5)
-    expect(gallery.props.initialScrollIndex).toBe(3)
+    expect(gallery.props.initialScrollIndex).toBe(2)
   }
 )
