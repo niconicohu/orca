@@ -94,8 +94,18 @@ describe('MobileNativeChatView: initial measured position', () => {
   it('starts virtualization at the newest row so estimated offscreen spacers cannot masquerade as the bottom', async () => {
     const folded = Array.from({ length: 80 }, (_, index) => assistantTurn(`a-${index}`, 'Response'))
     await render({ folded })
-    expect(list().props.initialScrollIndex).toBe(79)
+    expect(list().props.initialScrollIndex).toBe(70)
+    expect(list().props.initialNumToRender).toBe(10)
     expect(list().props.onScrollToIndexFailed).toEqual(expect.any(Function))
+    await update({
+      folded: [
+        ...Array.from({ length: 20 }, (_, index) => assistantTurn(`old-${index}`, 'Earlier')),
+        ...folded
+      ]
+    })
+    expect(list().props.initialScrollIndex).toBe(70)
+    await update({ ...transcript, sendSurfaceId: 'small-chat' })
+    expect(list().props.initialScrollIndex).toBe(0)
   })
 
   it('pins again after native layout commits instead of waiting forever on an old-size acknowledgement', async () => {
