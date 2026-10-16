@@ -1,7 +1,9 @@
+import { MobileMarkdownCodeBlock } from '../MobileMarkdownCodeBlock'
+import { MobileMarkdownNativeText as Text } from '../MobileMarkdownNativeText'
 import { createThemedStyles } from '../../theme/mobile-themed-styles'
 import { useMobileTheme } from '../../theme/use-mobile-theme'
 import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { openExternalLink } from '../../platform/external-link'
 import { ChevronDown, ChevronRight } from 'lucide-react-native'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
@@ -95,7 +97,7 @@ function BlockView({ block, base }: { block: MarkdownBlock; base: number }) {
     case 'heading':
       return (
         <Text style={[styles.heading, { fontSize: base + Math.max(0, 4 - block.level) }]}>
-          <Inline text={block.text} base={base} />
+          {renderInline(block.text, base)}
         </Text>
       )
     case 'code':
@@ -104,9 +106,12 @@ function BlockView({ block, base }: { block: MarkdownBlock; base: number }) {
         return <MermaidDiagram source={block.text} base={base} />
       }
       return (
-        <View style={styles.codeBlock}>
-          <Text style={[styles.codeText, { fontSize: base - 1 }]}>{block.text}</Text>
-        </View>
+        <MobileMarkdownCodeBlock
+          code={block.text}
+          language={block.lang}
+          fontSize={base - 1}
+          style={{ marginBottom: spacing.sm }}
+        />
       )
     case 'table':
       return <TableBlock block={block} base={base} />
@@ -114,7 +119,7 @@ function BlockView({ block, base }: { block: MarkdownBlock; base: number }) {
       return (
         <View style={styles.quote}>
           <Text style={[styles.paragraph, { fontSize: base, lineHeight: base + 7 }]}>
-            <Inline text={block.text} base={base} />
+            {renderInline(block.text, base)}
           </Text>
         </View>
       )
@@ -135,7 +140,7 @@ function BlockView({ block, base }: { block: MarkdownBlock; base: number }) {
                   { fontSize: base, lineHeight: base + 7 }
                 ]}
               >
-                <Inline text={item} base={base} />
+                {renderInline(item, base)}
               </Text>
             </View>
           ))}
@@ -144,7 +149,7 @@ function BlockView({ block, base }: { block: MarkdownBlock; base: number }) {
     case 'paragraph':
       return (
         <Text style={[styles.paragraph, { fontSize: base, lineHeight: base + 7 }]}>
-          <Inline text={block.text} base={base} />
+          {renderInline(block.text, base)}
         </Text>
       )
   }
@@ -192,7 +197,7 @@ function TableBlock({
           {columns.map((c) => (
             <View key={c} style={[styles.tableCell, { alignItems: alignToFlex(block.align[c]) }]}>
               <Text style={[styles.tableHeaderText, { fontSize: base - 1 }]}>
-                <Inline text={block.headers[c] ?? ''} base={base} />
+                {renderInline(block.headers[c] ?? '', base)}
               </Text>
             </View>
           ))}
@@ -202,7 +207,7 @@ function TableBlock({
             {columns.map((c) => (
               <View key={c} style={[styles.tableCell, { alignItems: alignToFlex(block.align[c]) }]}>
                 <Text style={[styles.tableCellText, { fontSize: base - 1 }]}>
-                  <Inline text={row[c] ?? ''} base={base} />
+                  {renderInline(row[c] ?? '', base)}
                 </Text>
               </View>
             ))}
@@ -213,14 +218,13 @@ function TableBlock({
   )
 }
 
-function Inline({ text, base }: { text: string; base: number }) {
-  const tokens = useMemo<InlineToken[]>(() => {
-    try {
-      return parseInline(text)
-    } catch {
-      return [{ kind: 'text', text }]
-    }
-  }, [text])
+function renderInline(text: string, base: number) {
+  let tokens: InlineToken[]
+  try {
+    tokens = parseInline(text)
+  } catch {
+    tokens = [{ kind: 'text', text }]
+  }
   return (
     <>
       {tokens.map((token, i) => {
@@ -240,7 +244,11 @@ function Inline({ text, base }: { text: string; base: number }) {
         }
         if (token.kind === 'code') {
           return (
-            <Text key={i} style={[styles.codeInline, { fontSize: base - 1 }]}>
+            <Text
+              key={`${token.kind}:${token.text}:${tokens.slice(0, i).filter((previous) => previous.kind === token.kind && previous.text === token.text).length}`}
+              inlineCode
+              style={[styles.codeInline, { fontSize: base - 1 }]}
+            >
               {token.text}
             </Text>
           )
@@ -270,15 +278,6 @@ const styles = createThemedStyles(() =>
       fontFamily: typography.monoFamily,
       backgroundColor: colors.bgRaised
     },
-    codeBlock: {
-      backgroundColor: colors.bgRaised,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.borderSubtle,
-      borderRadius: radii.row,
-      padding: spacing.sm,
-      marginBottom: spacing.sm
-    },
-    codeText: { color: colors.textPrimary, fontFamily: typography.monoFamily },
     quote: {
       borderLeftWidth: 3,
       borderLeftColor: colors.borderSubtle,
