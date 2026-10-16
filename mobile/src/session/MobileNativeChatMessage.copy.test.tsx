@@ -364,7 +364,9 @@ describe('iOS whole-message copy', () => {
 
   it('has no copy footer for image-only or tool-only messages', () => {
     render({ ...message, blocks: [{ type: 'image-ref', path: '/attachment.png' }] })
-    expect(nodes('Pressable')).toHaveLength(0)
+    expect(
+      nodes('Pressable').filter((node) => node.props.accessibilityLabel?.startsWith('Copy '))
+    ).toHaveLength(0)
     act(() =>
       renderer!.update(
         createElement(MobileNativeChatMessage, {
@@ -372,6 +374,8 @@ describe('iOS whole-message copy', () => {
         })
       )
     )
-    expect(nodes('Pressable')).toHaveLength(0)
+    expect(
+      nodes('Pressable').filter((node) => node.props.accessibilityLabel?.startsWith('Copy '))
+    ).toHaveLength(0)
   })
 })

@@ -208,27 +208,31 @@ it('places text in its own bubble below the image', async () => {
   expect(bubbles[0]!.findAll((node) => String(node.type) === 'Image')).toHaveLength(0)
 })
 
-it('shows three images plus a fourth tile that opens all images at the first hidden one', async () => {
-  await act(async () => {
-    renderer = create(
-      createElement(MobileNativeChatMessage, {
-        message: {
-          ...message,
-          blocks: Array.from({ length: 5 }, (_, index) => ({
-            type: 'image-ref' as const,
-            url: `file:///${index}.png`
-          }))
-        }
-      })
+it.each(['user', 'assistant'] as const)(
+  'shows three %s images plus a fourth tile that opens all images at the first hidden one',
+  async (role) => {
+    await act(async () => {
+      renderer = create(
+        createElement(MobileNativeChatMessage, {
+          message: {
+            ...message,
+            role,
+            blocks: Array.from({ length: 5 }, (_, index) => ({
+              type: 'image-ref' as const,
+              url: `file:///${index}.png`
+            }))
+          }
+        })
+      )
+    })
+    expect(renderer!.root.findAll((node) => String(node.type) === 'Image')).toHaveLength(3)
+    const more = renderer!.root.find(
+      (node) =>
+        String(node.type) === 'Pressable' && node.props.accessibilityLabel === 'View all 5 images'
     )
-  })
-  expect(renderer!.root.findAll((node) => String(node.type) === 'Image')).toHaveLength(3)
-  const more = renderer!.root.find(
-    (node) =>
-      String(node.type) === 'Pressable' && node.props.accessibilityLabel === 'View all 5 images'
-  )
-  await act(async () => more.props.onPress())
-  const gallery = renderer!.root.find((node) => String(node.type) === 'FlatList')
-  expect(gallery.props.data).toHaveLength(5)
-  expect(gallery.props.initialScrollIndex).toBe(3)
-})
+    await act(async () => more.props.onPress())
+    const gallery = renderer!.root.find((node) => String(node.type) === 'FlatList')
+    expect(gallery.props.data).toHaveLength(5)
+    expect(gallery.props.initialScrollIndex).toBe(3)
+  }
+)

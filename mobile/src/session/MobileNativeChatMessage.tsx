@@ -37,7 +37,6 @@ import type { NativeChatResolvedPrompt } from '../../../src/shared/native-chat-r
 import { MobileNativeChatSubagentGroup } from './MobileNativeChatSubagentGroup'
 import { ToolRun } from './MobileNativeChatToolRun'
 import type { NativeChatTurnStatus } from './use-mobile-native-chat-turn-status'
-import { MobileNativeChatImage } from './MobileNativeChatImage'
 import { MobileNativeChatImageGallery } from './MobileNativeChatImageGallery'
 import { styles, TEXT_SIZE } from './mobile-native-chat-message-styles'
 import { agentMessageAttribution } from './mobile-agent-message-attribution'
@@ -105,10 +104,6 @@ function Prose({
         onLongPress={onLongPress}
       />
     )
-  }
-  if (isImageRefBlock(block)) {
-    const uri = block.url ?? block.path
-    return <MobileNativeChatImage key={uri} uri={uri} alt={block.alt} fontScale={fontScale} />
   }
   return null
 }
@@ -180,8 +175,9 @@ function MobileNativeChatMessageImpl({
   const { asks, unansweredAsks, work: tools } = nativeChatAskRunBlocks(blocksOfTools)
   // A roster draws as its group row, which replaces its frozen sentence.
   const drawnProse = withoutSubagentGroupTwins(prose)
-  const userImages = isUser ? drawnProse.filter(isImageRefBlock) : []
-  const bodyProse = isUser ? drawnProse.filter((block) => !isImageRefBlock(block)) : drawnProse
+  const images = message.role === 'system' ? [] : drawnProse.filter(isImageRefBlock)
+  const bodyProse =
+    message.role === 'system' ? drawnProse : drawnProse.filter((block) => !isImageRefBlock(block))
   // The agent did not write a system row: its words draw as a notice or a faint aside.
   const isSystem = message.role === 'system'
   const activeCall = structuredActivityUi
@@ -288,7 +284,9 @@ function MobileNativeChatMessageImpl({
       {/* A turn with no user bubble carries its bar above its first row. */}
       {turnStatusAbove ? statusRow : null}
       <View style={[styles.row, isUser && styles.rowUser]}>
-        {userImages.length > 0 ? <MobileNativeChatImageGallery images={userImages} /> : null}
+        {images.length > 0 ? (
+          <MobileNativeChatImageGallery images={images} alignToEnd={isUser} />
+        ) : null}
         {!isUser || bodyProse.length > 0 || showToolRun || askRow ? (
           <Content
             onLongPress={onLongPress}

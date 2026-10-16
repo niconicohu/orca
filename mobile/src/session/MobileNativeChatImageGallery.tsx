@@ -6,9 +6,11 @@ import { MobileNativeChatImageViewer } from './MobileNativeChatImageViewer'
 import { styles } from './mobile-native-chat-message-styles'
 
 export function MobileNativeChatImageGallery({
-  images
+  images,
+  alignToEnd = true
 }: {
   images: readonly NativeChatImageRefBlock[]
+  alignToEnd?: boolean
 }) {
   const [selected, setSelected] = useState<number | null>(null)
   const occurrences = new Map<string, number>()
@@ -19,7 +21,7 @@ export function MobileNativeChatImageGallery({
     return { image, key: `${identity}:${occurrence}` }
   })
   return (
-    <View style={styles.imageGallery}>
+    <View style={[styles.imageGallery, !alignToEnd && { justifyContent: 'flex-start' }]}>
       {thumbnails.map(({ image, key }, index) => (
         <Pressable
           key={key}
