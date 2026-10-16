@@ -215,7 +215,7 @@ it('shows three images plus a fourth tile that opens all images at the first hid
         message: {
           ...message,
           blocks: Array.from({ length: 5 }, (_, index) => ({
-            type: 'image-ref',
+            type: 'image-ref' as const,
             url: `file:///${index}.png`
           }))
         }
