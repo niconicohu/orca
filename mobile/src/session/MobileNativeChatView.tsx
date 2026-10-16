@@ -301,7 +301,8 @@ export function MobileNativeChatView({
     // The display status, decided once in the session hook.
     stopping: turnIndicator?.stopping === true,
     lineYields: structuredActivityUi && (ask != null || permission != null || question != null),
-    scopeKey: sendSurfaceId
+    scopeKey: sendSurfaceId,
+    processExpanded: toolsExpanded
   })
 
   const renderItem = useMobileNativeChatRowRenderer({
@@ -418,7 +419,9 @@ export function MobileNativeChatView({
             ) : (
               <ChevronsUpDown size={14} color={colors.textMuted} strokeWidth={2} />
             )}
-            <Text style={styles.chromeToggleLabel}>{toolsExpanded ? 'Collapse' : 'Tools'}</Text>
+            <Text style={styles.chromeToggleLabel}>
+              {toolsExpanded ? 'Collapse' : structuredActivityUi ? 'Process' : 'Tools'}
+            </Text>
           </Pressable>
         </View>
         {canStop ? (
