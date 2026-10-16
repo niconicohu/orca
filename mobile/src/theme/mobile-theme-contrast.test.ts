@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest'
-import { colors, darkColors, lightColors } from './mobile-theme'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { applyMobileColorScheme, colors, darkColors, lightColors } from './mobile-theme'
+import { styles } from '../session/mobile-native-chat-message-styles'
+
+vi.mock('react-native', () => ({
+  StyleSheet: { create: (value: unknown) => value, hairlineWidth: 1 }
+}))
+afterEach(() => applyMobileColorScheme('dark'))
 
 function channelLuminance(channel: number): number {
   const value = channel / 255
@@ -24,6 +30,19 @@ function contrastRatio(foreground: string, background: string): number {
 }
 
 describe('mobile text contrast', () => {
+  it.each(['light', 'dark'] as const)(
+    'uses a %s surface and readable text for user image messages',
+    (scheme) => {
+      applyMobileColorScheme(scheme)
+      expect(styles.userBubble.backgroundColor).toBe(colors.bgRaised)
+      expect(
+        contrastRatio(styles.userText.color, styles.userBubble.backgroundColor)
+      ).toBeGreaterThanOrEqual(4.5)
+      expect(
+        contrastRatio(styles.imageRef.color, styles.userBubble.backgroundColor)
+      ).toBeGreaterThanOrEqual(4.5)
+    }
+  )
   it.each([
     ['light', lightColors],
     ['dark', darkColors]
