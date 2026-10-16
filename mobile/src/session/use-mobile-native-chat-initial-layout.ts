@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { LayoutChangeEvent, NativeScrollEvent } from 'react-native'
 
 type Geometry = {
@@ -20,7 +20,11 @@ function atMeasuredBottom({ height, viewport, offset, lastScroll }: Geometry): b
 }
 
 /** Hide the initial pin and virtualized-row measurements, then leave normal scrolling alone. */
-export function useMobileNativeChatInitialLayout(scope: string, hasItems: boolean) {
+export function useMobileNativeChatInitialLayout(
+  scope: string,
+  hasItems: boolean,
+  pending = false
+) {
   const geometry = useRef<Geometry>({ scope, height: 0, viewport: 0, offset: 0 })
   const frame = useRef<number | null>(null)
   const [revealed, setRevealed] = useState<Geometry | null>(null)
@@ -38,6 +42,10 @@ export function useMobileNativeChatInitialLayout(scope: string, hasItems: boolea
   const ready = !hasItems || revealed === measured
   const confirm = useCallback(() => {
     if (ready || geometry.current !== measured) {
+      return
+    }
+    if (pending) {
+      cancel()
       return
     }
     // Native scroll acknowledgement and layout callbacks can arrive in either order.
@@ -64,7 +72,8 @@ export function useMobileNativeChatInitialLayout(scope: string, hasItems: boolea
         }
       })
     })
-  }, [ready, measured, cancel])
+  }, [ready, measured, cancel, pending])
+  useLayoutEffect(confirm, [confirm])
   useEffect(() => cancel, [cancel])
   return {
     ready,
