@@ -44,17 +44,13 @@ export const styles = createThemedStyles(() =>
     imageGalleryCount: { color: colors.textPrimary, fontSize: typography.titleSize },
     imageGalleryScrim: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: colors.bgBase,
-      opacity: 0.5
+      backgroundColor: 'rgba(0,0,0,0.5)'
     },
     imageGalleryOverflowCount: {
       position: 'absolute',
       right: spacing.xs,
       bottom: spacing.xs,
-      paddingHorizontal: spacing.xs,
-      borderRadius: radii.row,
-      color: colors.bgBase,
-      backgroundColor: colors.textPrimary,
+      color: colors.onAccent,
       fontSize: typography.titleSize
     },
     imageViewer: { flex: 1, backgroundColor: colors.bgBase },
