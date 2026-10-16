@@ -5,7 +5,10 @@ import SettingsMenuScreen from './settings-menu-screen'
 import AppearanceRoute from '../../app/appearance-settings'
 import { getMobileColorScheme } from '../theme/mobile-theme'
 
-const device = vi.hoisted(() => ({ storage: new Map<string, string>(), routes: [] as string[] }))
+const device = vi.hoisted(() => ({
+  storage: new Map<string, string>(),
+  routes: new Array<string>()
+}))
 vi.mock('react-native', () => ({
   Platform: { OS: 'android' },
   AppState: { addEventListener: () => ({ remove() {} }) },
