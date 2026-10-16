@@ -22,7 +22,6 @@ describe('agentLaunchCreateParams', () => {
       })
     ).toEqual({
       agent: 'codex',
-      nativeChatDefault: true,
       target: {
         kind: 'create-worktree',
         create: {

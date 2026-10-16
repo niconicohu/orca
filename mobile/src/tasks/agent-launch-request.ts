@@ -67,7 +67,6 @@ export function agentLaunchCreateParams(
 ): RpcSendParams<'agent.launch'> {
   return {
     agent,
-    nativeChatDefault: true,
     ...(operationId ? { operationId } : {}),
     target: { kind: 'create-worktree', create: withoutReservedAgentCreateFields(create) }
   }
@@ -87,10 +86,11 @@ export function agentLaunchExistingParams(args: {
   paneKey?: string
   sessionId?: string
   placement?: AgentLaunchPlacement
+  nativeChatDefault?: boolean
 }): RpcSendParams<'agent.launchReplay'> {
   return {
     agent: args.agent,
-    nativeChatDefault: true,
+    ...(args.nativeChatDefault !== undefined ? { nativeChatDefault: args.nativeChatDefault } : {}),
     operationId: args.operationId,
     target: { kind: 'existing', worktree: `id:${args.worktreeId}` },
     ...(args.prompt ? { prompt: args.prompt } : {}),

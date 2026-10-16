@@ -4,7 +4,20 @@
   "family": "worktree.agent-launch-create",
   "namedDeltas": [],
   "values": {
-    "00e6b2e434f1": {
+    "12ace8a26229": {
+      "outcome": {
+        "error": "outer refused"
+      }
+    },
+    "240b0b1c72b2": {
+      "status": "fulfilled",
+      "startedAt": 0,
+      "settledAt": 0,
+      "value": {
+        "error": ""
+      }
+    },
+    "25b1c746e7e7": {
       "name": "agent.launch#1",
       "ordinal": 1,
       "args": [
@@ -16,7 +29,46 @@
           "name": "params",
           "value": {
             "agent": "codex",
-            "nativeChatDefault": true,
+            "target": {
+              "create": {
+                "clientMutationId": "mutation-1",
+                "name": "kestrel",
+                "repo": "id:repo-1"
+              },
+              "kind": "create-worktree"
+            }
+          }
+        },
+        {
+          "name": "options",
+          "value": {
+            "timeoutMs": 600000
+          }
+        }
+      ],
+      "settlement": {
+        "status": "rejected",
+        "startedAt": 0,
+        "settledAt": 0,
+        "error": {
+          "category": "Error",
+          "message": "transport failure",
+          "isRpcDeliveryUnknown": true
+        }
+      }
+    },
+    "2d650f172c7e": {
+      "name": "agent.launch#1",
+      "ordinal": 1,
+      "args": [
+        {
+          "name": "method",
+          "value": "agent.launch"
+        },
+        {
+          "name": "params",
+          "value": {
+            "agent": "codex",
             "target": {
               "create": {
                 "clientMutationId": "mutation-1",
@@ -47,7 +99,7 @@
         }
       }
     },
-    "04797cc58f73": {
+    "368f594f7f00": {
       "name": "agent.launch#1",
       "ordinal": 1,
       "args": [
@@ -59,7 +111,309 @@
           "name": "params",
           "value": {
             "agent": "codex",
-            "nativeChatDefault": true,
+            "target": {
+              "create": {
+                "clientMutationId": "mutation-1",
+                "name": "kestrel",
+                "repo": "id:repo-1"
+              },
+              "kind": "create-worktree"
+            }
+          }
+        },
+        {
+          "name": "options",
+          "value": {
+            "timeoutMs": 600000
+          }
+        }
+      ],
+      "settlement": {
+        "status": "fulfilled",
+        "startedAt": 0,
+        "settledAt": 0,
+        "value": {
+          "id": "frame-1",
+          "ok": true,
+          "result": {
+            "$rpc": "null"
+          }
+        }
+      }
+    },
+    "3f946ad0279c": {
+      "outcome": "uncreated"
+    },
+    "69b9efd3c553": {
+      "name": "worktree.create#1",
+      "ordinal": 3,
+      "args": [
+        {
+          "name": "method",
+          "value": "worktree.create"
+        },
+        {
+          "name": "params",
+          "value": {
+            "clientMutationId": "mutation-1",
+            "name": "kestrel",
+            "repo": "id:repo-1"
+          }
+        },
+        {
+          "name": "options",
+          "value": {
+            "timeoutMs": 600000
+          }
+        }
+      ],
+      "settlement": {
+        "status": "pending",
+        "startedAt": 0
+      }
+    },
+    "7665e4eb5ce2": {
+      "status": "fulfilled",
+      "startedAt": 0,
+      "settledAt": 0,
+      "value": {
+        "error": "outer refused"
+      }
+    },
+    "772c3ce6f514": {
+      "name": "agent.launch#1",
+      "ordinal": 1,
+      "args": [
+        {
+          "name": "method",
+          "value": "agent.launch"
+        },
+        {
+          "name": "params",
+          "value": {
+            "agent": "codex",
+            "target": {
+              "create": {
+                "clientMutationId": "mutation-1",
+                "name": "kestrel",
+                "repo": "id:repo-1"
+              },
+              "kind": "create-worktree"
+            }
+          }
+        },
+        {
+          "name": "options",
+          "value": {
+            "timeoutMs": 600000
+          }
+        }
+      ],
+      "settlement": {
+        "status": "rejected",
+        "startedAt": 0,
+        "settledAt": 0,
+        "error": {
+          "category": "Error",
+          "message": "",
+          "isRpcDeliveryUnknown": true
+        }
+      }
+    },
+    "7d651cae8837": {
+      "outcome": {
+        "error": ""
+      }
+    },
+    "882a241ecac4": {
+      "name": "agent.launch#1",
+      "ordinal": 1,
+      "args": [
+        {
+          "name": "method",
+          "value": "agent.launch"
+        },
+        {
+          "name": "params",
+          "value": {
+            "agent": "codex",
+            "target": {
+              "create": {
+                "clientMutationId": "mutation-1",
+                "name": "kestrel",
+                "repo": "id:repo-1"
+              },
+              "kind": "create-worktree"
+            }
+          }
+        },
+        {
+          "name": "options",
+          "value": {
+            "timeoutMs": 600000
+          }
+        }
+      ],
+      "settlement": {
+        "status": "fulfilled",
+        "startedAt": 0,
+        "settledAt": 0,
+        "value": {
+          "id": "frame-1",
+          "ok": true,
+          "result": {
+            "error": "inner refused",
+            "ok": false
+          }
+        }
+      }
+    },
+    "9270aeb7d9c6": {
+      "status": "pending",
+      "startedAt": 0
+    },
+    "97555d579c32": {
+      "status": "fulfilled",
+      "startedAt": 0,
+      "settledAt": 0,
+      "value": {
+        "name": "kestrel",
+        "warning": "startup terminal failed",
+        "worktreeId": "repo-1::/w"
+      }
+    },
+    "9df0ac2b0247": {
+      "status": "fulfilled",
+      "startedAt": 0,
+      "settledAt": 0,
+      "value": {
+        "error": "Failed to create workspace"
+      }
+    },
+    "a19446c94e4f": {
+      "name": "agent.launch#1",
+      "ordinal": 2,
+      "json": "{\"id\":\"frame-1\",\"deviceToken\":\"recording-device\",\"method\":\"agent.launch\",\"params\":{\"agent\":\"codex\",\"target\":{\"kind\":\"create-worktree\",\"create\":{\"repo\":\"id:repo-1\",\"name\":\"kestrel\",\"clientMutationId\":\"mutation-1\"}}}}"
+    },
+    "a947768bc0ed": {
+      "status": "rejected",
+      "startedAt": 0,
+      "settledAt": 0,
+      "error": {
+        "category": "Error",
+        "message": "transport failure",
+        "isRpcDeliveryUnknown": true
+      }
+    },
+    "b070f4a5c63f": {
+      "name": "agent.launch#1",
+      "ordinal": 1,
+      "args": [
+        {
+          "name": "method",
+          "value": "agent.launch"
+        },
+        {
+          "name": "params",
+          "value": {
+            "agent": "codex",
+            "target": {
+              "create": {
+                "clientMutationId": "mutation-1",
+                "name": "kestrel",
+                "repo": "id:repo-1"
+              },
+              "kind": "create-worktree"
+            }
+          }
+        },
+        {
+          "name": "options",
+          "value": {
+            "timeoutMs": 600000
+          }
+        }
+      ],
+      "settlement": {
+        "status": "fulfilled",
+        "startedAt": 0,
+        "settledAt": 0,
+        "value": {
+          "error": {
+            "code": "refused",
+            "message": "outer refused"
+          },
+          "id": "frame-1",
+          "ok": false
+        }
+      }
+    },
+    "c7584e82c72f": {
+      "status": "rejected",
+      "startedAt": 0,
+      "settledAt": 0,
+      "error": {
+        "category": "Error",
+        "message": "",
+        "isRpcDeliveryUnknown": true
+      }
+    },
+    "d13a578180f9": {
+      "name": "worktree.create#1",
+      "ordinal": 4,
+      "json": "{\"id\":\"frame-2\",\"deviceToken\":\"recording-device\",\"method\":\"worktree.create\",\"params\":{\"repo\":\"id:repo-1\",\"name\":\"kestrel\",\"clientMutationId\":\"mutation-1\"}}"
+    },
+    "d4b99c221491": {
+      "name": "agent.launch#1",
+      "ordinal": 1,
+      "args": [
+        {
+          "name": "method",
+          "value": "agent.launch"
+        },
+        {
+          "name": "params",
+          "value": {
+            "agent": "codex",
+            "target": {
+              "create": {
+                "clientMutationId": "mutation-1",
+                "name": "kestrel",
+                "repo": "id:repo-1"
+              },
+              "kind": "create-worktree"
+            }
+          }
+        },
+        {
+          "name": "options",
+          "value": {
+            "timeoutMs": 600000
+          }
+        }
+      ],
+      "settlement": {
+        "status": "fulfilled",
+        "startedAt": 0,
+        "settledAt": 0,
+        "value": {
+          "id": "frame-1",
+          "ok": true
+        }
+      }
+    },
+    "d53c007d1e7a": {
+      "name": "agent.launch#1",
+      "ordinal": 1,
+      "args": [
+        {
+          "name": "method",
+          "value": "agent.launch"
+        },
+        {
+          "name": "params",
+          "value": {
+            "agent": "codex",
             "target": {
               "create": {
                 "clientMutationId": "mutation-1",
@@ -91,20 +445,7 @@
         }
       }
     },
-    "12ace8a26229": {
-      "outcome": {
-        "error": "outer refused"
-      }
-    },
-    "240b0b1c72b2": {
-      "status": "fulfilled",
-      "startedAt": 0,
-      "settledAt": 0,
-      "value": {
-        "error": ""
-      }
-    },
-    "260c7d45d3cc": {
+    "e32d599d417d": {
       "name": "agent.launch#1",
       "ordinal": 1,
       "args": [
@@ -116,7 +457,6 @@
           "name": "params",
           "value": {
             "agent": "codex",
-            "nativeChatDefault": true,
             "target": {
               "create": {
                 "clientMutationId": "mutation-1",
@@ -150,7 +490,23 @@
         }
       }
     },
-    "32a964871d54": {
+    "ea58146f75c4": {
+      "status": "rejected",
+      "startedAt": 0,
+      "settledAt": 0,
+      "error": {
+        "category": "RpcIncompatibleReplyError",
+        "message": "The host sent a reply this app could not read (agent.launch)",
+        "isRpcDeliveryUnknown": false,
+        "code": "incompatible_reply"
+      }
+    },
+    "ed1eb862d036": {
+      "outcome": {
+        "error": "Failed to create workspace"
+      }
+    },
+    "f02b3d4d2928": {
       "name": "agent.launch#1",
       "ordinal": 1,
       "args": [
@@ -162,7 +518,6 @@
           "name": "params",
           "value": {
             "agent": "codex",
-            "nativeChatDefault": true,
             "target": {
               "create": {
                 "clientMutationId": "mutation-1",
@@ -181,20 +536,11 @@
         }
       ],
       "settlement": {
-        "status": "rejected",
-        "startedAt": 0,
-        "settledAt": 0,
-        "error": {
-          "category": "Error",
-          "message": "transport failure",
-          "isRpcDeliveryUnknown": true
-        }
+        "status": "pending",
+        "startedAt": 0
       }
     },
-    "3f946ad0279c": {
-      "outcome": "uncreated"
-    },
-    "51eb0e5cd4e2": {
+    "f4c2ee5db891": {
       "name": "agent.launch#1",
       "ordinal": 1,
       "args": [
@@ -206,7 +552,49 @@
           "name": "params",
           "value": {
             "agent": "codex",
-            "nativeChatDefault": true,
+            "target": {
+              "create": {
+                "clientMutationId": "mutation-1",
+                "name": "kestrel",
+                "repo": "id:repo-1"
+              },
+              "kind": "create-worktree"
+            }
+          }
+        },
+        {
+          "name": "options",
+          "value": {
+            "timeoutMs": 600000
+          }
+        }
+      ],
+      "settlement": {
+        "status": "fulfilled",
+        "startedAt": 0,
+        "settledAt": 0,
+        "value": {
+          "error": {
+            "code": "refused",
+            "message": ""
+          },
+          "id": "frame-1",
+          "ok": false
+        }
+      }
+    },
+    "f53a3cfe8aa9": {
+      "name": "agent.launch#1",
+      "ordinal": 1,
+      "args": [
+        {
+          "name": "method",
+          "value": "agent.launch"
+        },
+        {
+          "name": "params",
+          "value": {
+            "agent": "codex",
             "target": {
               "create": {
                 "clientMutationId": "mutation-1",
@@ -249,406 +637,6 @@
         }
       }
     },
-    "56ae0bbb7100": {
-      "name": "agent.launch#1",
-      "ordinal": 1,
-      "args": [
-        {
-          "name": "method",
-          "value": "agent.launch"
-        },
-        {
-          "name": "params",
-          "value": {
-            "agent": "codex",
-            "nativeChatDefault": true,
-            "target": {
-              "create": {
-                "clientMutationId": "mutation-1",
-                "name": "kestrel",
-                "repo": "id:repo-1"
-              },
-              "kind": "create-worktree"
-            }
-          }
-        },
-        {
-          "name": "options",
-          "value": {
-            "timeoutMs": 600000
-          }
-        }
-      ],
-      "settlement": {
-        "status": "fulfilled",
-        "startedAt": 0,
-        "settledAt": 0,
-        "value": {
-          "error": {
-            "code": "refused",
-            "message": ""
-          },
-          "id": "frame-1",
-          "ok": false
-        }
-      }
-    },
-    "67137dc1a6a7": {
-      "name": "agent.launch#1",
-      "ordinal": 1,
-      "args": [
-        {
-          "name": "method",
-          "value": "agent.launch"
-        },
-        {
-          "name": "params",
-          "value": {
-            "agent": "codex",
-            "nativeChatDefault": true,
-            "target": {
-              "create": {
-                "clientMutationId": "mutation-1",
-                "name": "kestrel",
-                "repo": "id:repo-1"
-              },
-              "kind": "create-worktree"
-            }
-          }
-        },
-        {
-          "name": "options",
-          "value": {
-            "timeoutMs": 600000
-          }
-        }
-      ],
-      "settlement": {
-        "status": "fulfilled",
-        "startedAt": 0,
-        "settledAt": 0,
-        "value": {
-          "error": {
-            "code": "refused",
-            "message": "outer refused"
-          },
-          "id": "frame-1",
-          "ok": false
-        }
-      }
-    },
-    "69b9efd3c553": {
-      "name": "worktree.create#1",
-      "ordinal": 3,
-      "args": [
-        {
-          "name": "method",
-          "value": "worktree.create"
-        },
-        {
-          "name": "params",
-          "value": {
-            "clientMutationId": "mutation-1",
-            "name": "kestrel",
-            "repo": "id:repo-1"
-          }
-        },
-        {
-          "name": "options",
-          "value": {
-            "timeoutMs": 600000
-          }
-        }
-      ],
-      "settlement": {
-        "status": "pending",
-        "startedAt": 0
-      }
-    },
-    "7665e4eb5ce2": {
-      "status": "fulfilled",
-      "startedAt": 0,
-      "settledAt": 0,
-      "value": {
-        "error": "outer refused"
-      }
-    },
-    "7b5745560906": {
-      "name": "agent.launch#1",
-      "ordinal": 1,
-      "args": [
-        {
-          "name": "method",
-          "value": "agent.launch"
-        },
-        {
-          "name": "params",
-          "value": {
-            "agent": "codex",
-            "nativeChatDefault": true,
-            "target": {
-              "create": {
-                "clientMutationId": "mutation-1",
-                "name": "kestrel",
-                "repo": "id:repo-1"
-              },
-              "kind": "create-worktree"
-            }
-          }
-        },
-        {
-          "name": "options",
-          "value": {
-            "timeoutMs": 600000
-          }
-        }
-      ],
-      "settlement": {
-        "status": "pending",
-        "startedAt": 0
-      }
-    },
-    "7d651cae8837": {
-      "outcome": {
-        "error": ""
-      }
-    },
-    "847ef94b3036": {
-      "name": "agent.launch#1",
-      "ordinal": 1,
-      "args": [
-        {
-          "name": "method",
-          "value": "agent.launch"
-        },
-        {
-          "name": "params",
-          "value": {
-            "agent": "codex",
-            "nativeChatDefault": true,
-            "target": {
-              "create": {
-                "clientMutationId": "mutation-1",
-                "name": "kestrel",
-                "repo": "id:repo-1"
-              },
-              "kind": "create-worktree"
-            }
-          }
-        },
-        {
-          "name": "options",
-          "value": {
-            "timeoutMs": 600000
-          }
-        }
-      ],
-      "settlement": {
-        "status": "rejected",
-        "startedAt": 0,
-        "settledAt": 0,
-        "error": {
-          "category": "Error",
-          "message": "",
-          "isRpcDeliveryUnknown": true
-        }
-      }
-    },
-    "8ffc57f768ad": {
-      "name": "agent.launch#1",
-      "ordinal": 1,
-      "args": [
-        {
-          "name": "method",
-          "value": "agent.launch"
-        },
-        {
-          "name": "params",
-          "value": {
-            "agent": "codex",
-            "nativeChatDefault": true,
-            "target": {
-              "create": {
-                "clientMutationId": "mutation-1",
-                "name": "kestrel",
-                "repo": "id:repo-1"
-              },
-              "kind": "create-worktree"
-            }
-          }
-        },
-        {
-          "name": "options",
-          "value": {
-            "timeoutMs": 600000
-          }
-        }
-      ],
-      "settlement": {
-        "status": "fulfilled",
-        "startedAt": 0,
-        "settledAt": 0,
-        "value": {
-          "id": "frame-1",
-          "ok": true
-        }
-      }
-    },
-    "9270aeb7d9c6": {
-      "status": "pending",
-      "startedAt": 0
-    },
-    "97555d579c32": {
-      "status": "fulfilled",
-      "startedAt": 0,
-      "settledAt": 0,
-      "value": {
-        "name": "kestrel",
-        "warning": "startup terminal failed",
-        "worktreeId": "repo-1::/w"
-      }
-    },
-    "9df0ac2b0247": {
-      "status": "fulfilled",
-      "startedAt": 0,
-      "settledAt": 0,
-      "value": {
-        "error": "Failed to create workspace"
-      }
-    },
-    "a947768bc0ed": {
-      "status": "rejected",
-      "startedAt": 0,
-      "settledAt": 0,
-      "error": {
-        "category": "Error",
-        "message": "transport failure",
-        "isRpcDeliveryUnknown": true
-      }
-    },
-    "c7584e82c72f": {
-      "status": "rejected",
-      "startedAt": 0,
-      "settledAt": 0,
-      "error": {
-        "category": "Error",
-        "message": "",
-        "isRpcDeliveryUnknown": true
-      }
-    },
-    "d13a578180f9": {
-      "name": "worktree.create#1",
-      "ordinal": 4,
-      "json": "{\"id\":\"frame-2\",\"deviceToken\":\"recording-device\",\"method\":\"worktree.create\",\"params\":{\"repo\":\"id:repo-1\",\"name\":\"kestrel\",\"clientMutationId\":\"mutation-1\"}}"
-    },
-    "e57e5f020f29": {
-      "name": "agent.launch#1",
-      "ordinal": 1,
-      "args": [
-        {
-          "name": "method",
-          "value": "agent.launch"
-        },
-        {
-          "name": "params",
-          "value": {
-            "agent": "codex",
-            "nativeChatDefault": true,
-            "target": {
-              "create": {
-                "clientMutationId": "mutation-1",
-                "name": "kestrel",
-                "repo": "id:repo-1"
-              },
-              "kind": "create-worktree"
-            }
-          }
-        },
-        {
-          "name": "options",
-          "value": {
-            "timeoutMs": 600000
-          }
-        }
-      ],
-      "settlement": {
-        "status": "fulfilled",
-        "startedAt": 0,
-        "settledAt": 0,
-        "value": {
-          "id": "frame-1",
-          "ok": true,
-          "result": {
-            "$rpc": "null"
-          }
-        }
-      }
-    },
-    "e84dc0b1be29": {
-      "name": "agent.launch#1",
-      "ordinal": 1,
-      "args": [
-        {
-          "name": "method",
-          "value": "agent.launch"
-        },
-        {
-          "name": "params",
-          "value": {
-            "agent": "codex",
-            "nativeChatDefault": true,
-            "target": {
-              "create": {
-                "clientMutationId": "mutation-1",
-                "name": "kestrel",
-                "repo": "id:repo-1"
-              },
-              "kind": "create-worktree"
-            }
-          }
-        },
-        {
-          "name": "options",
-          "value": {
-            "timeoutMs": 600000
-          }
-        }
-      ],
-      "settlement": {
-        "status": "fulfilled",
-        "startedAt": 0,
-        "settledAt": 0,
-        "value": {
-          "id": "frame-1",
-          "ok": true,
-          "result": {
-            "error": "inner refused",
-            "ok": false
-          }
-        }
-      }
-    },
-    "ea58146f75c4": {
-      "status": "rejected",
-      "startedAt": 0,
-      "settledAt": 0,
-      "error": {
-        "category": "RpcIncompatibleReplyError",
-        "message": "The host sent a reply this app could not read (agent.launch)",
-        "isRpcDeliveryUnknown": false,
-        "code": "incompatible_reply"
-      }
-    },
-    "ed1eb862d036": {
-      "outcome": {
-        "error": "Failed to create workspace"
-      }
-    },
-    "f19cc9a9e99a": {
-      "name": "agent.launch#1",
-      "ordinal": 2,
-      "json": "{\"id\":\"frame-1\",\"deviceToken\":\"recording-device\",\"method\":\"agent.launch\",\"params\":{\"agent\":\"codex\",\"nativeChatDefault\":true,\"target\":{\"kind\":\"create-worktree\",\"create\":{\"repo\":\"id:repo-1\",\"name\":\"kestrel\",\"clientMutationId\":\"mutation-1\"}}}}"
-    },
     "f800fc04633e": {
       "outcome": {
         "name": "kestrel",
@@ -663,8 +651,8 @@
       {
         "id": "tw-create-retry-agent-launched.prelude:sent",
         "observation": {
-          "sender": ["7b5745560906"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["f02b3d4d2928"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "9270aeb7d9c6"
           },
@@ -675,8 +663,8 @@
       {
         "id": "tw-create-retry-agent-launched.normal:launched",
         "observation": {
-          "sender": ["51eb0e5cd4e2"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["f53a3cfe8aa9"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "97555d579c32"
           },
@@ -687,8 +675,8 @@
       {
         "id": "tw-create-retry-agent-launched.result-absent:launched",
         "observation": {
-          "sender": ["8ffc57f768ad"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["d4b99c221491"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "ea58146f75c4"
           },
@@ -699,8 +687,8 @@
       {
         "id": "tw-create-retry-agent-launched.result-null:launched",
         "observation": {
-          "sender": ["e57e5f020f29"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["368f594f7f00"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "ea58146f75c4"
           },
@@ -711,8 +699,8 @@
       {
         "id": "tw-create-retry-agent-launched.inner-ok-missing:launched",
         "observation": {
-          "sender": ["00e6b2e434f1"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["2d650f172c7e"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "9df0ac2b0247"
           },
@@ -723,8 +711,8 @@
       {
         "id": "tw-create-retry-agent-launched.inner-false-string-error:launched",
         "observation": {
-          "sender": ["e84dc0b1be29"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["882a241ecac4"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "9df0ac2b0247"
           },
@@ -735,8 +723,8 @@
       {
         "id": "tw-create-retry-agent-launched.inner-false-object-error:launched",
         "observation": {
-          "sender": ["260c7d45d3cc"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["e32d599d417d"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "9df0ac2b0247"
           },
@@ -747,8 +735,8 @@
       {
         "id": "tw-create-retry-agent-launched.outer-refused:launched",
         "observation": {
-          "sender": ["67137dc1a6a7"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["b070f4a5c63f"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "7665e4eb5ce2"
           },
@@ -759,8 +747,8 @@
       {
         "id": "tw-create-retry-agent-launched.outer-refused-no-message:launched",
         "observation": {
-          "sender": ["56ae0bbb7100"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["f4c2ee5db891"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "240b0b1c72b2"
           },
@@ -771,8 +759,8 @@
       {
         "id": "tw-create-retry-agent-launched.method-not-found:launched",
         "observation": {
-          "sender": ["04797cc58f73", "69b9efd3c553"],
-          "payloads": ["f19cc9a9e99a", "d13a578180f9"],
+          "sender": ["d53c007d1e7a", "69b9efd3c553"],
+          "payloads": ["a19446c94e4f", "d13a578180f9"],
           "settlements": {
             "create": "9270aeb7d9c6"
           },
@@ -783,8 +771,8 @@
       {
         "id": "tw-create-retry-agent-launched.transport-rejection:launched",
         "observation": {
-          "sender": ["32a964871d54"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["25b1c746e7e7"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "a947768bc0ed"
           },
@@ -795,8 +783,8 @@
       {
         "id": "tw-create-retry-agent-launched.transport-rejection-no-message:launched",
         "observation": {
-          "sender": ["847ef94b3036"],
-          "payloads": ["f19cc9a9e99a"],
+          "sender": ["772c3ce6f514"],
+          "payloads": ["a19446c94e4f"],
           "settlements": {
             "create": "c7584e82c72f"
           },
