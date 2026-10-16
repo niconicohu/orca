@@ -176,13 +176,12 @@ export function MobileNativeChatView({
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset } = e.nativeEvent
       recordScrollMetrics(e.nativeEvent)
-      initialLayout.recordScroll(e.nativeEvent)
       // Near the top — page in older history. Only the reader's scroll: a pin reports offsets too.
       if (contentOffset.y < 60 && hasMore && !loadingEarlier && readerIsScrolling()) {
         loadEarlier()
       }
     },
-    [hasMore, loadingEarlier, loadEarlier, readerIsScrolling, recordScrollMetrics, initialLayout]
+    [hasMore, loadingEarlier, loadEarlier, readerIsScrolling, recordScrollMetrics]
   )
 
   // Per-turn status rows: one live indicator while the turn runs, then a settled
@@ -290,12 +289,12 @@ export function MobileNativeChatView({
                 onMomentumScrollEnd={endMomentum}
                 scrollEventThrottle={32}
                 onContentSizeChange={(width, height) => {
-                  initialLayout.recordContent(height)
                   pinToTailAfterContentResize(width, height)
+                  initialLayout.recordContent(height)
                 }}
                 onLayout={(event) => {
-                  initialLayout.recordLayout(event)
                   pinToTail()
+                  initialLayout.recordLayout(event)
                 }}
                 updateCellsBatchingPeriod={initialLayout.ready ? 50 : 0}
                 maintainVisibleContentPosition={mobileNativeChatRowAnchor(hasMore === true)}

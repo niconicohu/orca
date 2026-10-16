@@ -1,33 +1,19 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { LayoutChangeEvent, NativeScrollEvent } from 'react-native'
+import type { LayoutChangeEvent } from 'react-native'
 
-type Geometry = {
-  scope: string
-  height: number
-  viewport: number
-  offset: number
-  lastScroll?: NativeScrollEvent
-}
+type Geometry = { scope: string; height: number; viewport: number }
+const MAX_DIAGRAM_WAIT_MS = 1_000
 
-function atMeasuredBottom({ height, viewport, offset, lastScroll }: Geometry): boolean {
-  const bottom = Math.max(0, height - viewport)
-  const acknowledged =
-    bottom === 0 ||
-    (lastScroll !== undefined &&
-      Math.abs(lastScroll.contentSize.height - height) <= 2 &&
-      Math.abs(lastScroll.layoutMeasurement.height - viewport) <= 2)
-  return height > 0 && viewport > 0 && acknowledged && Math.abs(bottom - offset) <= 2
-}
-
-/** Hide the initial pin and virtualized-row measurements, then leave normal scrolling alone. */
+/** Hide native measurement and the tail pin, without depending on optional scroll events. */
 export function useMobileNativeChatInitialLayout(
   scope: string,
   hasItems: boolean,
   pending = false
 ) {
-  const geometry = useRef<Geometry>({ scope, height: 0, viewport: 0, offset: 0 })
+  const geometry = useRef<Geometry>({ scope, height: 0, viewport: 0 })
   const frame = useRef<number | null>(null)
   const [revealed, setRevealed] = useState<Geometry | null>(null)
+  const [expired, setExpired] = useState<Geometry | null>(null)
   const cancel = useCallback(() => {
     if (frame.current !== null) {
       cancelAnimationFrame(frame.current)
@@ -36,44 +22,41 @@ export function useMobileNativeChatInitialLayout(
   }, [])
   if (geometry.current.scope !== scope) {
     cancel()
-    geometry.current = { scope, height: 0, viewport: 0, offset: 0 }
+    geometry.current = { scope, height: 0, viewport: 0 }
   }
   const measured = geometry.current
   const ready = !hasItems || revealed === measured
+  const waiting = pending && expired !== measured
   const confirm = useCallback(() => {
     if (ready || geometry.current !== measured) {
       return
     }
-    if (pending) {
-      cancel()
-      return
-    }
-    // Native scroll acknowledgement and layout callbacks can arrive in either order.
-    const observed = measured.lastScroll
-    if (
-      observed &&
-      Math.abs(observed.contentSize.height - measured.height) <= 2 &&
-      Math.abs(observed.layoutMeasurement.height - measured.viewport) <= 2
-    ) {
-      measured.offset = observed.contentOffset.y
-    }
-    if (!atMeasuredBottom(measured)) {
+    if (waiting || measured.height <= 0 || measured.viewport <= 0) {
       cancel()
       return
     }
     if (frame.current !== null) {
       return
     }
+    // The tail follower's queued native pin commits before the second stable frame.
     frame.current = requestAnimationFrame(() => {
       frame.current = requestAnimationFrame(() => {
         frame.current = null
-        if (geometry.current === measured && atMeasuredBottom(measured)) {
+        if (geometry.current === measured) {
           setRevealed(measured)
         }
       })
     })
-  }, [ready, measured, cancel, pending])
+  }, [ready, measured, cancel, waiting])
   useLayoutEffect(confirm, [confirm])
+  useEffect(() => {
+    if (ready) {
+      return
+    }
+    // A slow WebView must not hold the person's entire transcript behind its placeholder.
+    const timer = setTimeout(() => setExpired(measured), MAX_DIAGRAM_WAIT_MS)
+    return () => clearTimeout(timer)
+  }, [ready, measured])
   useEffect(() => cancel, [cancel])
   return {
     ready,
@@ -103,16 +86,6 @@ export function useMobileNativeChatInitialLayout(
         confirm()
       },
       [measured, cancel, confirm]
-    ),
-    recordScroll: useCallback(
-      (event: NativeScrollEvent) => {
-        if (geometry.current !== measured) {
-          return
-        }
-        measured.lastScroll = event
-        confirm()
-      },
-      [measured, confirm]
     )
   }
 }
