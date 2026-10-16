@@ -71,6 +71,15 @@ describe('MobileNativeChatView: initial measured position', () => {
   }
   const transcript = { folded: [assistantTurn('a', 'A long response')] }
 
+  it('ignores a delayed content-size callback from the previously opened tab', async () => {
+    await render(transcript)
+    const previousResize = list().props.onContentSizeChange
+    await update({ ...transcript, sendSurfaceId: 'another-tab' })
+    scrollToOffset.mockClear()
+    act(() => previousResize(320, 9000))
+    expect(scrollToOffset).not.toHaveBeenCalled()
+  })
+
   it('waits for a diagram to finish sizing before revealing an otherwise settled bottom', async () => {
     vi.useFakeTimers()
     diagram.pending = true

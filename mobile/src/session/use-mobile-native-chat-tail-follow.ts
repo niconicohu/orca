@@ -135,7 +135,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
 
   const pinToTailAfterContentResize = useCallback(
     (_width: number, height: number) => {
-      if (!followingRef.current || !hasItems) {
+      if (scopeKeyRef.current !== scopeKey || !followingRef.current || !hasItems) {
         return
       }
       listRef.current?.scrollToOffset({ animated: false, offset: height })
