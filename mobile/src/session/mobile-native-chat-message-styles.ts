@@ -44,14 +44,14 @@ export const styles = createThemedStyles(() =>
     imageGalleryCount: { color: colors.textPrimary, fontSize: typography.titleSize },
     imageGalleryScrim: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.5)'
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      alignItems: 'center',
+      justifyContent: 'center'
     },
     imageGalleryOverflowCount: {
-      position: 'absolute',
-      right: spacing.xs,
-      bottom: spacing.xs,
       color: colors.onAccent,
-      fontSize: typography.titleSize
+      fontSize: 24,
+      fontWeight: '600'
     },
     imageViewer: { flex: 1, backgroundColor: colors.bgBase },
     imageViewerHeader: { flexDirection: 'row', alignItems: 'center', padding: spacing.md },

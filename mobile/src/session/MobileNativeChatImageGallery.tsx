@@ -38,12 +38,9 @@ export function MobileNativeChatImageGallery({
             resizeMode="cover"
           />
           {index === 2 && images.length > 3 ? (
-            <>
-              <View pointerEvents="none" style={styles.imageGalleryScrim} />
-              <Text pointerEvents="none" style={styles.imageGalleryOverflowCount}>
-                +{images.length - 3}
-              </Text>
-            </>
+            <View pointerEvents="none" style={styles.imageGalleryScrim}>
+              <Text style={styles.imageGalleryOverflowCount}>+{images.length - 3}</Text>
+            </View>
           ) : null}
         </Pressable>
       ))}
