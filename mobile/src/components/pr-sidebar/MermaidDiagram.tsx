@@ -1,12 +1,13 @@
 import { createThemedStyles } from '../../theme/mobile-themed-styles'
 import { useMobileTheme } from '../../theme/use-mobile-theme'
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { WebView } from 'react-native-webview'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import { MERMAID_DIAGRAM_CONFIG } from './mermaid-diagram-config'
 import { MERMAID_ENGINE_JS } from './mermaid-webview-engine.generated'
 import { encodeJsonForScript } from '../inline-script-json'
+import { useMobileTranscriptLayoutPending } from '../mobile-transcript-layout'
 
 export type MermaidDiagramProps = {
   source: string
@@ -27,6 +28,14 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
 
   const [height, setHeight] = useState(0)
   const [failed, setFailed] = useState(false)
+  useMobileTranscriptLayoutPending(height === 0 && !failed)
+  useEffect(() => {
+    if (height > 0 || failed) {
+      return
+    }
+    const timer = setTimeout(() => setFailed(true), 10_000)
+    return () => clearTimeout(timer)
+  }, [height, failed])
   const html = useMemo(() => buildHtml(source), [source, colorScheme])
 
   if (failed) {
@@ -55,6 +64,8 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
         }}
         onError={() => setFailed(true)}
         onHttpError={() => setFailed(true)}
+        onRenderProcessGone={() => setFailed(true)}
+        onContentProcessDidTerminate={() => setFailed(true)}
         onMessage={(event) => {
           const data = event.nativeEvent.data
           if (data === 'error') {
