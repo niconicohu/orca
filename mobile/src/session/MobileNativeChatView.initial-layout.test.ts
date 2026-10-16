@@ -89,11 +89,29 @@ describe('MobileNativeChatView: initial measured position', () => {
       list().props.onContentSizeChange(320, 400)
     })
     await act(async () => {
-      vi.runAllTimers()
+      vi.advanceTimersByTime(100)
     })
     expect(list().props.style).toMatchObject({ opacity: 0 })
     diagram.pending = false
     await update(transcript)
+    await act(async () => {
+      vi.runAllTimers()
+    })
+    expect(list().props.style).toBeUndefined()
+  })
+
+  it('does not leave retained text hidden indefinitely behind a slow diagram', async () => {
+    vi.useFakeTimers()
+    diagram.pending = true
+    await render({ ...transcript, messages: transcript.folded })
+    act(() => {
+      list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
+      list().props.onContentSizeChange(320, 1200)
+      list().props.onScroll({ nativeEvent: measured(1200, 700) })
+    })
+    await act(async () => {
+      vi.advanceTimersByTime(1_000)
+    })
     await act(async () => {
       vi.runAllTimers()
     })
@@ -117,7 +135,7 @@ describe('MobileNativeChatView: initial measured position', () => {
     expect(list().props.initialScrollIndex).toBe(0)
   })
 
-  it('pins again after native layout commits instead of waiting forever on an old-size acknowledgement', async () => {
+  it('reveals a measured and pinned transcript without waiting for another native acknowledgement', async () => {
     vi.useFakeTimers()
     await render(transcript)
     act(() => {
@@ -130,7 +148,7 @@ describe('MobileNativeChatView: initial measured position', () => {
       vi.runAllTimers()
     })
     expect(scrollToOffset).toHaveBeenCalledWith({ animated: false, offset: 1200 })
-    expect(list().props.style).toMatchObject({ opacity: 0 })
+    expect(list().props.style).toBeUndefined()
     act(() => list().props.onScroll({ nativeEvent: measured(1200, 700) }))
     await act(async () => {
       vi.runAllTimers()
@@ -138,36 +156,22 @@ describe('MobileNativeChatView: initial measured position', () => {
     expect(list().props.style).toBeUndefined()
   })
 
-  it('keeps content hidden until its measured bottom has stopped changing', async () => {
+  it('restarts the two-frame reveal if Markdown changes the measured layout', async () => {
     vi.useFakeTimers()
     await render(transcript)
-    expect(list().props.style).toMatchObject({ opacity: 0 })
     act(() => {
       list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
       list().props.onContentSizeChange(320, 1200)
-      list().props.onScroll({ nativeEvent: measured(1200, 0) })
     })
     await act(async () => {
-      vi.runAllTimers()
+      vi.advanceTimersByTime(1)
     })
-    expect(list().props.style).toMatchObject({ opacity: 0 })
-    act(() => list().props.onScroll({ nativeEvent: measured(1200, 700) }))
-    // Markdown layout grows while the first pin is settling.
     act(() => list().props.onContentSizeChange(320, 1400))
-    await act(async () => {
-      vi.runAllTimers()
-    })
     expect(list().props.style).toMatchObject({ opacity: 0 })
-    // An old scroll acknowledgement must not reveal the new layout.
-    act(() => list().props.onScroll({ nativeEvent: measured(1200, 700) }))
     await act(async () => {
       vi.runAllTimers()
     })
-    expect(list().props.style).toMatchObject({ opacity: 0 })
-    act(() => list().props.onScroll({ nativeEvent: measured(1400, 900) }))
-    await act(async () => {
-      vi.runAllTimers()
-    })
+    expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 1400 })
     expect(list().props.style).toBeUndefined()
   })
 
@@ -195,6 +199,38 @@ describe('MobileNativeChatView: initial measured position', () => {
     await act(async () => {
       vi.runAllTimers()
     })
+    expect(list().props.style).toBeUndefined()
+  })
+
+  it('reveals retained long history after returning to a tab even if native emits no new scroll event', async () => {
+    vi.useFakeTimers()
+    const retained = { ...transcript, messages: transcript.folded }
+    await render(retained)
+    const layout = () => {
+      list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
+      list().props.onContentSizeChange(320, 1200)
+    }
+    act(() => {
+      layout()
+      list().props.onScroll({ nativeEvent: measured(1200, 700) })
+    })
+    await act(async () => {
+      vi.runAllTimers()
+    })
+    await update({ ...retained, sendSurfaceId: 'tab-b' })
+    act(() => {
+      layout()
+      list().props.onScroll({ nativeEvent: measured(1200, 700) })
+    })
+    await act(async () => {
+      vi.runAllTimers()
+    })
+    await update(retained)
+    act(layout)
+    await act(async () => {
+      vi.runAllTimers()
+    })
+    expect(list().props.data.length).toBeGreaterThan(0)
     expect(list().props.style).toBeUndefined()
   })
 
