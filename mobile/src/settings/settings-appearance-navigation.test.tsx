@@ -69,12 +69,12 @@ it('opens Appearance from Settings and applies a saved mode through that route',
       renderer = create(createElement(Navigation))
     })
     const entry = renderer!.root.find(
-      (node) => node.type === 'Pressable' && node.props.accessibilityLabel === 'Appearance'
+      (node) => String(node.type) === 'Pressable' && node.props.accessibilityLabel === 'Appearance'
     )
     await act(async () => entry.props.onPress())
     expect(device.routes).toEqual(['/appearance-settings'])
     const choices = renderer!.root.findAll(
-      (node) => node.type === 'Pressable' && node.props.accessibilityRole === 'radio'
+      (node) => String(node.type) === 'Pressable' && node.props.accessibilityRole === 'radio'
     )
     expect(choices.map((choice) => choice.props.accessibilityLabel)).toEqual([
       'Follow system',
