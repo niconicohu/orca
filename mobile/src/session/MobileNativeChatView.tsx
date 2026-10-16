@@ -214,6 +214,16 @@ export function MobileNativeChatView({
   })
 
   const history = useMobileNativeChatPageHistory(turns.listMessages, renderItem, sendSurfaceId)
+  const [initialWindow, setInitialWindow] = useState({
+    scope: sendSurfaceId,
+    rows: history.listRows.length
+  })
+  if (
+    initialWindow.scope !== sendSurfaceId ||
+    (initialWindow.rows === 0 && history.listRows.length > 0)
+  ) {
+    setInitialWindow({ scope: sendSurfaceId, rows: history.listRows.length })
+  }
 
   const liveStatus = turns.liveLine ? (
     <MobileNativeChatLiveLine
@@ -261,9 +271,8 @@ export function MobileNativeChatView({
                 pointerEvents={initialLayout.ready ? 'auto' : 'none'}
                 ref={listRef}
                 data={history.listRows}
-                initialScrollIndex={
-                  history.listRows.length > 0 ? history.listRows.length - 1 : undefined
-                }
+                initialScrollIndex={Math.max(0, initialWindow.rows - 10)}
+                initialNumToRender={10}
                 onScrollToIndexFailed={pinToTail}
                 keyExtractor={(item) => item.id}
                 renderItem={history.renderListRow}
