@@ -49,7 +49,8 @@ it('loads older tool-sized messages within the read deadline on a constrained li
     ) {
       throw new Error('Missing history page size')
     }
-    const older = page(Array.from({ length: params.limit }, (_, i) => row(1000 - params.limit + i)))
+    const limit = params.limit
+    const older = page(Array.from({ length: limit }, (_, i) => row(1000 - limit + i)))
     const timeout = options?.timeoutMs ?? 15_000
     const delivery = Math.ceil((JSON.stringify(older).length * 1000) / (50 * 1024))
     deadlines.push(delivery)
