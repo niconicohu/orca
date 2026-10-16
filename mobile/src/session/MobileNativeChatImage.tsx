@@ -1,5 +1,14 @@
 import { useContext, useEffect, useState } from 'react'
-import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  Text,
+  View,
+  type ImageStyle,
+  type StyleProp,
+  type ImageResizeMode
+} from 'react-native'
 import { isAgentSessionAttachmentStorePath } from '../../../src/shared/agent-session-attachments'
 import { colors } from '../theme/mobile-theme'
 import {
@@ -12,11 +21,15 @@ import { styles, TEXT_SIZE } from './mobile-native-chat-message-styles'
 export function MobileNativeChatImage({
   uri,
   alt,
-  fontScale
+  fontScale,
+  imageStyle = styles.imageThumb,
+  resizeMode = 'contain'
 }: {
   uri: string | undefined
   alt?: string
   fontScale: number
+  imageStyle?: StyleProp<ImageStyle>
+  resizeMode?: ImageResizeMode
 }) {
   const client = useContext(MobileNativeChatAttachmentContext)
   const direct = isRenderableImageUri(uri)
@@ -51,8 +64,8 @@ export function MobileNativeChatImage({
     return (
       <Image
         source={{ uri: imageUri }}
-        style={styles.imageThumb}
-        resizeMode="contain"
+        style={imageStyle}
+        resizeMode={resizeMode}
         accessibilityLabel={alt ?? 'Attached image'}
         onError={() => setFailed(true)}
       />
@@ -60,7 +73,7 @@ export function MobileNativeChatImage({
   }
   if (remote && current === null) {
     return (
-      <View style={styles.imageThumb}>
+      <View style={imageStyle}>
         <ActivityIndicator color={colors.textSecondary} accessibilityLabel="Loading image" />
       </View>
     )

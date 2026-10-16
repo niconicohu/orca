@@ -12,6 +12,32 @@ export const MONO_SIZE = 12
 
 export const styles = createThemedStyles(() =>
   StyleSheet.create({
+    imageGallery: {
+      width: '88%',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: spacing.xs,
+      marginBottom: spacing.sm
+    },
+    imageGallerySingle: { width: 180, height: 180, borderRadius: radii.card, overflow: 'hidden' },
+    imageGalleryTile: {
+      flex: 1,
+      maxWidth: 88,
+      aspectRatio: 1,
+      borderRadius: radii.row,
+      overflow: 'hidden'
+    },
+    imageGalleryFill: { width: '100%', height: '100%' },
+    imageGalleryMore: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.bgRaised
+    },
+    imageGalleryCount: { color: colors.textPrimary, fontSize: typography.titleSize },
+    imageViewer: { flex: 1, backgroundColor: colors.bgBase },
+    imageViewerHeader: { flexDirection: 'row', alignItems: 'center', padding: spacing.md },
+    imageViewerTitle: { flex: 1, color: colors.textPrimary, fontSize: typography.bodySize },
+    imageViewerClose: { padding: spacing.sm },
     compaction: {
       width: '100%',
       flexDirection: 'row',

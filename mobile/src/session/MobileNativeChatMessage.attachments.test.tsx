@@ -5,6 +5,7 @@ import { MobileNativeChatMessage } from './MobileNativeChatMessage'
 import { MobileNativeChatAttachmentContext } from './mobile-native-chat-attachment-read'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import type { RpcResponse } from '../transport/types'
+import { styles } from './mobile-native-chat-message-styles'
 
 vi.mock('react-native', async () => {
   const React = await import('react')
@@ -22,6 +23,9 @@ vi.mock('react-native', async () => {
       timing: () => ({ start: vi.fn(), stop: vi.fn() })
     },
     Image: 'Image',
+    Modal: 'Modal',
+    FlatList: 'FlatList',
+    useWindowDimensions: () => ({ width: 390, height: 844 }),
     Platform: { OS: 'ios' },
     Pressable: 'Pressable',
     ScrollView: ({ children, ...props }: { children?: ReactNode }) =>
@@ -34,6 +38,7 @@ vi.mock('react-native', async () => {
 })
 vi.mock('expo-clipboard', () => ({ setStringAsync: vi.fn() }))
 vi.mock('lucide-react-native', () => ({
+  X: 'X',
   AlertCircle: 'AlertCircle',
   MessageSquareMore: 'MessageSquareMore',
   AlertTriangle: 'AlertTriangle',
@@ -49,6 +54,9 @@ vi.mock('lucide-react-native', () => ({
 vi.mock('../components/MobileMarkdown', () => ({ MobileMarkdown: 'MobileMarkdown' }))
 vi.mock('./MobileNativeChatMessageActionsSheet', () => ({
   MobileNativeChatMessageActionsSheet: 'MessageActionsSheet'
+}))
+vi.mock('../layout/side-safe-area', () => ({
+  useWindowSafeAreaInsets: () => ({ top: 24, bottom: 24, left: 0, right: 0 })
 }))
 
 const path = '/root/.orca/agent-session-attachments/session/image.png'
@@ -156,4 +164,71 @@ it('does not ask the attachment reader for arbitrary host filesystem paths', asy
     )
   })
   expect(sendRequest).not.toHaveBeenCalled()
+})
+
+it('keeps an image-only message outside any text bubble', async () => {
+  await act(async () => {
+    renderer = create(
+      createElement(MobileNativeChatMessage, {
+        message: {
+          ...message,
+          blocks: [{ type: 'image-ref', url: 'file:///a.png' }]
+        }
+      })
+    )
+  })
+  expect(
+    renderer!.root.findAll(
+      (node) => Array.isArray(node.props.style) && node.props.style.includes(styles.userBubble)
+    )
+  ).toHaveLength(0)
+})
+
+it('places text in its own bubble below the image', async () => {
+  await act(async () => {
+    renderer = create(
+      createElement(MobileNativeChatMessage, {
+        message: {
+          ...message,
+          blocks: [
+            { type: 'text', text: 'What is this?' },
+            { type: 'image-ref', url: 'file:///a.png' }
+          ]
+        }
+      })
+    )
+  })
+  const bubbles = renderer!.root.findAll(
+    (node) =>
+      String(node.type) === 'View' &&
+      Array.isArray(node.props.style) &&
+      node.props.style.includes(styles.userBubble)
+  )
+  expect(bubbles).toHaveLength(1)
+  expect(bubbles[0]!.findAll((node) => String(node.type) === 'Image')).toHaveLength(0)
+})
+
+it('shows three images plus a fourth tile that opens all images at the first hidden one', async () => {
+  await act(async () => {
+    renderer = create(
+      createElement(MobileNativeChatMessage, {
+        message: {
+          ...message,
+          blocks: Array.from({ length: 5 }, (_, index) => ({
+            type: 'image-ref',
+            url: `file:///${index}.png`
+          }))
+        }
+      })
+    )
+  })
+  expect(renderer!.root.findAll((node) => String(node.type) === 'Image')).toHaveLength(3)
+  const more = renderer!.root.find(
+    (node) =>
+      String(node.type) === 'Pressable' && node.props.accessibilityLabel === 'View all 5 images'
+  )
+  await act(async () => more.props.onPress())
+  const gallery = renderer!.root.find((node) => String(node.type) === 'FlatList')
+  expect(gallery.props.data).toHaveLength(5)
+  expect(gallery.props.initialScrollIndex).toBe(3)
 })
