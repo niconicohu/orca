@@ -20,14 +20,9 @@ function atMeasuredBottom({ height, viewport, offset, lastScroll }: Geometry): b
 }
 
 /** Hide the initial pin and virtualized-row measurements, then leave normal scrolling alone. */
-export function useMobileNativeChatInitialLayout(
-  scope: string,
-  hasItems: boolean,
-  pin: (width: number, height: number) => void
-) {
+export function useMobileNativeChatInitialLayout(scope: string, hasItems: boolean) {
   const geometry = useRef<Geometry>({ scope, height: 0, viewport: 0, offset: 0 })
   const frame = useRef<number | null>(null)
-  const pinFrame = useRef<number | null>(null)
   const [revealed, setRevealed] = useState<Geometry | null>(null)
   const cancel = useCallback(() => {
     if (frame.current !== null) {
@@ -35,31 +30,12 @@ export function useMobileNativeChatInitialLayout(
       frame.current = null
     }
   }, [])
-  const cancelPin = useCallback(() => {
-    if (pinFrame.current !== null) {
-      cancelAnimationFrame(pinFrame.current)
-      pinFrame.current = null
-    }
-  }, [])
   if (geometry.current.scope !== scope) {
     cancel()
-    cancelPin()
     geometry.current = { scope, height: 0, viewport: 0, offset: 0 }
   }
   const measured = geometry.current
   const ready = !hasItems || revealed === measured
-  const pinAfterLayout = useCallback(() => {
-    if (ready || measured.height <= 0 || measured.viewport <= 0 || pinFrame.current !== null) {
-      return
-    }
-    // Android can clamp a command to the old content range during the layout callback.
-    pinFrame.current = requestAnimationFrame(() => {
-      pinFrame.current = null
-      if (geometry.current === measured) {
-        pin(0, measured.height)
-      }
-    })
-  }, [ready, measured, pin])
   const confirm = useCallback(() => {
     if (ready || geometry.current !== measured) {
       return
@@ -89,13 +65,7 @@ export function useMobileNativeChatInitialLayout(
       })
     })
   }, [ready, measured, cancel])
-  useEffect(
-    () => () => {
-      cancel()
-      cancelPin()
-    },
-    [cancel, cancelPin]
-  )
+  useEffect(() => cancel, [cancel])
   return {
     ready,
     recordLayout: useCallback(
@@ -108,10 +78,9 @@ export function useMobileNativeChatInitialLayout(
           cancel()
         }
         measured.viewport = height
-        pinAfterLayout()
         confirm()
       },
-      [measured, cancel, confirm, pinAfterLayout]
+      [measured, cancel, confirm]
     ),
     recordContent: useCallback(
       (height: number) => {
@@ -122,10 +91,9 @@ export function useMobileNativeChatInitialLayout(
           cancel()
         }
         measured.height = height
-        pinAfterLayout()
         confirm()
       },
-      [measured, cancel, confirm, pinAfterLayout]
+      [measured, cancel, confirm]
     ),
     recordScroll: useCallback(
       (event: NativeScrollEvent) => {
