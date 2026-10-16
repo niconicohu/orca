@@ -258,6 +258,10 @@ export function MobileNativeChatView({
               pointerEvents={initialLayout.ready ? 'auto' : 'none'}
               ref={listRef}
               data={history.listRows}
+              initialScrollIndex={
+                history.listRows.length > 0 ? history.listRows.length - 1 : undefined
+              }
+              onScrollToIndexFailed={pinToTail}
               keyExtractor={(item) => item.id}
               renderItem={history.renderListRow}
               contentContainerStyle={styles.listContent}
