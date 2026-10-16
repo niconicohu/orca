@@ -5,6 +5,7 @@ import {
   assistantTurn,
   list,
   render,
+  scrollToOffset,
   update
 } from './MobileNativeChatView.harness.test-fixture'
 
@@ -51,6 +52,27 @@ describe('MobileNativeChatView: initial measured position', () => {
     }
   }
   const transcript = { folded: [assistantTurn('a', 'A long response')] }
+
+  it('pins again after native layout commits instead of waiting forever on an old-size acknowledgement', async () => {
+    vi.useFakeTimers()
+    await render(transcript)
+    act(() => {
+      list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
+      list().props.onContentSizeChange(320, 1200)
+      list().props.onScroll({ nativeEvent: measured(800, 300) })
+    })
+    scrollToOffset.mockClear()
+    await act(async () => {
+      vi.runAllTimers()
+    })
+    expect(scrollToOffset).toHaveBeenCalledWith({ animated: false, offset: 1200 })
+    expect(list().props.style).toMatchObject({ opacity: 0 })
+    act(() => list().props.onScroll({ nativeEvent: measured(1200, 700) }))
+    await act(async () => {
+      vi.runAllTimers()
+    })
+    expect(list().props.style).toBeUndefined()
+  })
 
   it('keeps content hidden until its measured bottom has stopped changing', async () => {
     vi.useFakeTimers()
