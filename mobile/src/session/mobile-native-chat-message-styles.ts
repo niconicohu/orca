@@ -19,15 +19,23 @@ export const styles = createThemedStyles(() =>
       gap: spacing.xs,
       marginBottom: spacing.sm
     },
-    imageGallerySingle: { width: 180, height: 180, borderRadius: radii.card, overflow: 'hidden' },
     imageGalleryTile: {
-      flex: 1,
-      maxWidth: 88,
+      width: 88,
+      flexShrink: 1,
       aspectRatio: 1,
-      borderRadius: radii.row,
+      borderRadius: radii.card,
       overflow: 'hidden'
     },
     imageGalleryFill: { width: '100%', height: '100%' },
+    fileGallery: { flexWrap: 'wrap' },
+    fileTile: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      padding: spacing.sm,
+      backgroundColor: colors.bgRaised
+    },
+    fileName: { color: colors.textPrimary, fontSize: typography.metaSize, textAlign: 'center' },
     imageGalleryMore: {
       alignItems: 'center',
       justifyContent: 'center',

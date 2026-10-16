@@ -38,6 +38,7 @@ vi.mock('react-native', async () => {
 })
 vi.mock('expo-clipboard', () => ({ setStringAsync: vi.fn() }))
 vi.mock('lucide-react-native', () => ({
+  FileText: 'FileText',
   X: 'X',
   AlertCircle: 'AlertCircle',
   MessageSquareMore: 'MessageSquareMore',
@@ -206,6 +207,73 @@ it('places text in its own bubble below the image', async () => {
   )
   expect(bubbles).toHaveLength(1)
   expect(bubbles[0]!.findAll((node) => String(node.type) === 'Image')).toHaveLength(0)
+})
+
+it('uses the same compact square crop and bubble radius for one photo as for multiple photos', async () => {
+  await act(async () => {
+    renderer = create(
+      createElement(MobileNativeChatMessage, {
+        message: { ...message, blocks: [{ type: 'image-ref', url: 'file:///one.png' }] }
+      })
+    )
+  })
+  const thumbnail = renderer!.root.find(
+    (node) =>
+      String(node.type) === 'Pressable' && node.props.accessibilityLabel === 'Open image 1 of 1'
+  )
+  expect(thumbnail.props.style).toMatchObject({
+    width: 88,
+    aspectRatio: 1,
+    borderRadius: styles.userBubble.borderRadius
+  })
+  expect(renderer!.root.find((node) => String(node.type) === 'Image').props.resizeMode).toBe(
+    'cover'
+  )
+})
+
+it('shows stored files above the text, expands additional files, and opens the original host path', async () => {
+  const onOpenFile = vi.fn()
+  const paths = Array.from(
+    { length: 5 },
+    (_, index) => `/root/.orca/agent-session-attachments/id/file${index}.pdf`
+  )
+  await act(async () => {
+    renderer = create(
+      createElement(MobileNativeChatMessage, {
+        message: {
+          ...message,
+          blocks: [
+            { type: 'text', text: `${paths.map((path) => `@${path}`).join(' ')}\nPlease review.` }
+          ]
+        },
+        onOpenFile
+      })
+    )
+  })
+  const fileTiles = () =>
+    renderer!.root.findAll(
+      (node) =>
+        String(node.type) === 'Pressable' && node.props.accessibilityLabel?.startsWith('Open file ')
+    )
+  expect(fileTiles()).toHaveLength(3)
+  const more = renderer!.root.find(
+    (node) =>
+      String(node.type) === 'Pressable' && node.props.accessibilityLabel === 'View all 5 files'
+  )
+  await act(async () => more.props.onPress())
+  expect(fileTiles()).toHaveLength(5)
+  await act(async () => fileTiles()[4]!.props.onPress())
+  expect(onOpenFile).toHaveBeenCalledWith(paths[4])
+  const bubble = renderer!.root.find(
+    (node) =>
+      String(node.type) === 'View' &&
+      Array.isArray(node.props.style) &&
+      node.props.style.includes(styles.userBubble)
+  )
+  expect(bubble.findAll((node) => String(node.type) === 'FileText')).toHaveLength(0)
+  expect(bubble.findAll((node) => node.props.children === 'Please review.').length).toBeGreaterThan(
+    0
+  )
 })
 
 it.each(['user', 'assistant'] as const)(

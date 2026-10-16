@@ -39,6 +39,8 @@ import { MobileNativeChatSubagentGroup } from './MobileNativeChatSubagentGroup'
 import { ToolRun } from './MobileNativeChatToolRun'
 import type { NativeChatTurnStatus } from './use-mobile-native-chat-turn-status'
 import { MobileNativeChatImageGallery } from './MobileNativeChatImageGallery'
+import { MobileNativeChatFileAttachments } from './MobileNativeChatFileAttachments'
+import { splitMobileNativeChatFileAttachments } from './mobile-native-chat-file-attachments'
 import { styles, TEXT_SIZE } from './mobile-native-chat-message-styles'
 import { agentMessageAttribution } from './mobile-agent-message-attribution'
 import { withoutPendingNativeChatVisualDirectiveTail } from '../../../src/shared/native-chat-visual-directive'
@@ -195,7 +197,10 @@ function MobileNativeChatMessageImpl({
   const { prose, tools: blocksOfTools } = splitNativeChatBlocks(message.blocks)
   const { asks, unansweredAsks, work: tools } = nativeChatAskRunBlocks(blocksOfTools)
   // A roster draws as its group row, which replaces its frozen sentence.
-  const drawnProse = withoutSubagentGroupTwins(prose)
+  const withoutTwins = withoutSubagentGroupTwins(prose)
+  const { files, prose: drawnProse } = isUser
+    ? splitMobileNativeChatFileAttachments(withoutTwins)
+    : { files: [], prose: withoutTwins }
   const images = message.role === 'system' ? [] : drawnProse.filter(isImageRefBlock)
   const bodyProse =
     message.role === 'system' ? drawnProse : drawnProse.filter((block) => !isImageRefBlock(block))
@@ -308,6 +313,9 @@ function MobileNativeChatMessageImpl({
       <View style={[styles.row, isUser && styles.rowUser]}>
         {images.length > 0 ? (
           <MobileNativeChatImageGallery images={images} alignToEnd={isUser} />
+        ) : null}
+        {files.length > 0 ? (
+          <MobileNativeChatFileAttachments files={files} onOpenFile={onOpenFile} />
         ) : null}
         {!isUser || bodyProse.length > 0 || showToolRun || askRow ? (
           <Content

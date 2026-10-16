@@ -27,7 +27,7 @@ export function MobileNativeChatImageGallery({
           key={key}
           accessibilityRole="button"
           accessibilityLabel={`Open image ${index + 1} of ${images.length}`}
-          style={images.length === 1 ? styles.imageGallerySingle : styles.imageGalleryTile}
+          style={styles.imageGalleryTile}
           onPress={() => setSelected(index)}
         >
           <MobileNativeChatImage
