@@ -53,6 +53,13 @@ describe('MobileNativeChatView: initial measured position', () => {
   }
   const transcript = { folded: [assistantTurn('a', 'A long response')] }
 
+  it('starts virtualization at the newest row so estimated offscreen spacers cannot masquerade as the bottom', async () => {
+    const folded = Array.from({ length: 80 }, (_, index) => assistantTurn(`a-${index}`, 'Response'))
+    await render({ folded })
+    expect(list().props.initialScrollIndex).toBe(79)
+    expect(list().props.onScrollToIndexFailed).toEqual(expect.any(Function))
+  })
+
   it('pins again after native layout commits instead of waiting forever on an old-size acknowledgement', async () => {
     vi.useFakeTimers()
     await render(transcript)
