@@ -37,18 +37,16 @@ export function MobileNativeChatImageGallery({
             imageStyle={styles.imageGalleryFill}
             resizeMode="cover"
           />
+          {index === 2 && images.length > 3 ? (
+            <>
+              <View pointerEvents="none" style={styles.imageGalleryScrim} />
+              <Text pointerEvents="none" style={styles.imageGalleryOverflowCount}>
+                +{images.length - 3}
+              </Text>
+            </>
+          ) : null}
         </Pressable>
       ))}
-      {images.length > 3 ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`View all ${images.length} images`}
-          style={[styles.imageGalleryTile, styles.imageGalleryMore]}
-          onPress={() => setSelected(3)}
-        >
-          <Text style={styles.imageGalleryCount}>+{images.length - 3}</Text>
-        </Pressable>
-      ) : null}
       {selected !== null ? (
         <MobileNativeChatImageViewer
           images={images}
