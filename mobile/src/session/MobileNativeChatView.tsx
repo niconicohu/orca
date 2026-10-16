@@ -23,6 +23,10 @@ import {
 } from './mobile-native-chat-render-data'
 import { useMobileNativeChatPageHistory } from './use-mobile-native-chat-page-history'
 import { useMobileNativeChatInitialLayout } from './use-mobile-native-chat-initial-layout'
+import {
+  MobileTranscriptLayoutContext,
+  useMobileTranscriptLayout
+} from '../components/mobile-transcript-layout'
 import { useMobileNativeChatPinchGesture } from './use-mobile-native-chat-pinch-gesture'
 import {
   mobileNativeChatRowAnchor,
@@ -143,7 +147,12 @@ export function MobileNativeChatView({
     readerIsScrolling,
     recordScrollMetrics
   } = useMobileNativeChatTailFollow({ items: data, scopeKey: sendSurfaceId })
-  const initialLayout = useMobileNativeChatInitialLayout(sendSurfaceId, data.length > 0)
+  const transcriptLayout = useMobileTranscriptLayout()
+  const initialLayout = useMobileNativeChatInitialLayout(
+    sendSurfaceId,
+    data.length > 0,
+    transcriptLayout.pending
+  )
 
   const handleSend = useCallback(
     async (text: string): Promise<boolean> => {
@@ -245,71 +254,73 @@ export function MobileNativeChatView({
           <ActivityIndicator color={colors.textSecondary} />
         </View>
       ) : (
-        <GestureHandlerRootView style={styles.listWrap}>
-          <MobileNativeChatScrollHold headKey={turns.listMessages[0]?.id} listRef={listRef} />
-          <GestureDetector gesture={pinchGesture}>
-            <FlatList
-              key={sendSurfaceId}
-              style={initialLayout.ready ? undefined : { opacity: 0 }}
-              pointerEvents={initialLayout.ready ? 'auto' : 'none'}
-              ref={listRef}
-              data={history.listRows}
-              initialScrollIndex={
-                history.listRows.length > 0 ? history.listRows.length - 1 : undefined
-              }
-              onScrollToIndexFailed={pinToTail}
-              keyExtractor={(item) => item.id}
-              renderItem={history.renderListRow}
-              contentContainerStyle={styles.listContent}
-              // Let link/file taps land while the composer keyboard is up
-              // instead of being swallowed by the dismiss gesture.
-              keyboardShouldPersistTaps="handled"
-              onScroll={onScroll}
-              onScrollBeginDrag={beginUserScroll}
-              onScrollEndDrag={endUserDrag}
-              onMomentumScrollBegin={beginMomentum}
-              onMomentumScrollEnd={endMomentum}
-              scrollEventThrottle={32}
-              onContentSizeChange={(width, height) => {
-                initialLayout.recordContent(height)
-                pinToTailAfterContentResize(width, height)
-              }}
-              onLayout={(event) => {
-                initialLayout.recordLayout(event)
-                pinToTail()
-              }}
-              updateCellsBatchingPeriod={initialLayout.ready ? 50 : 0}
-              maintainVisibleContentPosition={mobileNativeChatRowAnchor(hasMore === true)}
-              ListHeaderComponent={history.withHistory(
-                mobileNativeChatListHeader(hasMore, loadingEarlier, loadEarlier)
-              )}
-              ListFooterComponent={mobileNativeChatListFooter(
-                liveStatus,
-                turns.waitingRows,
-                renderItem
-              )}
-              ListEmptyComponent={emptyStateView}
-            />
-          </GestureDetector>
-          {!initialLayout.ready ? (
-            <View style={[styles.center, StyleSheet.absoluteFill]} pointerEvents="none">
-              <ActivityIndicator
-                accessibilityLabel="Loading conversation"
-                color={colors.textSecondary}
+        <MobileTranscriptLayoutContext.Provider value={transcriptLayout.register}>
+          <GestureHandlerRootView style={styles.listWrap}>
+            <MobileNativeChatScrollHold headKey={turns.listMessages[0]?.id} listRef={listRef} />
+            <GestureDetector gesture={pinchGesture}>
+              <FlatList
+                key={sendSurfaceId}
+                style={initialLayout.ready ? undefined : { opacity: 0 }}
+                pointerEvents={initialLayout.ready ? 'auto' : 'none'}
+                ref={listRef}
+                data={history.listRows}
+                initialScrollIndex={
+                  history.listRows.length > 0 ? history.listRows.length - 1 : undefined
+                }
+                onScrollToIndexFailed={pinToTail}
+                keyExtractor={(item) => item.id}
+                renderItem={history.renderListRow}
+                contentContainerStyle={styles.listContent}
+                // Let link/file taps land while the composer keyboard is up
+                // instead of being swallowed by the dismiss gesture.
+                keyboardShouldPersistTaps="handled"
+                onScroll={onScroll}
+                onScrollBeginDrag={beginUserScroll}
+                onScrollEndDrag={endUserDrag}
+                onMomentumScrollBegin={beginMomentum}
+                onMomentumScrollEnd={endMomentum}
+                scrollEventThrottle={32}
+                onContentSizeChange={(width, height) => {
+                  initialLayout.recordContent(height)
+                  pinToTailAfterContentResize(width, height)
+                }}
+                onLayout={(event) => {
+                  initialLayout.recordLayout(event)
+                  pinToTail()
+                }}
+                updateCellsBatchingPeriod={initialLayout.ready ? 50 : 0}
+                maintainVisibleContentPosition={mobileNativeChatRowAnchor(hasMore === true)}
+                ListHeaderComponent={history.withHistory(
+                  mobileNativeChatListHeader(hasMore, loadingEarlier, loadEarlier)
+                )}
+                ListFooterComponent={mobileNativeChatListFooter(
+                  liveStatus,
+                  turns.waitingRows,
+                  renderItem
+                )}
+                ListEmptyComponent={emptyStateView}
               />
-            </View>
-          ) : null}
-          {/* Jump-to-latest control. */}
-          {showJumpToTail ? (
-            <Pressable
-              accessibilityLabel="Scroll to latest"
-              style={[styles.fab, styles.fabBottom]}
-              onPress={jumpToTail}
-            >
-              <ArrowDown size={18} color={colors.textPrimary} strokeWidth={2.2} />
-            </Pressable>
-          ) : null}
-        </GestureHandlerRootView>
+            </GestureDetector>
+            {!initialLayout.ready ? (
+              <View style={[styles.center, StyleSheet.absoluteFill]} pointerEvents="none">
+                <ActivityIndicator
+                  accessibilityLabel="Loading conversation"
+                  color={colors.textSecondary}
+                />
+              </View>
+            ) : null}
+            {/* Jump-to-latest control. */}
+            {showJumpToTail ? (
+              <Pressable
+                accessibilityLabel="Scroll to latest"
+                style={[styles.fab, styles.fabBottom]}
+                onPress={jumpToTail}
+              >
+                <ArrowDown size={18} color={colors.textPrimary} strokeWidth={2.2} />
+              </Pressable>
+            ) : null}
+          </GestureHandlerRootView>
+        </MobileTranscriptLayoutContext.Provider>
       )}
       {trayContent}
       <MobileNativeChatPromptCard

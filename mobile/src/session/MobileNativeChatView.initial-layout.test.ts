@@ -9,9 +9,24 @@ import {
   update
 } from './MobileNativeChatView.harness.test-fixture'
 
+const diagram = vi.hoisted(() => ({ pending: false }))
+
 vi.mock('react-native', async () => {
   const { reactNativeStub } = await import('./MobileNativeChatView.render-stubs.test-fixture')
-  return reactNativeStub()
+  const React = await import('react')
+  const { useMobileTranscriptLayoutPending } =
+    await import('../components/mobile-transcript-layout')
+  const stub = await reactNativeStub()
+  function Diagram() {
+    useMobileTranscriptLayoutPending(diagram.pending)
+    return null
+  }
+  return {
+    ...stub,
+    FlatList: React.forwardRef((props, ref) =>
+      React.createElement(stub.FlatList, { ...props, ref }, React.createElement(Diagram))
+    )
+  }
 })
 vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 })
@@ -42,7 +57,10 @@ vi.mock('./MobileNativeChatComposer', async () => {
 
 describe('MobileNativeChatView: initial measured position', () => {
   installChatViewHooks()
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => {
+    vi.useRealTimers()
+    diagram.pending = false
+  })
 
   function measured(height: number, offset: number) {
     return {
@@ -52,6 +70,26 @@ describe('MobileNativeChatView: initial measured position', () => {
     }
   }
   const transcript = { folded: [assistantTurn('a', 'A long response')] }
+
+  it('waits for a diagram to finish sizing before revealing an otherwise settled bottom', async () => {
+    vi.useFakeTimers()
+    diagram.pending = true
+    await render(transcript)
+    act(() => {
+      list().props.onLayout({ nativeEvent: { layout: { height: 500 } } })
+      list().props.onContentSizeChange(320, 400)
+    })
+    await act(async () => {
+      vi.runAllTimers()
+    })
+    expect(list().props.style).toMatchObject({ opacity: 0 })
+    diagram.pending = false
+    await update(transcript)
+    await act(async () => {
+      vi.runAllTimers()
+    })
+    expect(list().props.style).toBeUndefined()
+  })
 
   it('starts virtualization at the newest row so estimated offscreen spacers cannot masquerade as the bottom', async () => {
     const folded = Array.from({ length: 80 }, (_, index) => assistantTurn(`a-${index}`, 'Response'))
