@@ -75,7 +75,17 @@ export function useMobileNativeChatInitialLayout(
     const timer = setTimeout(() => setExpired(measured), MAX_INITIAL_LAYOUT_WAIT_MS)
     return () => clearTimeout(timer)
   }, [ready, measured])
-  useEffect(() => cancel, [cancel])
+  useEffect(
+    () => () => {
+      if (settleTimer.current !== null) {
+        clearTimeout(settleTimer.current)
+      }
+      if (frame.current !== null) {
+        cancelAnimationFrame(frame.current)
+      }
+    },
+    []
+  )
   return {
     ready,
     recordLayout: useCallback(
