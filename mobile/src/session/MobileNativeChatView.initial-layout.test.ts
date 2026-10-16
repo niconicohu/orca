@@ -118,6 +118,22 @@ describe('MobileNativeChatView: initial measured position', () => {
     expect(list().props.style).toBeUndefined()
   })
 
+  it('reveals a continuously growing transcript instead of waiting forever for a quiet frame', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(0), 16)
+    )
+    await render({ ...transcript, messages: transcript.folded })
+    act(() => list().props.onLayout({ nativeEvent: { layout: { height: 500 } } }))
+    for (let tick = 0; tick < 70; tick++) {
+      act(() => list().props.onContentSizeChange(320, 1200 + tick))
+      await act(async () => {
+        vi.advanceTimersByTime(16)
+      })
+    }
+    expect(list().props.style).toBeUndefined()
+  })
+
   it('starts virtualization at the newest row so estimated offscreen spacers cannot masquerade as the bottom', async () => {
     const folded = Array.from({ length: 80 }, (_, index) => assistantTurn(`a-${index}`, 'Response'))
     await render({ folded })
@@ -156,7 +172,7 @@ describe('MobileNativeChatView: initial measured position', () => {
     expect(list().props.style).toBeUndefined()
   })
 
-  it('restarts the two-frame reveal if Markdown changes the measured layout', async () => {
+  it('waits for quiet layout before revealing and restarts when Markdown changes height', async () => {
     vi.useFakeTimers()
     await render(transcript)
     act(() => {
@@ -164,12 +180,17 @@ describe('MobileNativeChatView: initial measured position', () => {
       list().props.onContentSizeChange(320, 1200)
     })
     await act(async () => {
-      vi.advanceTimersByTime(1)
+      vi.advanceTimersByTime(100)
     })
+    expect(list().props.style).toMatchObject({ opacity: 0 })
     act(() => list().props.onContentSizeChange(320, 1400))
     expect(list().props.style).toMatchObject({ opacity: 0 })
     await act(async () => {
-      vi.runAllTimers()
+      vi.advanceTimersByTime(199)
+    })
+    expect(list().props.style).toMatchObject({ opacity: 0 })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
     })
     expect(scrollToOffset).toHaveBeenLastCalledWith({ animated: false, offset: 1400 })
     expect(list().props.style).toBeUndefined()
@@ -228,7 +249,7 @@ describe('MobileNativeChatView: initial measured position', () => {
     await update(retained)
     act(layout)
     await act(async () => {
-      vi.runAllTimers()
+      vi.advanceTimersByTime(250)
     })
     expect(list().props.data.length).toBeGreaterThan(0)
     expect(list().props.style).toBeUndefined()
