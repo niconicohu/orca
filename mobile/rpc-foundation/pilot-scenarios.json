@@ -5993,8 +5993,7 @@
                 "name": "kestrel",
                 "clientMutationId": "mutation-1"
               }
-            },
-            "nativeChatDefault": true
+            }
           },
           "reply": {
             "ok": true,
