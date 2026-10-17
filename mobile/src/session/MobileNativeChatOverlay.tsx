@@ -1,3 +1,5 @@
+import { useMobileTheme } from '../theme/use-mobile-theme'
+import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { MobileNativeChatAttachmentContext } from './mobile-native-chat-attachment-read'
 import { useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
@@ -63,6 +65,7 @@ export function MobileNativeChatOverlay({
   getSendCompletionGeneration,
   keyboardInset
 }: Props): React.JSX.Element | null {
+  useMobileTheme()
   const session = controller.nativeChatSession
   // The chat is drawn only with a resolved agent; the fallback never reaches the screen.
   const agent = controller.nativeChatAgent ?? ''
@@ -84,6 +87,7 @@ export function MobileNativeChatOverlay({
       onDelete: queued.delete,
       onClearAll: queued.clear,
       onEdit: queued.edit,
+      editor: queued.editor,
       pause: queued.pause,
       onResume: queued.resume,
       sessionKey: queued.sessionKey,
@@ -184,6 +188,8 @@ export function MobileNativeChatOverlay({
   )
 }
 
-const styles = StyleSheet.create({
-  overlay: StyleSheet.absoluteFillObject
-})
+const styles = createThemedStyles(() =>
+  StyleSheet.create({
+    overlay: StyleSheet.absoluteFillObject
+  })
+)
