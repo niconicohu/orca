@@ -14,8 +14,8 @@ vi.mock('react-native-gesture-handler', () => ({
   GestureDetector: ({ children }: { children: unknown }) => children,
   Gesture: { Native: () => ({}) }
 }))
-vi.mock('./MobileNativeChatAndroidImagePage', () => ({
-  MobileNativeChatAndroidImagePage: 'AndroidImagePage'
+vi.mock('./MobileNativeChatZoomableImagePage', () => ({
+  MobileNativeChatZoomableImagePage: 'AndroidImagePage'
 }))
 vi.mock('react-native', () => ({
   Platform: { OS: 'ios' },
@@ -130,7 +130,7 @@ it('opens the selected gallery image and retains every neighboring image', () =>
   const list = renderer!.root.find((node) => String(node.type) === 'FlatList')
   expect(list.props.data).toBe(images)
   expect(list.props.initialScrollIndex).toBe(2)
-  act(() => list.props.onMomentumScrollEnd({ nativeEvent: { contentOffset: { x: 390 * 4 } } }))
+  act(() => list.props.onScroll({ nativeEvent: { contentOffset: { x: 390 * 4 } } }))
   expect(
     renderer!.root
       .findAll((node) => String(node.type) === 'Text')

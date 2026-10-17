@@ -1,22 +1,12 @@
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import type { NativeChatImageRefBlock } from '../../../src/shared/native-chat-types'
 import { useCallback, useMemo, useState } from 'react'
-import {
-  FlatList,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useWindowDimensions
-} from 'react-native'
+import { FlatList, Modal, Pressable, Text, View, useWindowDimensions } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
-import { MobileNativeChatAndroidImagePage } from './MobileNativeChatAndroidImagePage'
+import { MobileNativeChatZoomableImagePage } from './MobileNativeChatZoomableImagePage'
 import { X } from 'lucide-react-native'
 import { useWindowSafeAreaInsets } from '../layout/side-safe-area'
 import { colors } from '../theme/mobile-theme'
-import { MobileNativeChatImage } from './MobileNativeChatImage'
 import type { MobileNativeChatViewedImage } from './mobile-native-chat-row-overlays'
 import { styles } from './mobile-native-chat-message-styles'
 
@@ -36,6 +26,7 @@ export function MobileNativeChatImageViewer({
   const insets = useWindowSafeAreaInsets()
   const window = useWindowDimensions()
   const width = Math.max(1, window.width - insets.left - insets.right)
+  const [pageHeight, setPageHeight] = useState(0)
   const [index, setIndex] = useState(initialIndex)
   const [lockedIndex, setLockedIndex] = useState<number | null>(null)
   const pagingGesture = useMemo(() => Gesture.Native(), [])
@@ -69,10 +60,18 @@ export function MobileNativeChatImageViewer({
             <X size={20} color={colors.textPrimary} />
           </Pressable>
         </View>
-        <GestureDetector gesture={pagingGesture}>
+        <GestureDetector
+          gesture={pagingGesture}
+          touchAction={lockedIndex === null ? 'pan-x' : 'none'}
+        >
           <FlatList
             key={width}
             horizontal
+            style={{ flex: 1 }}
+            onLayout={({ nativeEvent }) => {
+              const height = nativeEvent.layout.height
+              setPageHeight((previous) => (Math.abs(previous - height) > 0.5 ? height : previous))
+            }}
             pagingEnabled
             scrollEnabled={lockedIndex === null}
             data={images}
@@ -82,7 +81,8 @@ export function MobileNativeChatImageViewer({
             showsHorizontalScrollIndicator={false}
             keyExtractor={(image, at) => `${at}:${image.url ?? image.path}`}
             getItemLayout={(_data, at) => ({ length: width, offset: at * width, index: at })}
-            onMomentumScrollEnd={(event) =>
+            scrollEventThrottle={16}
+            onScroll={(event) =>
               setIndex(
                 Math.max(
                   0,
@@ -90,34 +90,16 @@ export function MobileNativeChatImageViewer({
                 )
               )
             }
-            renderItem={({ item, index: at }) =>
-              Platform.OS === 'android' ? (
-                <MobileNativeChatAndroidImagePage
-                  image={item}
-                  width={width}
-                  index={at}
-                  pagingGesture={pagingGesture}
-                  onInteractionChange={onInteractionChange}
-                />
-              ) : (
-                <View style={{ width, flex: 1 }}>
-                  <ScrollView
-                    style={{ flex: 1 }}
-                    contentContainerStyle={{ flexGrow: 1 }}
-                    maximumZoomScale={4}
-                    minimumZoomScale={1}
-                    centerContent
-                  >
-                    <MobileNativeChatImage
-                      uri={item.url ?? item.path}
-                      alt={item.alt}
-                      fontScale={1}
-                      imageStyle={styles.imageGalleryFill}
-                    />
-                  </ScrollView>
-                </View>
-              )
-            }
+            renderItem={({ item, index: at }) => (
+              <MobileNativeChatZoomableImagePage
+                image={item}
+                width={width}
+                height={pageHeight}
+                index={at}
+                pagingGesture={pagingGesture}
+                onInteractionChange={onInteractionChange}
+              />
+            )}
           />
         </GestureDetector>
       </GestureHandlerRootView>
