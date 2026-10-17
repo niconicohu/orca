@@ -1,6 +1,3 @@
-vi.mock('../layout/side-safe-area', () => ({
-  useWindowSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 })
-}))
 import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -151,6 +148,21 @@ describe('iOS whole-message copy', () => {
       ).toHaveLength(0)
     }
   )
+
+  it.each([
+    'Please repair this chart:\n::orca-visual{file="usage.html"}\nKeep this text.',
+    '::orca-visual{file="usage.html"}'
+  ])('preserves the entire visible own source without an inline copy control %j', (text) => {
+    render({ ...message, role: 'user', blocks: [{ type: 'text', text }] })
+    // Drawn as written: your own message never renders a visual.
+    expect(nodes('MobileMarkdown')).toHaveLength(1)
+    expect(nodes('MobileMarkdown')[0]?.props.content).toBe(text)
+    expect(nodes('MobileMarkdown')[0]?.props.renderVisual).toBeUndefined()
+    expect(
+      nodes('Pressable').filter((node) => node.props.accessibilityLabel === 'Copy message')
+    ).toHaveLength(0)
+    expect(writeText).not.toHaveBeenCalled()
+  })
 
   it('omits assistant visual directives while retaining literal fenced code', async () => {
     const text =
@@ -371,9 +383,7 @@ describe('iOS whole-message copy', () => {
 
   it('has no copy footer for image-only or tool-only messages', () => {
     render({ ...message, blocks: [{ type: 'image-ref', path: '/attachment.png' }] })
-    expect(
-      nodes('Pressable').filter((node) => node.props.accessibilityLabel?.startsWith('Copy '))
-    ).toHaveLength(0)
+    expect(nodes('Pressable')).toHaveLength(0)
     act(() =>
       renderer!.update(
         createElement(MobileNativeChatMessage, {
@@ -381,8 +391,6 @@ describe('iOS whole-message copy', () => {
         })
       )
     )
-    expect(
-      nodes('Pressable').filter((node) => node.props.accessibilityLabel?.startsWith('Copy '))
-    ).toHaveLength(0)
+    expect(nodes('Pressable')).toHaveLength(0)
   })
 })

@@ -1,5 +1,6 @@
-import { createThemedStyles } from '../../theme/mobile-themed-styles'
+import { readableMermaidFlowchartSvg } from '../../../../src/shared/mermaid-flowchart-contrast'
 import { useMobileTheme } from '../../theme/use-mobile-theme'
+import { createThemedStyles } from '../../theme/mobile-themed-styles'
 import { memo, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
@@ -30,8 +31,7 @@ import { loadPageMermaid } from './mermaid-page-engine'
  * already inside the generation the phone downloaded.
  */
 export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: MermaidDiagramProps) {
-  const colorScheme = useMobileTheme()
-
+  const scheme = useMobileTheme()
   const hostRef = useRef<View>(null)
   // The source that failed, rather than a flag: a flag would need clearing from the effect that
   // renders the next one, and a render the component has already failed is the only thing the
@@ -60,7 +60,7 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
         }
         // Already sanitized: `securityLevel: 'strict'` is what makes this string safe to parse,
         // and mermaid is the only thing that can sanitize its own serialization.
-        host.innerHTML = svg
+        host.innerHTML = readableMermaidFlowchartSvg(svg, colors.textPrimary, colors.bgRaised)
       } catch {
         if (!disposed) {
           setFailedSource(source)
@@ -73,7 +73,7 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
       // previous diagram when the source changes.
       host.replaceChildren()
     }
-  }, [id, source, colorScheme])
+  }, [id, source, scheme])
 
   if (failed) {
     return (
@@ -99,8 +99,6 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
 
 /** The native component's frame and label, so a diagram and its fallback sit in the same box. */
 function MermaidFrame({ children }: { children: ReactNode }) {
-  useMobileTheme()
-
   return (
     <View style={styles.frame} testID="mermaid-diagram">
       <View style={styles.label}>

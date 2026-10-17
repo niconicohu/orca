@@ -79,7 +79,7 @@ describe('MobileNativeChatMessage on Android', () => {
     expect(byType('MessageActionsSheet')).toHaveLength(0)
     expect(
       byType('Pressable').filter((node) => node.props.accessibilityLabel === 'Copy message')
-    ).toHaveLength(0)
+    ).toHaveLength(1)
 
     const [bubble] = byType('Pressable')
     expect(typeof bubble!.props.onLongPress).toBe('function')
@@ -94,6 +94,28 @@ describe('MobileNativeChatMessage on Android', () => {
 
     act(() => sheet!.props.onClose())
     expect(byType('MessageActionsSheet')).toHaveLength(0)
+  })
+
+  it('opens the actions sheet from a long press on an attached picture, not the viewer', () => {
+    act(() => {
+      renderer = create(
+        createElement(MobileNativeChatMessage, {
+          message: {
+            ...message,
+            role: 'user',
+            blocks: [
+              { type: 'text', text: 'Here is the screen.' },
+              { type: 'image-ref', url: 'file:///a.jpg', alt: 'a photo' }
+            ]
+          }
+        })
+      )
+    })
+    const [bubble] = byType('Pressable')
+    const picture = renderer!.root.findByProps({ accessibilityLabel: 'Open image 1 of 1' })
+    expect(picture.props.onLongPress).toBe(bubble!.props.onLongPress)
+    act(() => picture.props.onLongPress())
+    expect(byType('MessageActionsSheet')).toHaveLength(1)
   })
 
   it('disables inline selection for host notices too', () => {
@@ -176,14 +198,14 @@ describe('MobileNativeChatMessage on Android', () => {
         createElement(MobileNativeChatMessage, { message: { ...message, id: 'u1', role: 'user' } })
       )
     })
-    const texts = byType('Text').filter((node) => node.props.selectable !== undefined)
-    expect(texts.length).toBeGreaterThan(0)
-    for (const node of texts) {
-      expect(node.props.selectable).toBe(false)
-    }
+    // Markdown owns the bubble's text; on Android a long press on a link span opens the sheet.
+    const [markdown, ...others] = byType('MobileMarkdown')
+    expect(others).toHaveLength(0)
+    expect(markdown?.props).toMatchObject({ rangeSelectable: true, tone: 'onBright' })
+    expect(markdown?.props.onLongPress).toEqual(expect.any(Function))
     expect(
       byType('Pressable').filter((node) => node.props.accessibilityLabel === 'Copy message')
-    ).toHaveLength(0)
+    ).toHaveLength(1)
     act(() => byType('Pressable')[0]!.props.onLongPress())
     expect(byType('MessageActionsSheet')).toHaveLength(1)
   })

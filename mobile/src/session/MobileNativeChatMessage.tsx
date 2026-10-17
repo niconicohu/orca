@@ -2,6 +2,7 @@ import { useMobileTheme } from '../theme/use-mobile-theme'
 import { MobileSelectableText as Text } from '../components/MobileSelectableText'
 import { memo, useCallback, useContext, useState } from 'react'
 import { Text as NativeText, View } from 'react-native'
+
 import { INLINE_TEXT_SELECTION } from '../components/inline-text-selection'
 import { MobileNativeChatMessageActionsSheet } from './MobileNativeChatMessageActionsSheet'
 import { MobileNativeChatLongPressContent as Content } from './MobileNativeChatLongPressContent'
@@ -28,6 +29,7 @@ import {
 } from '../../../src/shared/agent-session-host-status-rows'
 import { MobileNativeChatTurnStatus } from './MobileNativeChatTurnStatus'
 import { MobileNativeChatNoticeRow } from './MobileNativeChatNoticeRow'
+import { MobileNativeChatUserMessageFold } from './MobileNativeChatUserMessageFold'
 import { MobileNativeChatAwaitingInputRow } from './MobileNativeChatAwaitingInputRow'
 import { MobileNativeChatResolutionReceipt } from './MobileNativeChatResolutionReceipt'
 import {
@@ -41,7 +43,13 @@ import type { NativeChatTurnStatus } from './use-mobile-native-chat-turn-status'
 import { MobileNativeChatImageGallery } from './MobileNativeChatImageGallery'
 import { MobileNativeChatFileAttachments } from './MobileNativeChatFileAttachments'
 import { splitMobileNativeChatFileAttachments } from './mobile-native-chat-file-attachments'
-import { styles, TEXT_SIZE } from './mobile-native-chat-message-styles'
+import {
+  styles,
+  TEXT_SIZE,
+  CHAT_PROSE_SCALE,
+  scaledType
+} from './mobile-native-chat-message-styles'
+
 import { agentMessageAttribution } from './mobile-agent-message-attribution'
 import { withoutPendingNativeChatVisualDirectiveTail } from '../../../src/shared/native-chat-visual-directive'
 import {
@@ -70,7 +78,6 @@ function Prose({
   onLongPress?: () => void
 }): React.JSX.Element | null {
   useMobileTheme()
-
   if (isTextBlock(block)) {
     if (block.presentation === 'compaction') {
       return (
@@ -89,22 +96,22 @@ function Prose({
       return (
         <Text
           selectable={INLINE_TEXT_SELECTION}
-          style={[styles.hostNotice, { fontSize: TEXT_SIZE * fontScale }]}
+          style={[styles.hostNotice, scaledType(TEXT_SIZE, fontScale)]}
         >
           {AGENT_SESSION_HOST_STATUS_COPY[block.presentation]}
         </Text>
       )
     }
-    // Inverted (user) bubbles use a fixed dark-on-light text rather than the
-    // markdown renderer's light-on-dark palette.
     if (invert) {
       return (
-        <Text
-          selectable={INLINE_TEXT_SELECTION}
-          style={[styles.userText, { fontSize: TEXT_SIZE * fontScale }]}
-        >
-          {block.text}
-        </Text>
+        <MobileMarkdown
+          content={block.text}
+          tone="default"
+          rangeSelectable
+          textScale={CHAT_PROSE_SCALE * fontScale}
+          onOpenFile={onOpenFile}
+          onLongPress={onLongPress}
+        />
       )
     }
     return (
@@ -116,7 +123,7 @@ function Prose({
         }
         renderVisual={renderVisual}
         rangeSelectable
-        textScale={1.25 * fontScale}
+        textScale={CHAT_PROSE_SCALE * fontScale}
         onOpenFile={onOpenFile}
         onLongPress={onLongPress}
       />
@@ -147,7 +154,9 @@ function MobileNativeChatMessageImpl({
   receipt,
   awaiting,
   subagentGroupsOpen,
-  onToggleSubagentGroup
+  onToggleSubagentGroup,
+  userMessageOpen,
+  onToggleUserMessage
 }: {
   message: NativeChatMessage
   /** The newest assistant row of a live turn with no prompt open: its last text may still grow. */
@@ -184,9 +193,10 @@ function MobileNativeChatMessageImpl({
   /** The roster groups the reader opened, held by the transcript; only a roster row gets it. */
   subagentGroupsOpen?: ReadonlySet<string>
   onToggleSubagentGroup?: (groupId: string) => void
+  userMessageOpen?: boolean
+  onToggleUserMessage?: (messageId: string) => void
 }): React.JSX.Element {
   useMobileTheme()
-
   // Another agent's message is set apart from the person's bubble, left-aligned and named.
   const attribution = agentMessageAttribution('Message from', message.from)
   const isUser = message.role === 'user' && attribution === null
@@ -303,16 +313,42 @@ function MobileNativeChatMessageImpl({
       </>
     )
   }
-  // Only the completed answer gets a persistent copy control; long press still works on every row.
+  // Always shown, so the row never shifts when copy appears.
   const copyText =
     finalReply && message.role === 'assistant' ? nativeChatMessagePlainText(message) : ''
+  const proseRows = (blocks: NativeChatBlock[]) =>
+    blocks.map((block, index) =>
+      isSubagentGroupBlock(block) && isRenderableSubagentGroup(block) ? (
+        <MobileNativeChatSubagentGroup
+          key={`subagent-group:${block.groupId}`}
+          block={block}
+          open={subagentGroupsOpen?.has(block.groupId) === true}
+          onToggle={onToggleSubagentGroup}
+        />
+      ) : isSystem ? null : (
+        <Prose
+          key={index}
+          block={block}
+          invert={isUser}
+          fontScale={fontScale}
+          onOpenFile={onOpenFile}
+          onLongPress={onLongPress}
+          renderVisual={message.role === 'assistant' ? renderVisual : undefined}
+          holdPendingVisual={block === growingBlock}
+        />
+      )
+    )
   return (
     <>
       {/* A turn with no user bubble carries its bar above its first row. */}
       {turnStatusAbove ? statusRow : null}
       <View style={[styles.row, isUser && styles.rowUser]}>
         {images.length > 0 ? (
-          <MobileNativeChatImageGallery images={images} alignToEnd={isUser} />
+          <MobileNativeChatImageGallery
+            images={images}
+            alignToEnd={isUser}
+            onLongPress={onLongPress}
+          />
         ) : null}
         {files.length > 0 ? (
           <MobileNativeChatFileAttachments files={files} onOpenFile={onOpenFile} />
@@ -340,26 +376,17 @@ function MobileNativeChatMessageImpl({
                 onLongPress={onLongPress}
               />
             ) : null}
-            {bodyProse.map((block, index) =>
-              isSubagentGroupBlock(block) && isRenderableSubagentGroup(block) ? (
-                <MobileNativeChatSubagentGroup
-                  key={`subagent-group:${block.groupId}`}
-                  block={block}
-                  open={subagentGroupsOpen?.has(block.groupId) === true}
-                  onToggle={onToggleSubagentGroup}
-                />
-              ) : isSystem ? null : (
-                <Prose
-                  key={index}
-                  block={block}
-                  invert={isUser}
-                  fontScale={fontScale}
-                  onOpenFile={onOpenFile}
-                  onLongPress={onLongPress}
-                  renderVisual={message.role === 'assistant' ? renderVisual : undefined}
-                  holdPendingVisual={block === growingBlock}
-                />
-              )
+            {isUser ? (
+              <MobileNativeChatUserMessageFold
+                text={deriveNativeChatRowContent(bodyProse).markdown}
+                fontScale={fontScale}
+                open={userMessageOpen === true}
+                onToggle={() => onToggleUserMessage?.(message.id)}
+              >
+                {proseRows(bodyProse)}
+              </MobileNativeChatUserMessageFold>
+            ) : (
+              proseRows(bodyProse)
             )}
             {askRow}
             {showToolRun ? (
@@ -376,6 +403,7 @@ function MobileNativeChatMessageImpl({
             ) : null}
           </Content>
         ) : null}
+
         {unsentNotice ? <NativeText style={styles.unsentNotice}>{unsentNotice}</NativeText> : null}
         {copyText.length > 0 ? (
           <MobileSourceCopyButton

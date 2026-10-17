@@ -1,18 +1,22 @@
-import { useState } from 'react'
+import { useMobileTheme } from '../theme/use-mobile-theme'
+import { useContext } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import type { NativeChatImageRefBlock } from '../../../src/shared/native-chat-types'
 import { MobileNativeChatImage } from './MobileNativeChatImage'
-import { MobileNativeChatImageViewer } from './MobileNativeChatImageViewer'
+import { MobileNativeChatImageViewerContext } from './mobile-native-chat-image-viewer-context'
 import { styles } from './mobile-native-chat-message-styles'
 
 export function MobileNativeChatImageGallery({
   images,
-  alignToEnd = true
+  alignToEnd = true,
+  onLongPress
 }: {
   images: readonly NativeChatImageRefBlock[]
   alignToEnd?: boolean
+  onLongPress?: () => void
 }) {
-  const [selected, setSelected] = useState<number | null>(null)
+  useMobileTheme()
+  const openImage = useContext(MobileNativeChatImageViewerContext)
   const occurrences = new Map<string, number>()
   const thumbnails = images.slice(0, 3).map((image) => {
     const identity = image.path ?? image.url ?? image.alt ?? 'image'
@@ -28,7 +32,14 @@ export function MobileNativeChatImageGallery({
           accessibilityRole="button"
           accessibilityLabel={`Open image ${index + 1} of ${images.length}`}
           style={styles.imageGalleryTile}
-          onPress={() => setSelected(index)}
+          onLongPress={onLongPress}
+          onPress={() =>
+            openImage({
+              uri: image.url ?? image.path ?? '',
+              label: image.alt ?? 'Attached image',
+              gallery: { images, initialIndex: index }
+            })
+          }
         >
           <MobileNativeChatImage
             uri={image.url ?? image.path}
@@ -44,13 +55,6 @@ export function MobileNativeChatImageGallery({
           ) : null}
         </Pressable>
       ))}
-      {selected !== null ? (
-        <MobileNativeChatImageViewer
-          images={images}
-          initialIndex={selected}
-          onClose={() => setSelected(null)}
-        />
-      ) : null}
     </View>
   )
 }
