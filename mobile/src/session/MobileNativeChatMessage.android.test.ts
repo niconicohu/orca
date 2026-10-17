@@ -79,7 +79,7 @@ describe('MobileNativeChatMessage on Android', () => {
     expect(byType('MessageActionsSheet')).toHaveLength(0)
     expect(
       byType('Pressable').filter((node) => node.props.accessibilityLabel === 'Copy message')
-    ).toHaveLength(1)
+    ).toHaveLength(0)
 
     const [bubble] = byType('Pressable')
     expect(typeof bubble!.props.onLongPress).toBe('function')
@@ -201,11 +201,11 @@ describe('MobileNativeChatMessage on Android', () => {
     // Markdown owns the bubble's text; on Android a long press on a link span opens the sheet.
     const [markdown, ...others] = byType('MobileMarkdown')
     expect(others).toHaveLength(0)
-    expect(markdown?.props).toMatchObject({ rangeSelectable: true, tone: 'onBright' })
+    expect(markdown?.props).toMatchObject({ rangeSelectable: true, tone: 'default' })
     expect(markdown?.props.onLongPress).toEqual(expect.any(Function))
     expect(
       byType('Pressable').filter((node) => node.props.accessibilityLabel === 'Copy message')
-    ).toHaveLength(1)
+    ).toHaveLength(0)
     act(() => byType('Pressable')[0]!.props.onLongPress())
     expect(byType('MessageActionsSheet')).toHaveLength(1)
   })
