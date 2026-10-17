@@ -1,6 +1,5 @@
-import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { useMobileTheme } from '../theme/use-mobile-theme'
-import { useState } from 'react'
+import { createThemedStyles } from '../theme/mobile-themed-styles'
 import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native'
 import { ChevronLeft, X } from 'lucide-react-native'
 import { BottomDrawer } from '../components/BottomDrawer'
@@ -26,6 +25,8 @@ import { sortNativeChatSessionOptions } from '../../../src/shared/native-chat-se
 import { AGENT_CHAT_PERMISSION_MODE_OPTION_ID } from '../../../src/shared/agent-chat-permission-mode'
 import type { MobileNativeChatSessionOptionsController } from './use-mobile-native-chat-session-options'
 
+export type MobileNativeChatPickerPresentation = { page: string | null; refocus: boolean }
+
 export type MobileNativeChatSessionOptionPickersProps = {
   controller: MobileNativeChatSessionOptionsController
   /** Pickers lock while the agent works — a mid-turn `/model` interleaves with
@@ -36,6 +37,17 @@ export type MobileNativeChatSessionOptionPickersProps = {
    *  window would be submitted as part of the user's prompt. The composer blocks
    *  the reverse direction on `pendingId`; this is the same guard mirrored. */
   sendInFlight?: boolean
+  /** The collapsed composer hides the pills but keeps the drawer mounted. */
+  pillsHidden?: boolean
+}
+
+type PresentationProps = {
+  presentation: MobileNativeChatPickerPresentation | null
+  onNavigate: (page: string | null) => void
+  /** A pill opened the drawer; fires before the keyboard is dismissed. */
+  onDrawerOpen: (page: string) => void
+  /** The drawer's sheet has fully left the screen, however it closed. */
+  onDrawerAfterClose?: () => void
 }
 
 /** Full access reads in the warning colour wherever it is shown. */
@@ -47,16 +59,14 @@ function permissionChoiceColor(value: string | undefined): string | undefined {
 export function MobileNativeChatSessionOptionPickers({
   controller,
   isWorking,
-  sendInFlight = false
-}: MobileNativeChatSessionOptionPickersProps): React.JSX.Element | null {
+  sendInFlight = false,
+  pillsHidden = false,
+  presentation,
+  onNavigate,
+  onDrawerOpen,
+  onDrawerAfterClose
+}: MobileNativeChatSessionOptionPickersProps & PresentationProps): React.JSX.Element | null {
   useMobileTheme()
-
-  const [openDescriptorId, setOpenDescriptorId] = useState<string | null>(null)
-  const [lastRequest, setLastRequest] = useState(controller.optionPickerRequest)
-  if (controller.optionPickerRequest && lastRequest !== controller.optionPickerRequest) {
-    setLastRequest(controller.optionPickerRequest)
-    setOpenDescriptorId(controller.optionPickerRequest.id)
-  }
   const { snapshot, pendingId } = controller
   const model = snapshot.find((descriptor) => descriptor.category === 'model')
   const permission = snapshot.find(
@@ -66,7 +76,7 @@ export function MobileNativeChatSessionOptionPickers({
   if (!model && !permission) {
     return null
   }
-  const activeDescriptor = snapshot.find((descriptor) => descriptor.id === openDescriptorId)
+  const activeDescriptor = snapshot.find((descriptor) => descriptor.id === presentation?.page)
   const permissionView = activeDescriptor !== undefined && activeDescriptor === permission
   // The permission mode applies from the next send, so a running turn never locks it.
   const disabled = (!permissionView && isWorking) || pendingId !== null || sendInFlight
@@ -78,10 +88,10 @@ export function MobileNativeChatSessionOptionPickers({
   const pillLabel = optionsLabel ? `${modelLabel} ${optionsLabel}` : modelLabel
   const reason = mobileSessionOptionDisabledReason(activeDescriptor?.disabledReason)
 
-  const closePicker = (): void => setOpenDescriptorId(null)
-  const openPicker = (): void => {
+  const closePicker = (): void => onNavigate(null)
+  const openPicker = (page: string): void => {
+    onDrawerOpen(page)
     Keyboard.dismiss()
-    setOpenDescriptorId(model?.id ?? null)
   }
 
   const applyOption = (descriptor: SessionOptionDescriptor, value: SessionOptionValue): void => {
@@ -119,28 +129,30 @@ export function MobileNativeChatSessionOptionPickers({
   const pillsBusy = pendingId !== null || sendInFlight
 
   return (
-    <View style={styles.pills}>
-      {!model && permission && permissionChoice ? (
+    // One tree keeps an open drawer mounted when the composer collapses.
+    <View style={pillsHidden ? styles.pillsHidden : styles.pills}>
+      {!pillsHidden && !model && permission && permissionChoice ? (
         <Pill
           label={permissionChoice.label}
           accessibleName={`Permissions, ${permissionChoice.label}`}
           disabled={pillsBusy}
           labelColor={permissionChoiceColor(permissionChoice.value)}
-          onPress={() => {
-            Keyboard.dismiss()
-            setOpenDescriptorId(permission.id)
-          }}
+          onPress={() => openPicker(permission.id)}
         />
       ) : null}
-      {model ? (
+      {model && !pillsHidden ? (
         <Pill
           label={pillLabel}
           accessibleName={`Model, ${pillLabel}`}
           disabled={(isWorking && !permission) || pillsBusy}
-          onPress={openPicker}
+          onPress={() => openPicker(model.id)}
         />
       ) : null}
-      <BottomDrawer visible={activeDescriptor !== undefined} onClose={closePicker}>
+      <BottomDrawer
+        visible={activeDescriptor !== undefined}
+        onClose={closePicker}
+        onAfterClose={onDrawerAfterClose}
+      >
         {activeDescriptor ? (
           <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
@@ -148,7 +160,7 @@ export function MobileNativeChatSessionOptionPickers({
                 accessibilityLabel={rootView ? 'Close picker' : 'Back to models'}
                 accessibilityRole="button"
                 style={({ pressed }) => [styles.sheetNav, pressed && styles.pressed]}
-                onPress={rootView ? closePicker : openPicker}
+                onPress={rootView ? closePicker : () => onNavigate(model?.id ?? null)}
                 hitSlop={8}
               >
                 {rootView ? (
@@ -189,7 +201,7 @@ export function MobileNativeChatSessionOptionPickers({
                     value={mobileSessionOptionSummaryValue(descriptor)}
                     disabled={descriptor === permission ? pillsBusy : disabled}
                     divided={index < settings.length - 1}
-                    onPress={() => setOpenDescriptorId(descriptor.id)}
+                    onPress={() => onNavigate(descriptor.id)}
                   />
                 ))}
               </View>
@@ -210,6 +222,10 @@ const styles = createThemedStyles(() =>
       flexShrink: 1,
       minWidth: 0,
       gap: spacing.xs
+    },
+    // Out of the row's flow, so the collapsed composer spends no gap on an empty slot.
+    pillsHidden: {
+      position: 'absolute'
     },
     sheet: {
       paddingBottom: spacing.xs
