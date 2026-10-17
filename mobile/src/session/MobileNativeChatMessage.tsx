@@ -2,9 +2,8 @@ import { useMobileTheme } from '../theme/use-mobile-theme'
 import { MobileNativeChatImageGallery } from './MobileNativeChatImageGallery'
 import { MobileNativeChatFileAttachments } from './MobileNativeChatFileAttachments'
 import { splitMobileNativeChatFileAttachments } from './mobile-native-chat-file-attachments'
-import { MobileSelectableText as Text } from '../components/MobileSelectableText'
 import { memo, useCallback, useContext, useLayoutEffect, useRef } from 'react'
-import { Text as NativeText, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { INLINE_TEXT_SELECTION } from '../components/inline-text-selection'
 import { MobileNativeChatLongPressContent as Content } from './MobileNativeChatLongPressContent'
 import { splitNativeChatBlocks } from '../../../src/shared/native-chat-tool-fold'
@@ -322,7 +321,7 @@ function MobileNativeChatMessageImpl({
             ) : null}
           </Content>
         ) : null}
-        {unsentNotice ? <NativeText style={styles.unsentNotice}>{unsentNotice}</NativeText> : null}
+        {unsentNotice ? <Text style={styles.unsentNotice}>{unsentNotice}</Text> : null}
         {/* Always shown, so the row never shifts when copy appears. */}
         {isChatTurn ? (
           <View style={styles.meta}>
