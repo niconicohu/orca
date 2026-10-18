@@ -68,9 +68,12 @@ describe('structuredAgentSessionHostSupport', () => {
     expect(
       structuredAgentSessionHostSupport([AGENT_SESSION_PHONE_ATTACHMENTS_RUNTIME_CAPABILITY])
     ).toEqual({ ...none, phoneAttachments: true })
-    // A host with the store but from before phones could upload into it offers them nothing.
+    // Read previews and phone uploads are advertised independently.
     expect(
-      structuredAgentSessionHostSupport([AGENT_SESSION_ATTACHMENTS_RUNTIME_CAPABILITY])
-    ).toEqual(none)
+      structuredAgentSessionHostSupport([
+        AGENT_SESSION_ATTACHMENTS_RUNTIME_CAPABILITY,
+        AGENT_SESSION_PHONE_ATTACHMENTS_RUNTIME_CAPABILITY
+      ])
+    ).toEqual({ ...none, attachments: true, phoneAttachments: true })
   })
 })
