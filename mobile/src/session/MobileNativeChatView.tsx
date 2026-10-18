@@ -97,6 +97,7 @@ export function MobileNativeChatView({
   filePaths,
   onNeedFiles,
   sessionOptions,
+  structuredComposer = null,
   ask,
   askKey,
   onDismissAsk,
@@ -346,7 +347,6 @@ export function MobileNativeChatView({
           </GestureHandlerRootView>
         </MobileTranscriptLayoutContext.Provider>
       )}
-      {trayContent}
       <MobileNativeChatPromptCard
         key={promptKey ?? undefined}
         {...{ ask, askKey, onDismissAsk, onAnswerAsk, onCancelAsk, onCancelPrompt, onCollapseAsk }}
@@ -363,10 +363,10 @@ export function MobileNativeChatView({
           <Text style={styles.sendErrorText}>{sendErrorMessage}</Text>
         </View>
       ) : null}
+      {/* Directly on the composer, which it tucks into. */}
+      {trayContent}
       <MobileNativeChatComposer
-        structuredCommands={
-          structuredActivityUi ? (sessionOptions?.controller.conversationCommands ?? []) : undefined
-        }
+        structured={structuredActivityUi ? structuredComposer : null}
         value={composerText}
         onChangeText={onComposerTextChange}
         onSend={handleSend}
@@ -385,7 +385,11 @@ export function MobileNativeChatView({
         onMicPressOut={onMicPressOut}
         disabled={lockReason !== null}
         sendDisabled={expandedPromptOwnsSend}
-        placeholder={mobileNativeChatComposerPlaceholder(lockReason, turnIndicator?.afterStop)}
+        placeholder={mobileNativeChatComposerPlaceholder(
+          lockReason,
+          turnIndicator?.afterStop,
+          agent
+        )}
         filePaths={filePaths}
         onNeedFiles={onNeedFiles}
         stop={
