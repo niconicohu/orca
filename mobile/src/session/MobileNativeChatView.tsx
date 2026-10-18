@@ -1,5 +1,10 @@
 import { useMobileTheme } from '../theme/use-mobile-theme'
 import { useCallback, useMemo, useState } from 'react'
+import { nativeChatTaskListPredecessors } from '../../../src/shared/native-chat-task-list-history'
+import {
+  MobileNativeChatDisclosureContext,
+  useMobileNativeChatDisclosures
+} from './mobile-native-chat-disclosure-store'
 import {
   ActivityIndicator,
   FlatList,
@@ -21,6 +26,7 @@ import {
 } from './mobile-native-chat-render-data'
 import { useMobileNativeChatPageHistory } from './use-mobile-native-chat-page-history'
 import { useMobileNativeChatInitialLayout } from './use-mobile-native-chat-initial-layout'
+import { useMobileNativeChatTranscriptRef } from './use-mobile-native-chat-transcript-ref'
 import {
   MobileTranscriptLayoutContext,
   useMobileTranscriptLayout
@@ -150,6 +156,7 @@ export function MobileNativeChatView({
     data.length > 0,
     transcriptLayout.pending
   )
+  const transcriptRef = useMobileNativeChatTranscriptRef(listRef, initialLayout.ready)
 
   const handleSend = useCallback(
     async (text: string): Promise<boolean> => {
@@ -197,11 +204,16 @@ export function MobileNativeChatView({
     lineYields: ask != null || permission != null || question != null,
     scopeKey: sendSurfaceId,
     processExpanded: toolsExpanded,
-    actionablePromptIds
+    actionablePromptIds,
+    receipts
   })
 
+  // What the reader opened in this chat's runs, kept above the rows the list recycles.
+  const disclosures = useMobileNativeChatDisclosures(sendSurfaceId)
+  const taskListPredecessors = useMemo(() => nativeChatTaskListPredecessors(data), [data])
   const renderItem = useMobileNativeChatRowRenderer({
     toolsExpanded,
+    taskListPredecessors,
     fontScale,
     onOpenFile,
     structuredActivityUi,
@@ -264,52 +276,56 @@ export function MobileNativeChatView({
       ) : (
         <MobileTranscriptLayoutContext.Provider value={transcriptLayout.register}>
           <GestureHandlerRootView style={styles.listWrap}>
-            <MobileNativeChatScrollHold headKey={turns.listMessages[0]?.id} listRef={listRef} />
-            <GestureDetector gesture={pinchGesture}>
-              <FlatList
-                key={sendSurfaceId}
-                style={initialLayout.ready ? undefined : { opacity: 0 }}
-                pointerEvents={initialLayout.ready ? 'auto' : 'none'}
-                ref={listRef}
-                data={history.listRows}
-                initialScrollIndex={Math.max(0, initialWindow.rows - 10)}
-                initialNumToRender={10}
-                onScrollToIndexFailed={pinToTail}
-                keyExtractor={(item) => item.id}
-                renderItem={history.renderListRow}
-                contentContainerStyle={
-                  toolCallCount > 0 ? styles.listContentUnderFloatingControls : styles.listContent
-                }
-                // Let link/file taps land while the composer keyboard is up
-                // instead of being swallowed by the dismiss gesture.
-                keyboardShouldPersistTaps="handled"
-                onScroll={onScroll}
-                onScrollBeginDrag={beginUserScroll}
-                onScrollEndDrag={endUserDrag}
-                onMomentumScrollBegin={beginMomentum}
-                onMomentumScrollEnd={endMomentum}
-                scrollEventThrottle={32}
-                onContentSizeChange={(width, height) => {
-                  pinToTailAfterContentResize(width, height)
-                  initialLayout.recordContent(height)
-                }}
-                onLayout={(event) => {
-                  pinToTail()
-                  initialLayout.recordLayout(event)
-                }}
-                updateCellsBatchingPeriod={initialLayout.ready ? 50 : 0}
-                maintainVisibleContentPosition={mobileNativeChatRowAnchor(hasMore === true)}
-                ListHeaderComponent={history.withHistory(
-                  mobileNativeChatListHeader(hasMore, loadingEarlier, loadEarlier)
-                )}
-                ListFooterComponent={mobileNativeChatListFooter(
-                  liveStatus,
-                  turns.waitingRows,
-                  renderItem
-                )}
-                ListEmptyComponent={emptyStateView}
-              />
-            </GestureDetector>
+            <MobileNativeChatDisclosureContext.Provider value={disclosures}>
+              <MobileNativeChatScrollHold headKey={turns.listMessages[0]?.id} listRef={listRef} />
+              <GestureDetector gesture={pinchGesture}>
+                <FlatList
+                  key={sendSurfaceId}
+                  style={initialLayout.ready ? undefined : { opacity: 0 }}
+                  pointerEvents={initialLayout.ready ? 'auto' : 'none'}
+                  accessibilityElementsHidden={!initialLayout.ready}
+                  importantForAccessibility={initialLayout.ready ? 'auto' : 'no-hide-descendants'}
+                  ref={transcriptRef}
+                  data={history.listRows}
+                  initialScrollIndex={Math.max(0, initialWindow.rows - 10)}
+                  initialNumToRender={10}
+                  onScrollToIndexFailed={pinToTail}
+                  keyExtractor={(item) => item.id}
+                  renderItem={history.renderListRow}
+                  contentContainerStyle={
+                    toolCallCount > 0 ? styles.listContentUnderFloatingControls : styles.listContent
+                  }
+                  // Let link/file taps land while the composer keyboard is up
+                  // instead of being swallowed by the dismiss gesture.
+                  keyboardShouldPersistTaps="handled"
+                  onScroll={onScroll}
+                  onScrollBeginDrag={beginUserScroll}
+                  onScrollEndDrag={endUserDrag}
+                  onMomentumScrollBegin={beginMomentum}
+                  onMomentumScrollEnd={endMomentum}
+                  scrollEventThrottle={32}
+                  onContentSizeChange={(width, height) => {
+                    pinToTailAfterContentResize(width, height)
+                    initialLayout.recordContent(height)
+                  }}
+                  onLayout={(event) => {
+                    pinToTail()
+                    initialLayout.recordLayout(event)
+                  }}
+                  updateCellsBatchingPeriod={initialLayout.ready ? 50 : 0}
+                  maintainVisibleContentPosition={mobileNativeChatRowAnchor(hasMore === true)}
+                  ListHeaderComponent={history.withHistory(
+                    mobileNativeChatListHeader(hasMore, loadingEarlier, loadEarlier)
+                  )}
+                  ListFooterComponent={mobileNativeChatListFooter(
+                    liveStatus,
+                    turns.waitingRows,
+                    renderItem
+                  )}
+                  ListEmptyComponent={emptyStateView}
+                />
+              </GestureDetector>
+            </MobileNativeChatDisclosureContext.Provider>
             {!initialLayout.ready ? (
               <View style={[styles.center, StyleSheet.absoluteFill]} pointerEvents="none">
                 <ActivityIndicator
