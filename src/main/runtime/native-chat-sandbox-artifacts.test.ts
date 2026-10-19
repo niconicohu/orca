@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { writeFile } from 'node:fs/promises'
+import { filesystemPathToFileUri } from '../../shared/file-uri-path'
+import { isWindowsAbsolutePathLike } from '../../shared/cross-platform-path'
 import { nativeChatTranscriptIncludesPath } from '../native-chat/native-chat-file-provenance'
 import {
   createRuntimeFileCommands,
@@ -30,7 +32,7 @@ vi.mock(
   async () => (await import('./orca-runtime-files-mock-registry')).localWorktreeRuntimeOptionsMock
 )
 
-describe('sandbox artifacts authorized by their actual chat Markdown', () => {
+describe('chat artifacts authorized by their actual host Markdown', () => {
   useRuntimeFileCommandsLifecycle()
   const { tempFile } = useTerminalArtifactTempFiles()
 
@@ -55,7 +57,11 @@ describe('sandbox artifacts authorized by their actual chat Markdown', () => {
       }))
     )
   )('$extension grants and exact reads from $tabId', async ({ extension, bytes, tabId }) => {
-    const file = await tempFile(`result.${extension}`, '')
+    const file = (await tempFile(`result.${extension}`, '')).replaceAll('\\', '/')
+    // Sandbox addresses POSIX hosts; native Windows fixtures use the existing file URI route.
+    const reference = isWindowsAbsolutePathLike(file)
+      ? filesystemPathToFileUri(file)
+      : `sandbox:${encodeURI(file)}`
     await writeFile(file, bytes)
     const context = { tabId, sessionId: 'session-1' }
     const { commands } = createRuntimeFileCommands({
@@ -84,7 +90,7 @@ describe('sandbox artifacts authorized by their actual chat Markdown', () => {
             readStructuredMessages: async () => [
               {
                 role: 'assistant',
-                blocks: [{ type: 'text', text: `![Result](sandbox:${encodeURI(file)})` }]
+                blocks: [{ type: 'text', text: `![Result](${reference})` }]
               }
             ]
           })

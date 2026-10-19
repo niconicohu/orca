@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { filesystemPathToFileUri } from '../../shared/file-uri-path'
 import type { NativeChatMessage } from '../../shared/native-chat-types'
 import type { RuntimeMobileSessionClientTab } from '../../shared/runtime-types'
 import { nativeChatTranscriptIncludesPath } from './native-chat-file-provenance'
@@ -64,38 +65,49 @@ describe('nativeChatTranscriptIncludesPath', () => {
       })
     ).resolves.toBe(false)
   })
-  it('accepts a sandbox file only from the matching structured conversation', async () => {
-    const readStructuredMessages = vi.fn(async () => [
-      message('assistant', '![Chart](sandbox:/mnt/data/chart.png)')
+  it.each(
+    ['png', 'pdf', 'svg', 'csv'].flatMap((extension) => [
+      { path: `/mnt/data/chart.${extension}`, reference: `sandbox:/mnt/data/chart.${extension}` },
+      ...[
+        `C:/Users/Agent/Generated reports/chart.${extension}`,
+        `//server/reports/chart.${extension}`
+      ].map((path) => ({ path, reference: filesystemPathToFileUri(path) }))
     ])
-    const tabs: RuntimeMobileSessionClientTab[] = [
-      {
-        type: 'agent-session',
-        id: 'chat-tab',
-        sessionId: 'session-1',
-        title: 'Chat',
-        agent: 'codex',
-        isActive: false
+  )(
+    'accepts $reference only from the matching structured conversation',
+    async ({ path, reference }) => {
+      const readStructuredMessages = vi.fn(async () => [
+        message('assistant', `![Chart](${reference})`)
+      ])
+      const tabs: RuntimeMobileSessionClientTab[] = [
+        {
+          type: 'agent-session',
+          id: 'chat-tab',
+          sessionId: 'session-1',
+          title: 'Chat',
+          agent: 'codex',
+          isActive: false
+        }
+      ]
+      const args = {
+        tabs,
+        context: { tabId: 'chat-tab', sessionId: 'session-1' },
+        pathText: path,
+        absolutePath: path,
+        readStructuredMessages
       }
-    ]
-    const args = {
-      tabs,
-      context: { tabId: 'chat-tab', sessionId: 'session-1' },
-      pathText: '/mnt/data/chart.png',
-      absolutePath: '/mnt/data/chart.png',
-      readStructuredMessages
+      await expect(nativeChatTranscriptIncludesPath(args)).resolves.toBe(true)
+      expect(readStructuredMessages).toHaveBeenCalledWith('session-1')
+      readStructuredMessages.mockClear()
+      await expect(
+        nativeChatTranscriptIncludesPath({
+          ...args,
+          context: { tabId: 'chat-tab', sessionId: 'another-session' }
+        })
+      ).resolves.toBe(false)
+      expect(readStructuredMessages).not.toHaveBeenCalled()
     }
-    await expect(nativeChatTranscriptIncludesPath(args)).resolves.toBe(true)
-    expect(readStructuredMessages).toHaveBeenCalledWith('session-1')
-    readStructuredMessages.mockClear()
-    await expect(
-      nativeChatTranscriptIncludesPath({
-        ...args,
-        context: { tabId: 'chat-tab', sessionId: 'another-session' }
-      })
-    ).resolves.toBe(false)
-    expect(readStructuredMessages).not.toHaveBeenCalled()
-  })
+  )
 
   it('does not authorize a structured user message or a longer sandbox filename', async () => {
     const tabs: RuntimeMobileSessionClientTab[] = [

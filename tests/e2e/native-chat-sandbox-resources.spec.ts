@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { filesystemPathToFileUri } from '../../src/shared/file-uri-path'
+import { isWindowsAbsolutePathLike } from '../../src/shared/cross-platform-path'
 import { test, expect } from './helpers/orca-app'
 import { ensureTerminalVisible, waitForActiveWorktree, waitForSessionReady } from './helpers/store'
 import { waitForActivePaneHookDescriptor, waitForActiveTerminalManager } from './helpers/terminal'
@@ -31,11 +33,11 @@ test('chat sandbox images render and file links open on their session owner', as
   }
   const scratch = await mkdtemp(path.join(os.tmpdir(), 'orca-sandbox-chat-'))
   const prefix = `sandbox-${randomUUID()}`
-  const pngPath = path.join(testRepoPath, `${prefix}.png`)
-  const pdfPath = path.join(testRepoPath, `${prefix}.pdf`)
-  const csvPath = path.join(testRepoPath, `${prefix}.csv`)
-  const svgPath = path.join(testRepoPath, `${prefix}.svg`)
-  const missingPath = path.join(testRepoPath, `${prefix}-missing.png`)
+  const pngPath = path.join(testRepoPath, `${prefix}.png`).replaceAll('\\', '/')
+  const pdfPath = path.join(testRepoPath, `${prefix}.pdf`).replaceAll('\\', '/')
+  const csvPath = path.join(testRepoPath, `${prefix}.csv`).replaceAll('\\', '/')
+  const svgPath = path.join(testRepoPath, `${prefix}.svg`).replaceAll('\\', '/')
+  const missingPath = path.join(testRepoPath, `${prefix}-missing.png`).replaceAll('\\', '/')
   const generated = await electronApp.evaluate(async ({ nativeImage, BrowserWindow }) => {
     const bitmap = Buffer.alloc(400 * 120 * 4)
     for (let y = 0; y < 120; y++) {
@@ -72,7 +74,9 @@ test('chat sandbox images render and file links open on their session owner', as
     ])
     const sessionId = `sandbox-e2e-${randomUUID()}`
     const transcriptPath = path.join(scratch, `${sessionId}.jsonl`)
-    const reference = (file: string): string => `sandbox:${encodeURI(file)}`
+    // Sandbox paths are POSIX; Windows still exercises every action with a native file URI.
+    const reference = (file: string): string =>
+      isWindowsAbsolutePathLike(file) ? filesystemPathToFileUri(file) : `sandbox:${encodeURI(file)}`
     await writeFile(
       transcriptPath,
       claudeTranscriptLines({
@@ -134,7 +138,9 @@ test('chat sandbox images render and file links open on their session owner', as
         .poll(() =>
           orcaPage.evaluate(
             (filePath) =>
-              window.__store?.getState().openFiles.some((file) => file.filePath === filePath),
+              window.__store
+                ?.getState()
+                .openFiles.some((file) => file.filePath.replaceAll('\\', '/') === filePath),
             file
           )
         )
