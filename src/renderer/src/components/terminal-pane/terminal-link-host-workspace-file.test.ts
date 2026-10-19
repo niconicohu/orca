@@ -48,6 +48,50 @@ function hostAnswers(result: unknown): void {
 }
 
 describe('a paired-server link outside its own workspace', () => {
+  it('keeps a paired SSH terminal grant on its owning environment and terminal', async () => {
+    storeState.settings = { activeRuntimeEnvironmentId: 'another-host' }
+    hostAnswers({
+      worktree: 'wt-feat',
+      relativePath: null,
+      absolutePath: '/mnt/data/report.csv',
+      exists: true,
+      isDirectory: false,
+      openTarget: {
+        kind: 'absolute-file',
+        provider: 'local',
+        absolutePath: '/mnt/data/report.csv',
+        grantId: 'terminal-grant'
+      }
+    })
+    openDetectedFilePath('/mnt/data/report.csv', null, null, {
+      ...featureWorktree,
+      terminalHandle: 'host-terminal'
+    })
+    await flushDoubleRaf()
+
+    expect(runtimeEnvironmentCallMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selector: 'env-1',
+        method: 'files.resolveTerminalPath',
+        params: {
+          worktree: 'id:wt-feat',
+          pathText: '/mnt/data/report.csv',
+          crossWorkspace: true,
+          terminal: 'host-terminal'
+        }
+      })
+    )
+    expect(statMock).not.toHaveBeenCalled()
+    expect(openFileMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filePath: '/mnt/data/report.csv',
+        runtimeEnvironmentId: 'env-1',
+        terminalArtifactGrantId: 'terminal-grant'
+      }),
+      { forceContentReload: true }
+    )
+  })
+
   it('opens a main-repo file in the workspace the host says holds it', async () => {
     hostAnswers({
       worktree: 'wt-main',

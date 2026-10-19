@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NativeChatMarkdown } from './NativeChatMarkdown'
 import {
@@ -290,6 +290,28 @@ describe('native chat sandbox resources', () => {
     expect(screen.getByRole('dialog').querySelector('img')?.getAttribute('src')).toBe(
       'blob:after-refresh'
     )
+  })
+
+  it('recovers when the cache is cleared during the first host image read', async () => {
+    let finish: ((value: unknown) => void) | undefined
+    mocks.rpc.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        })
+    )
+    render(<Chat resourceOwner={owner('host-a')} />)
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledOnce())
+    invalidateLocalImageSrcCacheForTests()
+    const image = await screen.findByRole('img', { name: 'Chart' })
+    expect(image.getAttribute('src')).toBe('blob:host-image')
+    expect(mocks.rpc).toHaveBeenCalledTimes(2)
+    await act(async () => {
+      finish?.({ content: 'AA==', isBinary: true, isImage: true, mimeType: 'image/png' })
+    })
+    expect(screen.queryByText(/Couldn't preview image/)).toBeNull()
+    expect(screen.getByRole('img', { name: 'Chart' })).toBe(image)
+    expect(mocks.localRead).not.toHaveBeenCalled()
   })
 
   it('keeps a displayed blob and DOM node on an equal owner update', async () => {
