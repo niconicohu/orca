@@ -8,6 +8,7 @@ import { MobileNativeChatAttachmentContext } from './mobile-native-chat-attachme
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import type { RpcResponse } from '../transport/types'
 import { styles } from './mobile-native-chat-message-styles'
+import { mobileNativeChatRowId } from './MobileNativeChatScrollHold'
 
 vi.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: 'View',
@@ -208,6 +209,26 @@ it('keeps an image-only message outside any text bubble', async () => {
       (node) => Array.isArray(node.props.style) && node.props.style.includes(styles.userBubble)
     )
   ).toHaveLength(0)
+})
+
+it('keeps the page reading anchor on an image-only row when its message id changes', async () => {
+  const draw = (id: string) =>
+    createElement(MobileNativeChatMessage, {
+      message: { ...message, id, blocks: [{ type: 'image-ref', url: 'file:///a.png' }] },
+      rowKey: 'kept-photo-row'
+    })
+  await act(async () => {
+    renderer = create(draw('newest-head'))
+  })
+  const row = () =>
+    renderer!.root.find(
+      (node) =>
+        String(node.type) === 'View' &&
+        node.props.testID === mobileNativeChatRowId('kept-photo-row')
+    )
+  expect(row().findAll((node) => String(node.type) === 'Image')).toHaveLength(1)
+  await act(async () => renderer!.update(draw('older-history-head')))
+  expect(row().findAll((node) => String(node.type) === 'Image')).toHaveLength(1)
 })
 
 it('places text in its own bubble below the image', async () => {
