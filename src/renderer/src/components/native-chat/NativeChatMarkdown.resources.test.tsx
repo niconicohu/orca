@@ -12,6 +12,7 @@ import { useNativeChatFileLinkClick } from './use-native-chat-file-link-click'
 import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import { useMemo } from 'react'
+import { setRendererUiLanguage } from '@/i18n/i18n'
 
 const mocks = vi.hoisted(() => ({ host: vi.fn(), rpc: vi.fn(), localRead: vi.fn(), open: vi.fn() }))
 vi.mock('@/runtime/host-route-call', () => ({ callHostRoute: mocks.host }))
@@ -93,14 +94,42 @@ beforeEach(() => {
     value: { fs: { readFile: mocks.localRead } }
   })
 })
-afterEach(() => {
+afterEach(async () => {
   cleanup()
   resetLocalImageSrcStateForTests()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
+  await setRendererUiLanguage('en')
 })
 
 describe('native chat sandbox resources', () => {
+  it('shows localized host errors in a Chinese conversation', async () => {
+    await setRendererUiLanguage('zh')
+    render(<NativeChatMarkdown content="![Chart](sandbox:/mnt/data/chart.png)" />)
+    await screen.findByText(/无法预览图片：会话主机不可用/)
+    expect(mocks.localRead).not.toHaveBeenCalled()
+  })
+  it('keeps ordinary remote images as links in the default compact variant', () => {
+    render(<NativeChatMarkdown content="![Remote chart](https://example.com/chart.png)" />)
+    expect(screen.queryByRole('img', { name: 'Remote chart' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Remote chart' }).getAttribute('href')).toBe(
+      'https://example.com/chart.png'
+    )
+    expect(mocks.host).not.toHaveBeenCalled()
+  })
+
+  it('retains ordinary document image rendering', () => {
+    render(
+      <NativeChatMarkdown
+        variant="document"
+        content="![Remote chart](https://example.com/chart.png)"
+      />
+    )
+    expect(screen.getByRole('img', { name: 'Remote chart' }).getAttribute('src')).toBe(
+      'https://example.com/chart.png'
+    )
+    expect(mocks.host).not.toHaveBeenCalled()
+  })
   it.each([undefined, 'host-a'])(
     'reads an image from its own %s host using its existing grant',
     async (environmentId) => {

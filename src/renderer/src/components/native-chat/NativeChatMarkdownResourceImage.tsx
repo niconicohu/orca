@@ -71,7 +71,12 @@ export function NativeChatMarkdownResourceImage({
       }
       const filePath = resolved?.kind === 'client' ? null : (resolved?.absolutePath ?? path)
       if (!filePath) {
-        throw new Error('The file is not available on its session host')
+        throw new Error(
+          translate(
+            'components.native-chat.fileLinks.imageFileUnavailable',
+            'The file is not available on its session host'
+          )
+        )
       }
       const readContext =
         resolved?.kind === 'grant'
@@ -96,7 +101,14 @@ export function NativeChatMarkdownResourceImage({
       if (!canceled) {
         setState({
           identity,
-          ...(src ? { src } : { error: 'The host could not provide an image preview' })
+          ...(src
+            ? { src }
+            : {
+                error: translate(
+                  'components.native-chat.fileLinks.imagePreviewUnavailable',
+                  'The host could not provide an image preview'
+                )
+              })
         })
       }
     })().catch((error: unknown) => {
@@ -106,7 +118,10 @@ export function NativeChatMarkdownResourceImage({
           error:
             error instanceof RuntimeRpcCallError &&
             (error.code === 'method_not_found' || error.code === 'invalid_params')
-              ? 'Update the Orca server to preview this chat file'
+              ? translate(
+                  'components.native-chat.fileLinks.imageServerUpdateRequired',
+                  'Update the Orca server to preview this chat file'
+                )
               : (readIpcErrorMessage(error) ?? String(error))
         })
       }
@@ -120,7 +135,12 @@ export function NativeChatMarkdownResourceImage({
     }
   }, [identity, near, path])
   const current = state.identity === identity ? state : null
-  const error = !context ? 'The session host is unavailable' : current?.error
+  const error = !context
+    ? translate(
+        'components.native-chat.fileLinks.imageHostUnavailable',
+        'The session host is unavailable'
+      )
+    : current?.error
   const label = alt || path
   return (
     <span ref={ref} className="inline-block max-w-full">
@@ -136,7 +156,15 @@ export function NativeChatMarkdownResourceImage({
               src={current.src}
               alt={alt}
               className="my-3 max-h-96 max-w-full rounded-md object-contain"
-              onError={() => setState({ identity, error: 'The image could not be displayed' })}
+              onError={() =>
+                setState({
+                  identity,
+                  error: translate(
+                    'components.native-chat.fileLinks.imageDisplayFailed',
+                    'The image could not be displayed'
+                  )
+                })
+              }
             />
           </button>
           <PanZoomImageDialog

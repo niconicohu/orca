@@ -41,7 +41,10 @@ function transcriptTextIncludesPath(text: string, pathText: string, absolutePath
   if (recentTerminalOutputIncludesPath(text, pathText, absolutePath)) {
     return true
   }
-  if (markdownIncludesPath(markdownParser.parse(text), pathText, absolutePath)) {
+  if (
+    /\]\s*[(:]|<[^>\s]+:/.test(text) &&
+    markdownIncludesPath(markdownParser.parse(text), pathText, absolutePath)
+  ) {
     return true
   }
   // Mobile excludes a sentence-final period from the tappable path span.
@@ -65,18 +68,22 @@ export async function nativeChatTranscriptIncludesPath(args: {
       tab.sessionId === args.context.sessionId
   )
   if (structuredTab) {
-    const messages = await args.readStructuredMessages?.(args.context.sessionId)
-    return (
-      messages?.some(
-        (message) =>
-          message.role === 'assistant' &&
-          message.blocks.some(
-            (block) =>
-              block.type === 'text' &&
-              transcriptTextIncludesPath(block.text, args.pathText, args.absolutePath)
-          )
-      ) ?? false
-    )
+    try {
+      const messages = await args.readStructuredMessages?.(args.context.sessionId)
+      return (
+        messages?.some(
+          (message) =>
+            message.role === 'assistant' &&
+            message.blocks.some(
+              (block) =>
+                block.type === 'text' &&
+                transcriptTextIncludesPath(block.text, args.pathText, args.absolutePath)
+            )
+        ) ?? false
+      )
+    } catch {
+      return false
+    }
   }
   const tab = args.tabs.find(
     (candidate): candidate is RuntimeMobileSessionTerminalClientTab =>
