@@ -7,7 +7,10 @@ import {
   type NativeChatResourceOwner
 } from './NativeChatResourceOwner'
 import { routeNativeChatHref } from '../../../../shared/native-chat-href-routing'
-import { resetLocalImageSrcStateForTests } from '@/components/editor/useLocalImageSrc'
+import {
+  invalidateLocalImageSrcCacheForTests,
+  resetLocalImageSrcStateForTests
+} from '@/components/editor/useLocalImageSrc'
 import { useNativeChatFileLinkClick } from './use-native-chat-file-link-click'
 import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
@@ -271,6 +274,22 @@ describe('native chat sandbox resources', () => {
     })
     await waitFor(() => expect(mocks.rpc).toHaveBeenCalledOnce())
     expect(mocks.rpc.mock.calls[0]?.[0]).toEqual({ kind: 'environment', environmentId: 'host-b' })
+  })
+
+  it('refreshes the thumbnail and zoom source after image cache invalidation', async () => {
+    vi.mocked(URL.createObjectURL)
+      .mockReturnValueOnce('blob:before-refresh')
+      .mockReturnValueOnce('blob:after-refresh')
+    render(<Chat resourceOwner={owner('host-a')} />)
+    const image = await screen.findByRole('img', { name: 'Chart' })
+    expect(image.getAttribute('src')).toBe('blob:before-refresh')
+    invalidateLocalImageSrcCacheForTests()
+    await waitFor(() => expect(image.getAttribute('src')).toBe('blob:after-refresh'))
+    expect(mocks.rpc).toHaveBeenCalledTimes(2)
+    fireEvent.click(screen.getByRole('button', { name: /^Chart$/ }))
+    expect(screen.getByRole('dialog').querySelector('img')?.getAttribute('src')).toBe(
+      'blob:after-refresh'
+    )
   })
 
   it('keeps a displayed blob and DOM node on an equal owner update', async () => {

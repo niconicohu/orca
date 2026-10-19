@@ -95,6 +95,14 @@ test('chat sandbox images render and file links open on their session owner', as
     const image = chat.getByRole('img', { name: 'Generated PNG', exact: true })
     await expect(image).toHaveJSProperty('naturalWidth', 400)
     await expect(image).toBeVisible()
+    const previousImageSrc = await image.getAttribute('src')
+    if (!previousImageSrc) {
+      throw new Error('The chat image has no resource URL')
+    }
+    // Refresh the cache without activating a native window.
+    await orcaPage.evaluate(() => window.dispatchEvent(new Event('focus')))
+    await expect(image).not.toHaveAttribute('src', previousImageSrc)
+    await expect(image).toHaveJSProperty('naturalWidth', 400)
     await image.evaluate(async (element) => {
       if (!(element instanceof HTMLImageElement)) {
         throw new Error('The chat preview is not an image')
