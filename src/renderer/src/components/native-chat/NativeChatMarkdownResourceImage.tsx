@@ -4,6 +4,7 @@ import {
   acquireLocalImageSrcLease,
   getLocalImageCacheKey,
   loadLocalImageAbsolutePath,
+  onImageCacheInvalidated,
   releaseLocalImageSrcByKey
 } from '@/components/editor/useLocalImageSrc'
 import { resolveHostWorkspaceFile } from '@/components/terminal-pane/terminal-host-workspace-file'
@@ -35,6 +36,8 @@ export function NativeChatMarkdownResourceImage({
   const identity = JSON.stringify([path, owner])
   const [state, setState] = useState<ImageState>({ identity: '' })
   const [near, setNear] = useState(false)
+  const [generation, setGeneration] = useState(0)
+  useEffect(() => onImageCacheInvalidated(() => setGeneration((value) => value + 1)), [])
   const [openIdentity, setOpenIdentity] = useState<string | null>(null)
   const open = openIdentity === identity
   const ref = useRef<HTMLSpanElement>(null)
@@ -133,7 +136,7 @@ export function NativeChatMarkdownResourceImage({
         releaseLocalImageSrcByKey(key)
       }
     }
-  }, [identity, near, path])
+  }, [identity, near, path, generation])
   const current = state.identity === identity ? state : null
   const error = !context
     ? translate(
