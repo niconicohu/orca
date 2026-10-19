@@ -18967,6 +18967,8 @@
       },
       "fileLinks": {
         "notFound": "File not found: {{value0}}",
+        "imageUnavailable": "Couldn't preview image: {{value0}}",
+        "imageLoading": "Loading image…",
         "unverifiable": "Couldn't check {{value0}}: {{value1}}",
         "unresolved": "Couldn't resolve {{value0}} in this workspace"
       },

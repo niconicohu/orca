@@ -6,6 +6,10 @@ import { NativeChatMarkdownRowKeyContext } from './native-chat-disclosure-store'
 import { useNativeChatVisualMarkdownExtension } from './native-chat-visual-markdown-extension'
 import { useNativeChatFileLinkExists } from './use-native-chat-file-link-existence'
 import './native-chat-markdown.css'
+import {
+  NativeChatResourceLinkClickContext,
+  useNativeChatResourceMarkdownExtension
+} from './native-chat-resource-markdown'
 
 /** Existing words stay opaque when a reply first starts growing. */
 function useWordFadeArmed(fadeWords: boolean): boolean {
@@ -41,24 +45,29 @@ export function NativeChatMarkdown({
   ...props
 }: NativeChatMarkdownProps): React.JSX.Element {
   const wordFadeArmed = useWordFadeArmed(fadeWords)
-  const extension = useNativeChatVisualMarkdownExtension(visualMessageId)
+  const visualExtension = useNativeChatVisualMarkdownExtension(visualMessageId)
+  const extension = useNativeChatResourceMarkdownExtension(visualExtension)
   const fileLinkExists = useNativeChatFileLinkExists(linkifyFilePaths, streaming)
   return (
     <NativeChatMarkdownRowKeyContext.Provider value={rowKey}>
-      <CommentMarkdown
-        {...props}
-        content={
-          extension && streaming ? withoutPendingNativeChatVisualDirectiveTail(content) : content
-        }
-        extension={extension}
-        fileLinkExists={fileLinkExists}
-        fadeWords={fadeWords}
-        renderMermaid={!streaming}
-        keepMermaidSourceWhilePending
-        data-word-fade={wordFadeArmed ? '' : undefined}
-        data-block-fade={wordFadeArmed && streaming ? '' : undefined}
-        className={cn('native-chat-markdown', className)}
-      />
+      <NativeChatResourceLinkClickContext.Provider value={props.onLinkClick}>
+        <CommentMarkdown
+          {...props}
+          content={
+            visualExtension && streaming
+              ? withoutPendingNativeChatVisualDirectiveTail(content)
+              : content
+          }
+          extension={extension}
+          fileLinkExists={fileLinkExists}
+          fadeWords={fadeWords}
+          renderMermaid={!streaming}
+          keepMermaidSourceWhilePending
+          data-word-fade={wordFadeArmed ? '' : undefined}
+          data-block-fade={wordFadeArmed && streaming ? '' : undefined}
+          className={cn('native-chat-markdown', className)}
+        />
+      </NativeChatResourceLinkClickContext.Provider>
     </NativeChatMarkdownRowKeyContext.Provider>
   )
 }

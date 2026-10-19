@@ -108,6 +108,26 @@ export function routeNativeChatHref(href: string | null | undefined): NativeChat
   if (WEB_SCHEME_PATTERN.test(trimmed)) {
     return { kind: 'web', url: trimmed }
   }
+  if (/^sandbox:/i.test(trimmed)) {
+    try {
+      const url = new URL(trimmed)
+      const pathText = decodeURIComponent(url.pathname)
+      if (
+        url.host ||
+        !pathText.startsWith('/') ||
+        pathText.startsWith('//') ||
+        pathText.length < 2 ||
+        pathText.includes('\\') ||
+        Array.from(pathText).some((character) => character.charCodeAt(0) < 32)
+      ) {
+        return { kind: 'none' }
+      }
+      // Sandbox is a host file reference, never a browser protocol or a line location.
+      return { kind: 'file', pathText, line: null, pathKind: 'literal' }
+    } catch {
+      return { kind: 'none' }
+    }
+  }
   if (/^file:/i.test(trimmed)) {
     let url: URL
     try {
