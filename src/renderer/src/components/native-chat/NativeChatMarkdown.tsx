@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentProps } from 'react'
+import { useEffect, useMemo, useState, type ComponentProps } from 'react'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import { cn } from '@/lib/utils'
 import { withoutPendingNativeChatVisualDirectiveTail } from '../../../../shared/native-chat-visual-directive'
@@ -7,9 +7,10 @@ import { useNativeChatVisualMarkdownExtension } from './native-chat-visual-markd
 import { useNativeChatFileLinkExists } from './use-native-chat-file-link-existence'
 import './native-chat-markdown.css'
 import {
-  NativeChatResourceLinkClickContext,
+  NativeChatResourceRenderContext,
   useNativeChatResourceMarkdownExtension
 } from './native-chat-resource-markdown'
+import { selectCommentMarkdownComponents } from '@/components/sidebar/comment-markdown-element-renderers'
 
 /** Existing words stay opaque when a reply first starts growing. */
 function useWordFadeArmed(fadeWords: boolean): boolean {
@@ -47,10 +48,25 @@ export function NativeChatMarkdown({
   const wordFadeArmed = useWordFadeArmed(fadeWords)
   const visualExtension = useNativeChatVisualMarkdownExtension(visualMessageId)
   const extension = useNativeChatResourceMarkdownExtension(visualExtension)
+  const { variant = 'compact', expandImages = false, onLinkClick, renderCodeBlock } = props
+  const resourceRenderContext = useMemo(
+    () => ({
+      onLinkClick,
+      Image:
+        visualExtension?.components.img ??
+        selectCommentMarkdownComponents({
+          variant,
+          expandImages,
+          onLinkClick,
+          renderCodeBlock
+        }).img
+    }),
+    [visualExtension, variant, expandImages, onLinkClick, renderCodeBlock]
+  )
   const fileLinkExists = useNativeChatFileLinkExists(linkifyFilePaths, streaming)
   return (
     <NativeChatMarkdownRowKeyContext.Provider value={rowKey}>
-      <NativeChatResourceLinkClickContext.Provider value={props.onLinkClick}>
+      <NativeChatResourceRenderContext.Provider value={resourceRenderContext}>
         <CommentMarkdown
           {...props}
           content={
@@ -67,7 +83,7 @@ export function NativeChatMarkdown({
           data-block-fade={wordFadeArmed && streaming ? '' : undefined}
           className={cn('native-chat-markdown', className)}
         />
-      </NativeChatResourceLinkClickContext.Provider>
+      </NativeChatResourceRenderContext.Provider>
     </NativeChatMarkdownRowKeyContext.Provider>
   )
 }

@@ -46,7 +46,10 @@ function transcriptTextIncludesPath(text: string, pathText: string, absolutePath
   if (recentTerminalOutputIncludesPath(text, pathText, absolutePath)) {
     return true
   }
-  if (markdownIncludesPath(markdownParser.parse(text), pathText, absolutePath)) {
+  if (
+    /\]\s*[(:]|<[^>\s]+:/.test(text) &&
+    markdownIncludesPath(markdownParser.parse(text), pathText, absolutePath)
+  ) {
     return true
   }
   // Mobile excludes a sentence-final period from the tappable path span.

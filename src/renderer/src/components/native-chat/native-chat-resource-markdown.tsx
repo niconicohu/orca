@@ -3,7 +3,7 @@ import type { Root, Nodes } from 'mdast'
 import type { Components } from 'react-markdown'
 import type { CommentMarkdownExtension } from '@/components/sidebar/CommentMarkdown'
 import {
-  createDocumentCommentMarkdownComponents,
+  compactCommentMarkdownComponents,
   type CommentMarkdownLinkClickHandler
 } from '@/components/sidebar/comment-markdown-element-renderers'
 import {
@@ -34,16 +34,13 @@ export function remarkNativeChatSandboxResources() {
   return (tree: Root): void => rewriteSandboxReferences(tree)
 }
 
-export const NativeChatResourceLinkClickContext = createContext<
-  CommentMarkdownLinkClickHandler | undefined
->(undefined)
+export const NativeChatResourceRenderContext = createContext<{
+  onLinkClick?: CommentMarkdownLinkClickHandler
+  Image: Components['img']
+}>({ Image: compactCommentMarkdownComponents.img })
 
 const ResourceImage: NonNullable<Components['img']> = (props) => {
-  const onLinkClick = useContext(NativeChatResourceLinkClickContext)
-  const Image = useMemo(
-    () => createDocumentCommentMarkdownComponents(onLinkClick).img,
-    [onLinkClick]
-  )
+  const { onLinkClick, Image } = useContext(NativeChatResourceRenderContext)
   const src = typeof props.src === 'string' ? props.src : undefined
   const route = routeNativeChatHref(src)
   if (route.kind === 'file' && route.pathKind === 'literal') {

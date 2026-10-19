@@ -44,6 +44,28 @@ function message(role: NativeChatMessage['role'], text: string): NativeChatMessa
 }
 
 describe('nativeChatTranscriptIncludesPath', () => {
+  it('refuses provenance when a structured journal becomes unreadable', async () => {
+    await expect(
+      nativeChatTranscriptIncludesPath({
+        tabs: [
+          {
+            type: 'agent-session',
+            id: 'chat-tab',
+            sessionId: 'session-1',
+            title: 'Chat',
+            agent: 'codex',
+            isActive: true
+          }
+        ],
+        context: { tabId: 'chat-tab', sessionId: 'session-1' },
+        pathText: '/mnt/data/chart.png',
+        absolutePath: '/mnt/data/chart.png',
+        readStructuredMessages: async () => {
+          throw new Error('Journal unavailable')
+        }
+      })
+    ).resolves.toBe(false)
+  })
   it('accepts a sandbox file only from the matching structured conversation', async () => {
     const readStructuredMessages = vi.fn(async () => [
       message('assistant', '![Chart](sandbox:/mnt/data/chart.png)')
