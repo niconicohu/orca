@@ -11,6 +11,7 @@ import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import type { Nodes } from 'mdast'
 import { routeNativeChatHref } from '../../shared/native-chat-href-routing'
+import { structuredAgentSessionTabId } from '../../shared/structured-agent-session-projection'
 
 const markdownParser = unified().use(remarkParse)
 
@@ -64,7 +65,8 @@ export async function nativeChatTranscriptIncludesPath(args: {
   const structuredTab = args.tabs.find(
     (tab) =>
       tab.type === 'agent-session' &&
-      tab.id === args.context.tabId &&
+      (tab.id === args.context.tabId ||
+        structuredAgentSessionTabId(tab.sessionId) === args.context.tabId) &&
       tab.sessionId === args.context.sessionId
   )
   if (structuredTab) {

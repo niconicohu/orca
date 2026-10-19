@@ -34,7 +34,7 @@ describe('sandbox artifacts authorized by their actual chat Markdown', () => {
   useRuntimeFileCommandsLifecycle()
   const { tempFile } = useTerminalArtifactTempFiles()
 
-  it.each([
+  const artifacts = [
     [
       'png',
       Buffer.from(
@@ -45,10 +45,19 @@ describe('sandbox artifacts authorized by their actual chat Markdown', () => {
     ['pdf', Buffer.from('%PDF-1.4\n%%EOF')],
     ['svg', Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>')],
     ['csv', Buffer.from('round,score\n1,97.1\n')]
-  ])('grants and reads the exact out-of-workspace %s file', async (extension, bytes) => {
+  ] as const
+  it.each(
+    artifacts.flatMap(([extension, bytes]) =>
+      ['agent-session:session-1', 'structured-agent-session-session-1'].map((tabId) => ({
+        extension,
+        bytes,
+        tabId
+      }))
+    )
+  )('$extension grants and exact reads from $tabId', async ({ extension, bytes, tabId }) => {
     const file = await tempFile(`result.${extension}`, '')
     await writeFile(file, bytes)
-    const context = { tabId: 'chat-tab', sessionId: 'session-1' }
+    const context = { tabId, sessionId: 'session-1' }
     const { commands } = createRuntimeFileCommands({
       path: '/repo',
       hasRecentNativeChatOutputPath: vi.fn(
@@ -62,7 +71,7 @@ describe('sandbox artifacts authorized by their actual chat Markdown', () => {
             tabs: [
               {
                 type: 'agent-session',
-                id: 'chat-tab',
+                id: 'agent-session:session-1',
                 sessionId: 'session-1',
                 agent: 'codex',
                 title: 'Chat',
@@ -113,8 +122,18 @@ describe('sandbox artifacts authorized by their actual chat Markdown', () => {
       'client-a',
       null,
       true,
-      { tabId: 'chat-tab', sessionId: 'another-session' }
+      { tabId, sessionId: 'another-session' }
     )
     expect(forged.openTarget).toBeUndefined()
+    const wrongTab = await commands.resolveTerminalPath(
+      'id:wt-1',
+      file,
+      null,
+      'client-a',
+      null,
+      true,
+      { tabId: 'structured-agent-session-another-session', sessionId: context.sessionId }
+    )
+    expect(wrongTab.openTarget).toBeUndefined()
   })
 })
