@@ -39,6 +39,7 @@ export {
   type TerminalFileContext
 } from './terminal-file-path-mapping'
 import { runtimeTargetEnvironmentId } from '@/runtime/runtime-client-target'
+import type { RuntimeNativeChatFileContext } from '../../../../shared/runtime-types'
 
 export type FileOpenFailure = {
   /** `missing` is a verified absence; `unverifiable` means the host could not answer (dropped SSH, timeout, denied path). */
@@ -47,6 +48,7 @@ export type FileOpenFailure = {
 }
 
 type TerminalFileOpenDeps = {
+  nativeChatContext?: RuntimeNativeChatFileContext
   worktreeId: string
   worktreePath: string
   runtimeEnvironmentId?: string | null
@@ -167,7 +169,8 @@ export function openDetectedFilePath(
       const linkOwner = await resolveHostWorkspaceFile(
         fileContext,
         mappedFilePath,
-        deps.terminalHandle
+        deps.terminalHandle,
+        deps.nativeChatContext
       )
       if (linkOwner?.kind === 'grant') {
         hostGrantId = linkOwner.grantId

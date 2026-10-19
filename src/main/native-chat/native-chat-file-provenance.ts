@@ -12,6 +12,25 @@ import type {
 } from '../../shared/runtime-types'
 import { recentTerminalOutputIncludesPath } from '../runtime/terminal-output-path-candidates'
 import { readNativeChatTranscriptTail } from './transcript-tail-reader'
+import { unified } from 'unified'
+import remarkParse from 'remark-parse'
+import type { Nodes } from 'mdast'
+import { routeNativeChatHref } from '../../shared/native-chat-href-routing'
+
+const markdownParser = unified().use(remarkParse)
+
+function markdownIncludesPath(node: Nodes, pathText: string, absolutePath: string): boolean {
+  if (node.type === 'image' || node.type === 'link' || node.type === 'definition') {
+    const route = routeNativeChatHref(node.url)
+    if (route.kind === 'file' && (route.pathText === pathText || route.pathText === absolutePath)) {
+      return true
+    }
+  }
+  return (
+    'children' in node &&
+    node.children.some((child) => markdownIncludesPath(child, pathText, absolutePath))
+  )
+}
 
 // Match the largest transcript window mobile can render so any visible citation remains provable.
 const NATIVE_CHAT_FILE_PROVENANCE_WINDOW = 2000
@@ -27,6 +46,9 @@ function transcriptTextIncludesPath(text: string, pathText: string, absolutePath
   if (recentTerminalOutputIncludesPath(text, pathText, absolutePath)) {
     return true
   }
+  if (markdownIncludesPath(markdownParser.parse(text), pathText, absolutePath)) {
+    return true
+  }
   // Mobile excludes a sentence-final period from the tappable path span.
   return recentTerminalOutputIncludesPath(text, `${pathText}.`, `${absolutePath}.`)
 }
@@ -38,6 +60,9 @@ export async function nativeChatTranscriptIncludesPath(args: {
   absolutePath: string
   readTranscript?: TranscriptRead
   attachmentRoot?: string
+  readStructuredMessages?: (
+    sessionId: string
+  ) => Promise<readonly Pick<NativeChatMessage, 'role' | 'blocks'>[]>
   readJournal?: (sessionId: string) => Promise<Pick<AgentJournalSnapshot, 'items'>>
 }): Promise<boolean> {
   const structuredTab = args.tabs.find(
@@ -45,6 +70,24 @@ export async function nativeChatTranscriptIncludesPath(args: {
   )
   if (structuredTab?.type === 'agent-session') {
     if (structuredTab.sessionId !== args.context.sessionId) {
+      return false
+    }
+    try {
+      const messages = await args.readStructuredMessages?.(args.context.sessionId)
+      if (
+        messages?.some(
+          (message) =>
+            message.role === 'assistant' &&
+            message.blocks.some(
+              (block) =>
+                block.type === 'text' &&
+                transcriptTextIncludesPath(block.text, args.pathText, args.absolutePath)
+            )
+        )
+      ) {
+        return true
+      }
+    } catch {
       return false
     }
     const root = args.attachmentRoot ?? getAgentSessionAttachmentStore()?.rootDir
