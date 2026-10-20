@@ -68,6 +68,7 @@ export function buildRuntimeSessionPlaceholders({
           path: parsed.worktreePath,
           // The session knows a worktree path, not the project's saved name.
           displayName: translate('sidebar.loadingProject', 'Loading project…'),
+          isRuntimeSessionPlaceholder: true,
           badgeColor: DEFAULT_REPO_BADGE_COLOR,
           addedAt: 0,
           connectionId: null,

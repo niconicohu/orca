@@ -5210,6 +5210,7 @@
         }
       },
       "sidebar": {
+        "loadingWorkspaces": "프로젝트 및 워크스페이스 로드 중…",
         "AddProjectFromFolderDialog": {
           "7d1f51678c": "프로젝트 추가",
           "7726a16374": "취소",

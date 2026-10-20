@@ -5205,6 +5205,7 @@
         }
       },
       "sidebar": {
+        "loadingWorkspaces": "Cargando proyectos y espacios de trabajo…",
         "local": {
           "base": {
             "ref": {
