@@ -127,6 +127,28 @@ describe('MobileMarkdown rendering', () => {
     expect(texts(render(content))).toEqual(expected)
   })
 
+  it('uses the chat image renderer for a standalone Markdown image while preserving inline links', () => {
+    const renderImage = vi.fn((uri: string, alt: string) =>
+      createElement('ChatImage', { uri, alt })
+    )
+    const onOpenFile = vi.fn()
+    act(() => {
+      renderer = create(
+        createElement(MobileMarkdown, {
+          content: '![Final chart](/mnt/data/chart.png)\n\nSee [original](/mnt/data/chart.png).',
+          renderImage,
+          onOpenFile
+        })
+      )
+    })
+    expect(renderer!.root.find((node) => String(node.type) === 'ChatImage').props).toMatchObject({
+      uri: '/mnt/data/chart.png',
+      alt: 'Final chart'
+    })
+    press(renderer!, 'original')
+    expect(onOpenFile).toHaveBeenCalledWith('/mnt/data/chart.png')
+  })
+
   it('C12: opens a link with brackets in it, and one with a title, at their own address', () => {
     const tree = render(
       '[wiki](https://en.wikipedia.org/wiki/Foo_(bar)) and [docs](https://x.com/a "The docs")'

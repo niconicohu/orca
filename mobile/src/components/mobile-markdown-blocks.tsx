@@ -36,6 +36,7 @@ export type MarkdownBlockContext = MarkdownInlineContext & {
   rowLongPress?: () => void
   directives: readonly NativeChatVisualDirective[]
   renderVisual?: (directive: NativeChatVisualDirective, index: number) => ReactNode
+  renderImage?: (uri: string, alt: string) => ReactNode
   mermaidOccurrences: Map<string, number>
 }
 
@@ -141,6 +142,9 @@ function renderBlock(
   switch (node.type) {
     case 'paragraph': {
       const [only] = node.children
+      if (node.children.length === 1 && only?.type === 'image' && ctx.renderImage) {
+        return <View key={key}>{ctx.renderImage(only.url, only.alt || 'Image')}</View>
+      }
       const visual =
         node.children.length === 1 && only?.type === 'text'
           ? mobileMarkdownVisualPlaceholderIndex(only.value, ctx.directives.length)

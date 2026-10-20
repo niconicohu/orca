@@ -4,6 +4,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, expect, it, vi } from 'vitest'
 import { MobileNativeChatRowOverlaysHost } from './MobileNativeChatRowOverlaysHost'
 import { MobileNativeChatMessage } from './MobileNativeChatMessage'
+import { MobileNativeChatResourceContext } from './mobile-native-chat-resource-read'
 import { MobileNativeChatAttachmentContext } from './mobile-native-chat-attachment-read'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import type { RpcResponse } from '../transport/types'
@@ -413,6 +414,79 @@ it('opens an attachment full size when tapped', () => {
       label: 'a photo',
       gallery: {
         images: [{ type: 'image-ref', url: 'file:///a.jpg', alt: 'a photo' }],
+        initialIndex: 0
+      }
+    })
+  )
+})
+
+it('reads an assistant process image on its session host and opens the shared gallery', async () => {
+  const imagePath = '/mnt/data/chart.png'
+  const sendRequest = vi.fn(async (method: string) => ({
+    id: 'reply',
+    ok: true as const,
+    result:
+      method === 'files.resolveTerminalPath'
+        ? {
+            worktree: 'wt-1',
+            relativePath: null,
+            absolutePath: imagePath,
+            exists: true,
+            isDirectory: false,
+            openTarget: {
+              kind: 'absolute-file',
+              provider: 'local',
+              absolutePath: imagePath,
+              grantId: 'image-grant',
+              readOnly: true
+            }
+          }
+        : { isImage: true, isBinary: true, mimeType: 'image/png', content: 'AAAA' }
+  }))
+  const openImage = vi.fn()
+  const source = {
+    client: { sendRequest },
+    hostId: 'host-1',
+    worktreeId: 'wt-1',
+    nativeChatContext: { tabId: 'chat-1', sessionId: 'session-1' }
+  }
+  const overlays = { openImage, openActions: vi.fn() }
+  await act(async () => {
+    renderer = create(
+      createElement(
+        MobileNativeChatResourceContext.Provider,
+        { value: source },
+        createElement(
+          MobileNativeChatRowOverlaysContext.Provider,
+          { value: overlays },
+          createElement(MobileNativeChatMessage, {
+            message: {
+              ...message,
+              role: 'assistant',
+              blocks: [{ type: 'image-ref', path: imagePath, alt: 'Process chart' }]
+            }
+          })
+        )
+      )
+    )
+  })
+  expect(renderer!.root.find((node) => String(node.type) === 'Image').props.source.uri).toBe(
+    'data:image/png;base64,AAAA'
+  )
+  expect(sendRequest).toHaveBeenCalledWith('files.readTerminalArtifactPreview', {
+    worktree: 'id:wt-1',
+    absolutePath: imagePath,
+    grantId: 'image-grant'
+  })
+  act(() =>
+    renderer!.root
+      .find((node) => node.props.accessibilityLabel === 'Open image 1 of 1')
+      .props.onPress()
+  )
+  expect(openImage).toHaveBeenCalledWith(
+    expect.objectContaining({
+      gallery: {
+        images: [{ type: 'image-ref', path: imagePath, alt: 'Process chart' }],
         initialIndex: 0
       }
     })

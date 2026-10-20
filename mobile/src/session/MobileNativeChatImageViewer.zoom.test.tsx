@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, expect, it, vi } from 'vitest'
+import { MobileZoomableImagePreview } from '../files/MobileZoomableImagePreview'
 import { MobileNativeChatImageViewer } from './MobileNativeChatImageViewer'
 
 type Touch = {
@@ -239,4 +240,36 @@ it('rebases an already active pan after a pinch without overwriting the pinch or
   act(() => gestures.get('pan')?.update?.({ ...event, translationX: 10 }))
   expect(transform()[0]).toEqual({ translateX: 80 })
   expect(transform()[2]).toEqual({ scale: 3 })
+})
+
+it('zooms a file preview and resets its transform when the next file loads', () => {
+  act(() => {
+    page = create(
+      <MobileZoomableImagePreview uri="data:image/png;base64,AAAA" label="Linked image" />
+    )
+  })
+  act(() =>
+    page!.root
+      .find((node) => String(node.type) === 'View')
+      .props.onLayout({ nativeEvent: { layout: { width: 390, height: 600 } } })
+  )
+  const viewport = page!.root.findAll((node) => String(node.type) === 'View').at(-1)!
+  act(() => viewport.props.onLayout({ nativeEvent: { layout: { width: 390, height: 600 } } }))
+  const event: Touch = {
+    scale: 1,
+    focalX: 195,
+    focalY: 300,
+    translationX: 0,
+    translationY: 0,
+    numberOfPointers: 2
+  }
+  act(() => gestures.get('pinch')?.start?.(event))
+  act(() => gestures.get('pinch')?.update?.({ ...event, scale: 2 }))
+  const transform = () =>
+    page!.root.find((node) => String(node.type) === 'AnimatedView').props.style[1]().transform
+  expect(transform()).toEqual([{ translateX: 0 }, { translateY: 0 }, { scale: 2 }])
+  act(() =>
+    page!.update(<MobileZoomableImagePreview uri="data:image/png;base64,BBBB" label="Next image" />)
+  )
+  expect(transform()).toEqual([{ translateX: 0 }, { translateY: 0 }, { scale: 1 }])
 })

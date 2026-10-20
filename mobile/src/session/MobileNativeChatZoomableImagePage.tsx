@@ -14,7 +14,8 @@ export function MobileNativeChatZoomableImagePage({
   height,
   index,
   pagingGesture,
-  onInteractionChange
+  onInteractionChange,
+  onImageError
 }: {
   image: NativeChatImageRefBlock
   width: number
@@ -22,6 +23,7 @@ export function MobileNativeChatZoomableImagePage({
   index: number
   pagingGesture: NativeGesture
   onInteractionChange: (index: number, locked: boolean) => void
+  onImageError?: () => void
 }) {
   const viewport = useRef<View>(null)
   const origin = useSharedValue({ x: 0, y: 0 })
@@ -142,6 +144,7 @@ export function MobileNativeChatZoomableImagePage({
             uri={image.url ?? image.path}
             alt={image.alt}
             fontScale={1}
+            onError={onImageError}
             imageStyle={styles.imageGalleryFill}
             onLoad={(event) => {
               const source = event.nativeEvent.source

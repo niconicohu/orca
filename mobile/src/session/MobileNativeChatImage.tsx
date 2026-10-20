@@ -16,6 +16,10 @@ import {
   MobileNativeChatAttachmentContext,
   readMobileNativeChatAttachment
 } from './mobile-native-chat-attachment-read'
+import {
+  MobileNativeChatResourceContext,
+  readMobileNativeChatResource
+} from './mobile-native-chat-resource-read'
 import { isRenderableImageUri } from './mobile-native-chat-image-preview'
 import { styles, TEXT_SIZE } from './mobile-native-chat-message-styles'
 
@@ -25,7 +29,8 @@ export function MobileNativeChatImage({
   fontScale,
   imageStyle = styles.imageThumb,
   resizeMode = 'contain',
-  onLoad
+  onLoad,
+  onError
 }: {
   uri: string | undefined
   alt?: string
@@ -33,45 +38,62 @@ export function MobileNativeChatImage({
   imageStyle?: StyleProp<ImageStyle>
   resizeMode?: ImageResizeMode
   onLoad?: ImageProps['onLoad']
+  onError?: ImageProps['onError']
 }) {
   const client = useContext(MobileNativeChatAttachmentContext)
+  const resource = useContext(MobileNativeChatResourceContext)
   const direct = isRenderableImageUri(uri)
-  const remote =
+  const attachment =
     !direct && client !== null && uri !== undefined && isAgentSessionAttachmentStorePath(uri)
+  const remote = attachment || (!direct && resource !== null && uri !== undefined)
+  const owner = attachment ? client : resource
   const [attempt, setAttempt] = useState(0)
   const [read, setRead] = useState<{
-    client: typeof client
+    owner: typeof owner
     path: string
     uri: string | null
+    error?: string
   } | null>(null)
   const [failed, setFailed] = useState<{
-    client: typeof client
+    owner: typeof owner
     path: string | undefined
     imageUri: string
   } | null>(null)
   useEffect(() => {
-    if (!remote || !client || uri === undefined) {
+    if (!remote || uri === undefined) {
       return
     }
     let disposed = false
-    void readMobileNativeChatAttachment(client, uri)
-      .catch(() => null)
+    const pending =
+      attachment && client
+        ? readMobileNativeChatAttachment(client, uri)
+        : resource
+          ? readMobileNativeChatResource(resource, uri)
+          : Promise.resolve(null)
+    void pending
       .then((image) => {
         if (!disposed) {
-          setRead({ client, path: uri, uri: image })
+          setRead({ owner, path: uri, uri: image })
+        }
+      })
+      .catch((error: unknown) => {
+        if (!disposed) {
+          setRead({
+            owner,
+            path: uri,
+            uri: null,
+            error: error instanceof Error ? error.message : 'The session host is unavailable'
+          })
         }
       })
     return () => {
       disposed = true
     }
-  }, [client, uri, remote, attempt])
-  const current = read?.client === client && read?.path === uri ? read : null
+  }, [client, resource, owner, attachment, uri, remote, attempt])
+  const current = read?.owner === owner && read?.path === uri ? read : null
   const imageUri = direct ? uri : current?.uri
   const failedForCurrent =
-    failed !== null &&
-    failed.client === client &&
-    failed.path === uri &&
-    failed.imageUri === imageUri
+    failed !== null && failed.owner === owner && failed.path === uri && failed.imageUri === imageUri
   if (imageUri && !failedForCurrent) {
     return (
       <Image
@@ -80,7 +102,10 @@ export function MobileNativeChatImage({
         resizeMode={resizeMode}
         onLoad={onLoad}
         accessibilityLabel={alt ?? 'Attached image'}
-        onError={() => setFailed({ client, path: uri, imageUri })}
+        onError={(event) => {
+          setFailed({ owner, path: uri, imageUri })
+          onError?.(event)
+        }}
       />
     )
   }
@@ -94,7 +119,7 @@ export function MobileNativeChatImage({
   const label = (
     <Text style={[styles.imageRef, { fontSize: TEXT_SIZE * fontScale }]}>
       {remote || failedForCurrent
-        ? 'Image unavailable · Tap to retry'
+        ? `${current?.error ?? 'Image unavailable'} · Tap to retry`
         : `🖼 ${alt ?? uri ?? 'image'}`}
     </Text>
   )
