@@ -14,6 +14,25 @@ const tab: RuntimeMobileSessionClientTab = {
 }
 
 describe('Codex process image provenance', () => {
+  it.each(['#variant', '?variant', ':12'])(
+    'keeps a tool image path literal, including %s',
+    async (suffix) => {
+      const fullPath = `${path}${suffix}`
+      const args = {
+        tabs: [tab],
+        context: { tabId: tab.id, sessionId: 'session-1' },
+        pathText: fullPath,
+        absolutePath: fullPath,
+        readStructuredMessages: async () => [
+          codexImageItemBody({ id: 'view', type: 'imageView', path: fullPath })
+        ]
+      }
+      await expect(nativeChatTranscriptIncludesPath(args)).resolves.toBe(true)
+      await expect(
+        nativeChatTranscriptIncludesPath({ ...args, pathText: path, absolutePath: path })
+      ).resolves.toBe(false)
+    }
+  )
   it.each([
     { id: 'view-1', type: 'imageView', path },
     { id: 'generate-1', type: 'imageGeneration', status: 'completed', savedPath: path }

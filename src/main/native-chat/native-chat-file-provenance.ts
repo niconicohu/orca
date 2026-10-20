@@ -66,15 +66,13 @@ function assistantMessageIncludesPath(
       if (block.type !== 'image-ref') {
         return false
       }
-      return [block.path, block.url].some((reference) => {
-        if (!reference) {
-          return false
-        }
-        const route = routeNativeChatHref(reference)
-        return (
-          route.kind === 'file' && (route.pathText === pathText || route.pathText === absolutePath)
-        )
-      })
+      if (block.path === pathText || block.path === absolutePath) {
+        return true
+      }
+      const route = routeNativeChatHref(block.url)
+      return (
+        route.kind === 'file' && (route.pathText === pathText || route.pathText === absolutePath)
+      )
     })
   )
 }
