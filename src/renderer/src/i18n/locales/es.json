@@ -3415,6 +3415,8 @@
           },
           "TerminalRemoteRuntimeReconnectBanner": {
             "retryingTitle": "Reconnecting to remote runtime",
+            "pairingRefusedTitle": "Este host ya no acepta este equipo",
+            "pairingRefusedBody": "Orca no pudo volver a emparejarse con él por SSH. No se detuvo nada en el host. Vuelve a conectar para intentarlo de nuevo.",
             "disconnectedTitle": "Remote runtime disconnected",
             "retryingBody": "Orca está reintentando automáticamente. Este terminal se reanudará si vuelve la conexión.",
             "disconnectedBody": "Automatic retries stopped. Reconnect to resume this terminal session.",
@@ -4229,6 +4231,8 @@
             "access_revoked": "Access revoked",
             "access_revoked_summary": "This server revoked access for this computer",
             "access_revoked_explanation": "Re-pair with a new pairing link from the server to reconnect.",
+            "managed_access_revoked_explanation": "Orca no pudo volver a emparejarse con él por SSH. Conéctate para intentarlo de nuevo.",
+            "connect_access_revoked_explanation": "Conéctate para intentarlo de nuevo.",
             "update_required": "Update required",
             "update_required_summary": "Orca versions are not compatible",
             "update_required_explanation": "Update Orca on this computer or on the server, then connect again.",
@@ -6390,6 +6394,7 @@
           "sshSaveFailed": "No se pudo agregar el host SSH.",
           "serverFieldsRequired": "Se requieren el nombre del servidor y el código de emparejamiento.",
           "serverSaved": "Se agregó servidor remoto.",
+          "serverAlreadyPaired": "Este servidor ya está emparejado como {{value0}}; se actualizó su conexión.",
           "serverSaveFailed": "No se pudo agregar el servidor remoto.",
           "serverTitle": "Agregar servidor remoto",
           "sshTitle": "Agregar host SSH",
@@ -8303,6 +8308,7 @@
           "e57dde9d93": "Cambios no guardados"
         },
         "RuntimeAccessGrantList": {
+          "sshAccessCaveat": "Revocar el acceso aquí no impide que alguien con acceso SSH a este equipo vuelva a emparejarse. Para bloquearlo, retira su acceso SSH.",
           "8b82879581": "Cualquier persona con una concesión activa puede conectarse hasta que la revoques. Revocar el acceso compartido desconecta a los clientes activos inmediatamente.",
           "68ec21309f": "Revocar acceso",
           "6f6d5188ed": "Revocar {{value0}}",
@@ -8342,7 +8348,7 @@
           "b5b5114cb0": "Se eliminó {{value0}}.",
           "6cb6eae14f": "No se pudo guardar el runtime.",
           "7b5986c8df": "Conectado a {{value0}}. Para crear proyectos nuevos allí de forma predeterminada, elígelo en Avanzado > Host predeterminado para proyectos nuevos.",
-          "5ef712f407": "Ya existe un servidor llamado \"{{value0}}\".",
+          "serverAlreadyPaired": "Este servidor ya está emparejado como {{value0}}; se actualizó su conexión.",
           "0c55a47480": "Se requieren nombre y código de emparejamiento.",
           "e6410d72c3": "No se pudieron cargar los runtimes.",
           "6ef71985da": "Sin punto final",
@@ -8413,6 +8419,8 @@
           "serverRuntimeUnavailableDescription": "El transporte SSH está conectado, pero el tiempo de ejecución de Orca no respondió. Es posible que el host todavía esté ejecutándose.",
           "serverReconnecting": "Reconectando",
           "accessRevoked": "{{value0}} no longer accepts this computer. Re-pair it with a new access link.",
+          "managedAccessRevoked": "{{value0}} ya no acepta este equipo y Orca no pudo volver a emparejarse con él por SSH. Conéctate para intentarlo de nuevo.",
+          "connectAccessRevoked": "{{value0}} ya no acepta este equipo. Conéctate para intentarlo de nuevo.",
           "repair": "Re-pair…",
           "serverAccessRevoked": "Access revoked",
           "orcaVersionLastSeen": "Orca v{{value0}} (last seen)"
@@ -12613,7 +12621,10 @@
           "linkedProjects_one": "El servidor Orca de este host ya tenía {{paths}}, así que este escritorio ahora usa la copia del servidor. Las pestañas de este escritorio y {{count}} automatización allí no se movieron, y los worktrees que creó allí aparecen como worktrees externos.",
           "linkedProjects_other": "El servidor Orca de este host ya tenía {{paths}}, así que este escritorio ahora usa la copia del servidor. Las pestañas de este escritorio y {{count}} automatizaciones allí no se movieron, y los worktrees que creó allí aparecen como worktrees externos.",
           "linkedProjects": "El servidor Orca de este host ya tenía {{paths}}, así que este escritorio ahora usa la copia del servidor. Las pestañas de este escritorio y {{count}} automatizaciones allí no se movieron, y los worktrees que creó allí aparecen como worktrees externos.",
-          "linkedProjectsNoAutomations": "El servidor Orca de este host ya tenía {{paths}}, así que este escritorio ahora usa la copia del servidor. Las pestañas de este escritorio allí no se movieron, y los worktrees que creó allí aparecen como worktrees externos."
+          "linkedProjectsNoAutomations": "El servidor Orca de este host ya tenía {{paths}}, así que este escritorio ahora usa la copia del servidor. Las pestañas de este escritorio allí no se movieron, y los worktrees que creó allí aparecen como worktrees externos.",
+          "nodeDownloadBlocked": "Ni este equipo ni este host pudieron descargar Node.js, que el servidor de Orca necesita. Usa un mirror de Node.js o revisa la red en ambas máquinas.",
+          "nodeDownloadBlockedNoMirror": "Ni este equipo ni este host pudieron descargar Node.js, que el servidor de Orca necesita. Revisa la red o el proxy en ambas máquinas y vuelve a conectar.",
+          "nodeDownloadBlockedMirrorTried": "Ni este equipo ni este host pudieron descargar Node.js, tampoco desde el mirror de descarga de Node.js. Revisa el ajuste del mirror y vuelve a conectar."
         },
         "deltaMove": {
           "action": "Mover los proyectos nuevos…",
@@ -12702,6 +12713,25 @@
         },
         "useUsageHostSettings": {
           "updateFailed": "No se pudo actualizar el ajuste en {{host}}."
+        },
+        "nodeDistMirrorDialog": {
+          "action": "Usar un mirror de Node.js…",
+          "openSetting": "Abrir ajuste del mirror",
+          "title": "Usar un mirror de Node.js",
+          "description": "El servidor de Orca necesita Node.js, y ni este equipo ni este host pudieron descargarlo de nodejs.org. Un mirror es una copia de nodejs.org/dist que Orca prueba primero en ambas máquinas.",
+          "urlLabel": "URL del mirror",
+          "checksum": "Cada descarga se sigue comprobando con el checksum que Orca fija para esta versión de Node.js. Se guarda en Ajustes > Avanzado > Red.",
+          "cancel": "Cancelar",
+          "save": "Guardar y reintentar",
+          "saveFailed": "Orca no pudo guardar el mirror.",
+          "retryFailed": "Error de conexión",
+          "refusal": {
+            "tooLong": "La URL del mirror es demasiado larga.",
+            "protocol": "Usa una URL de mirror http o https.",
+            "credentials": "La URL del mirror no puede incluir un nombre de usuario ni una contraseña.",
+            "query": "La URL del mirror no puede tener una consulta ni un fragmento.",
+            "invalid": "Introduce una URL de mirror válida."
+          }
         }
       },
       "right": {

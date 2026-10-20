@@ -3420,6 +3420,8 @@
           },
           "TerminalRemoteRuntimeReconnectBanner": {
             "retryingTitle": "원격 런타임에 다시 연결 중",
+            "pairingRefusedTitle": "이 호스트가 더 이상 이 컴퓨터를 허용하지 않습니다",
+            "pairingRefusedBody": "Orca가 SSH로 다시 페어링하지 못했습니다. 호스트에서는 아무것도 중지되지 않았습니다. 다시 연결하여 재시도하세요.",
             "disconnectedTitle": "원격 런타임 연결 끊김",
             "retryingBody": "Orca가 자동으로 재시도합니다. 연결이 복원되면 이 터미널이 재개됩니다.",
             "disconnectedBody": "자동 재시도가 중지되었습니다. 이 터미널 세션을 재개하려면 다시 연결하세요.",
@@ -4209,6 +4211,8 @@
             "access_revoked": "Access revoked",
             "access_revoked_summary": "This server revoked access for this computer",
             "access_revoked_explanation": "Re-pair with a new pairing link from the server to reconnect.",
+            "managed_access_revoked_explanation": "Orca가 SSH로 다시 페어링하지 못했습니다. 연결하여 다시 시도하세요.",
+            "connect_access_revoked_explanation": "연결하여 다시 시도하세요.",
             "update_required": "Update required",
             "update_required_summary": "Orca versions are not compatible",
             "update_required_explanation": "Update Orca on this computer or on the server, then connect again.",
@@ -6395,6 +6399,7 @@
           "sshSaveFailed": "SSH 호스트를 추가하지 못했습니다.",
           "serverFieldsRequired": "서버 이름과 페어링 코드가 필요합니다.",
           "serverSaved": "원격 서버가 추가되었습니다.",
+          "serverAlreadyPaired": "이 서버는 이미 {{value0}}(으)로 페어링되어 있습니다. 연결 정보를 업데이트했습니다.",
           "serverSaveFailed": "원격 서버를 추가하지 못했습니다.",
           "serverTitle": "원격 서버 추가",
           "sshTitle": "SSH 호스트 추가",
@@ -8293,6 +8298,7 @@
           "e57dde9d93": "저장되지 않은 변경사항"
         },
         "RuntimeAccessGrantList": {
+          "sshAccessCaveat": "여기서 취소해도 이 컴퓨터에 SSH로 접근할 수 있는 사람은 다시 페어링할 수 있습니다. 차단하려면 해당 SSH 접근 권한을 제거하세요.",
           "8b82879581": "활성화된 권한을 가진 사람은 누구나 취소할 때까지 연결할 수 있습니다. 공유 액세스를 취소하면 활성 클라이언트의 연결이 즉시 끊어집니다.",
           "68ec21309f": "액세스 취소",
           "6f6d5188ed": "{{value0}} 취소",
@@ -8332,7 +8338,7 @@
           "b5b5114cb0": "{{value0}}을(를) 삭제했습니다.",
           "6cb6eae14f": "런타임 환경을 저장하지 못했습니다.",
           "7b5986c8df": "{{value0}}에 연결되었습니다. 새 프로젝트를 기본적으로 그곳에 만들려면 고급 > 새 프로젝트의 기본 호스트에서 선택하세요.",
-          "5ef712f407": "\"{{value0}}\"이라는 서버가 이미 존재합니다.",
+          "serverAlreadyPaired": "이 서버는 이미 {{value0}}(으)로 페어링되어 있습니다. 연결 정보를 업데이트했습니다.",
           "0c55a47480": "이름과 페어링 코드가 필요합니다.",
           "e6410d72c3": "런타임 환경을 로드하지 못했습니다.",
           "6ef71985da": "엔드포인트 없음",
@@ -8403,6 +8409,8 @@
           "serverRuntimeUnavailableDescription": "SSH 전송이 연결되었지만 Orca 런타임이 응답하지 않았습니다. 호스트가 아직 실행 중일 수 있습니다.",
           "serverReconnecting": "다시 연결하는 중",
           "accessRevoked": "{{value0}} no longer accepts this computer. Re-pair it with a new access link.",
+          "managedAccessRevoked": "{{value0}}이(가) 더 이상 이 컴퓨터를 허용하지 않으며, Orca가 SSH로 다시 페어링하지 못했습니다. 연결하여 다시 시도하세요.",
+          "connectAccessRevoked": "{{value0}}이(가) 더 이상 이 컴퓨터를 허용하지 않습니다. 연결하여 다시 시도하세요.",
           "repair": "Re-pair…",
           "serverAccessRevoked": "Access revoked",
           "orcaVersionLastSeen": "Orca v{{value0}} (last seen)"
@@ -12618,7 +12626,10 @@
           "linkedProjects_one": "이 호스트의 Orca 서버에 {{paths}}이(가) 이미 있어 이 데스크톱은 이제 서버의 사본을 사용합니다. 이 데스크톱의 탭과 자동화 {{count}}개는 이동되지 않았으며, 여기서 만든 워크트리는 외부 워크트리로 표시됩니다.",
           "linkedProjects_other": "이 호스트의 Orca 서버에 {{paths}}이(가) 이미 있어 이 데스크톱은 이제 서버의 사본을 사용합니다. 이 데스크톱의 탭과 자동화 {{count}}개는 이동되지 않았으며, 여기서 만든 워크트리는 외부 워크트리로 표시됩니다.",
           "linkedProjects": "이 호스트의 Orca 서버에 {{paths}}이(가) 이미 있어 이 데스크톱은 이제 서버의 사본을 사용합니다. 이 데스크톱의 탭과 자동화 {{count}}개는 이동되지 않았으며, 여기서 만든 워크트리는 외부 워크트리로 표시됩니다.",
-          "linkedProjectsNoAutomations": "이 호스트의 Orca 서버에 {{paths}}이(가) 이미 있어 이 데스크톱은 이제 서버의 사본을 사용합니다. 이 데스크톱의 탭은 이동되지 않았으며, 여기서 만든 워크트리는 외부 워크트리로 표시됩니다."
+          "linkedProjectsNoAutomations": "이 호스트의 Orca 서버에 {{paths}}이(가) 이미 있어 이 데스크톱은 이제 서버의 사본을 사용합니다. 이 데스크톱의 탭은 이동되지 않았으며, 여기서 만든 워크트리는 외부 워크트리로 표시됩니다.",
+          "nodeDownloadBlocked": "이 컴퓨터와 이 호스트 모두 Orca 서버에 필요한 Node.js를 다운로드하지 못했습니다. Node.js 미러를 사용하거나 두 컴퓨터의 네트워크를 확인하세요.",
+          "nodeDownloadBlockedNoMirror": "이 컴퓨터와 이 호스트 모두 Orca 서버에 필요한 Node.js를 다운로드하지 못했습니다. 두 컴퓨터의 네트워크나 프록시를 확인한 뒤 다시 연결하세요.",
+          "nodeDownloadBlockedMirrorTried": "이 컴퓨터와 이 호스트 모두 Node.js 다운로드 미러를 포함해 Node.js를 다운로드하지 못했습니다. 미러 설정을 확인한 뒤 다시 연결하세요."
         },
         "deltaMove": {
           "action": "새 프로젝트 이동…",
@@ -12707,6 +12718,25 @@
         },
         "useUsageHostSettings": {
           "updateFailed": "{{host}}의 설정을 업데이트하지 못했습니다."
+        },
+        "nodeDistMirrorDialog": {
+          "action": "Node.js 미러 사용…",
+          "openSetting": "미러 설정 열기",
+          "title": "Node.js 미러 사용",
+          "description": "Orca 서버에는 Node.js가 필요한데, 이 컴퓨터와 이 호스트 모두 nodejs.org에서 다운로드하지 못했습니다. 미러는 nodejs.org/dist의 사본으로, Orca가 두 컴퓨터에서 먼저 시도합니다.",
+          "urlLabel": "미러 URL",
+          "checksum": "모든 다운로드는 여전히 Orca가 이 Node.js 릴리스에 고정한 체크섬으로 검증됩니다. 설정 > 고급 > 네트워크에 저장됩니다.",
+          "cancel": "취소",
+          "save": "저장 후 다시 시도",
+          "saveFailed": "Orca가 미러를 저장하지 못했습니다.",
+          "retryFailed": "연결 실패",
+          "refusal": {
+            "tooLong": "미러 URL이 너무 깁니다.",
+            "protocol": "http 또는 https 미러 URL을 사용하세요.",
+            "credentials": "미러 URL에는 사용자 이름이나 비밀번호를 넣을 수 없습니다.",
+            "query": "미러 URL에는 쿼리나 프래그먼트를 넣을 수 없습니다.",
+            "invalid": "올바른 미러 URL을 입력하세요."
+          }
         }
       },
       "right": {

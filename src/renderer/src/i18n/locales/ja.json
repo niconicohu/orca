@@ -3420,6 +3420,8 @@
           },
           "TerminalRemoteRuntimeReconnectBanner": {
             "retryingTitle": "リモートランタイムに再接続中",
+            "pairingRefusedTitle": "このホストはこのコンピューターを受け付けなくなりました",
+            "pairingRefusedBody": "Orca は SSH 経由で再ペアリングできませんでした。ホスト上では何も停止していません。再接続してもう一度お試しください。",
             "disconnectedTitle": "リモートランタイムが切断されました",
             "retryingBody": "Orca は自動的に再試行します。接続が復元されると、このターミナルが再開されます。",
             "disconnectedBody": "自動再試行が停止しました。このターミナルセッションを再開するには再接続してください。",
@@ -4209,6 +4211,8 @@
             "access_revoked": "Access revoked",
             "access_revoked_summary": "This server revoked access for this computer",
             "access_revoked_explanation": "Re-pair with a new pairing link from the server to reconnect.",
+            "managed_access_revoked_explanation": "Orca は SSH 経由で再ペアリングできませんでした。接続してもう一度お試しください。",
+            "connect_access_revoked_explanation": "接続してもう一度お試しください。",
             "update_required": "Update required",
             "update_required_summary": "Orca versions are not compatible",
             "update_required_explanation": "Update Orca on this computer or on the server, then connect again.",
@@ -6395,6 +6399,7 @@
           "sshSaveFailed": "SSH ホストの追加に失敗しました。",
           "serverFieldsRequired": "サーバー名とペアリングコードは必須です。",
           "serverSaved": "リモートサーバーが追加されました。",
+          "serverAlreadyPaired": "このサーバーは {{value0}} としてペアリング済みです。接続情報を更新しました。",
           "serverSaveFailed": "リモートサーバーの追加に失敗しました。",
           "serverTitle": "リモートサーバーを追加する",
           "sshTitle": "SSH ホストを追加",
@@ -8330,6 +8335,7 @@
           "e57dde9d93": "未保存の変更"
         },
         "RuntimeAccessGrantList": {
+          "sshAccessCaveat": "ここで取り消しても、このコンピューターへの SSH アクセスを持つ人は再びペアリングできます。完全に遮断するには、その SSH アクセスを削除してください。",
           "8b82879581": "アクティブな許可を持っている人は誰でも、許可を取り消すまで接続できます。共有アクセスを取り消すと、アクティブなクライアントはただちに切断されます。",
           "68ec21309f": "アクセスを取り消す",
           "6f6d5188ed": "{{value0}}を取り消す",
@@ -8369,7 +8375,7 @@
           "b5b5114cb0": "{{value0}} を削除しました。",
           "6cb6eae14f": "実行環境の保存に失敗しました。",
           "7b5986c8df": "{{value0}} に接続しました。新規プロジェクトを既定でそこに作成するには、[詳細設定] > [新規プロジェクトの既定ホスト] で選択してください。",
-          "5ef712f407": "「{{value0}}」という名前のサーバーはすでに存在します。",
+          "serverAlreadyPaired": "このサーバーは {{value0}} としてペアリング済みです。接続情報を更新しました。",
           "0c55a47480": "名前とペアリングコードは必須です。",
           "e6410d72c3": "ランタイム環境の読み込みに失敗しました。",
           "6ef71985da": "エンドポイントなし",
@@ -8440,6 +8446,8 @@
           "serverRuntimeUnavailableDescription": "SSH トランスポートは接続されていますが、Orca ランタイムが応答しませんでした。ホストがまだ実行中の可能性があります。",
           "serverReconnecting": "再接続中",
           "accessRevoked": "{{value0}} no longer accepts this computer. Re-pair it with a new access link.",
+          "managedAccessRevoked": "{{value0}} はこのコンピューターを受け付けなくなり、Orca は SSH 経由で再ペアリングできませんでした。接続してもう一度お試しください。",
+          "connectAccessRevoked": "{{value0}} はこのコンピューターを受け付けなくなりました。接続してもう一度お試しください。",
           "repair": "Re-pair…",
           "serverAccessRevoked": "Access revoked",
           "orcaVersionLastSeen": "Orca v{{value0}} (last seen)"
@@ -12618,7 +12626,10 @@
           "linkedProjects_one": "このホストの Orca サーバーには {{paths}} が既にあったため、このデスクトップはサーバーのコピーを使用します。このデスクトップのタブと {{count}} 件のオートメーションは移動されず、ここで作成したワークツリーは外部ワークツリーとして表示されます。",
           "linkedProjects_other": "このホストの Orca サーバーには {{paths}} が既にあったため、このデスクトップはサーバーのコピーを使用します。このデスクトップのタブと {{count}} 件のオートメーションは移動されず、ここで作成したワークツリーは外部ワークツリーとして表示されます。",
           "linkedProjects": "このホストの Orca サーバーには {{paths}} が既にあったため、このデスクトップはサーバーのコピーを使用します。このデスクトップのタブと {{count}} 件のオートメーションは移動されず、ここで作成したワークツリーは外部ワークツリーとして表示されます。",
-          "linkedProjectsNoAutomations": "このホストの Orca サーバーには {{paths}} が既にあったため、このデスクトップはサーバーのコピーを使用します。このデスクトップのタブは移動されず、ここで作成したワークツリーは外部ワークツリーとして表示されます。"
+          "linkedProjectsNoAutomations": "このホストの Orca サーバーには {{paths}} が既にあったため、このデスクトップはサーバーのコピーを使用します。このデスクトップのタブは移動されず、ここで作成したワークツリーは外部ワークツリーとして表示されます。",
+          "nodeDownloadBlocked": "Orca のサーバーに必要な Node.js を、このコンピュータとこのホストのどちらもダウンロードできませんでした。Node.js のミラーを使うか、両方のマシンのネットワークを確認してください。",
+          "nodeDownloadBlockedNoMirror": "Orca のサーバーに必要な Node.js を、このコンピュータとこのホストのどちらもダウンロードできませんでした。両方のマシンのネットワークまたはプロキシを確認してから、もう一度接続してください。",
+          "nodeDownloadBlockedMirrorTried": "このコンピュータとこのホストのどちらも、Node.js のダウンロードミラーを含めて Node.js をダウンロードできませんでした。ミラーの設定を確認してから、もう一度接続してください。"
         },
         "deltaMove": {
           "action": "新規プロジェクトを移動…",
@@ -12707,6 +12718,25 @@
         },
         "useUsageHostSettings": {
           "updateFailed": "{{host}} の設定を更新できませんでした。"
+        },
+        "nodeDistMirrorDialog": {
+          "action": "Node.js のミラーを使う…",
+          "openSetting": "ミラーの設定を開く",
+          "title": "Node.js のミラーを使う",
+          "description": "Orca のサーバーには Node.js が必要ですが、このコンピュータとこのホストのどちらも nodejs.org からダウンロードできませんでした。ミラーは nodejs.org/dist のコピーで、Orca は両方のマシンでまずミラーを試します。",
+          "urlLabel": "ミラーの URL",
+          "checksum": "ダウンロードしたファイルは、引き続き Orca がこの Node.js リリースに固定しているチェックサムで検証されます。設定 > 詳細設定 > ネットワーク に保存されます。",
+          "cancel": "キャンセル",
+          "save": "保存して再試行",
+          "saveFailed": "Orca はミラーを保存できませんでした。",
+          "retryFailed": "接続に失敗しました",
+          "refusal": {
+            "tooLong": "ミラーの URL が長すぎます。",
+            "protocol": "http または https のミラー URL を使ってください。",
+            "credentials": "ミラーの URL にユーザー名やパスワードは含められません。",
+            "query": "ミラーの URL にクエリやフラグメントは含められません。",
+            "invalid": "有効なミラーの URL を入力してください。"
+          }
         }
       },
       "right": {

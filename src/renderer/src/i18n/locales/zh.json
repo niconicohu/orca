@@ -3420,6 +3420,8 @@
           },
           "TerminalRemoteRuntimeReconnectBanner": {
             "retryingTitle": "正在重新连接到远程运行时",
+            "pairingRefusedTitle": "此主机不再接受这台电脑",
+            "pairingRefusedBody": "Orca 无法通过 SSH 重新与其配对。主机上没有任何内容被停止。请重新连接以重试。",
             "disconnectedTitle": "远程运行时已断开连接",
             "retryingBody": "Orca 正在自动重试。如果连接恢复，此终端将恢复。",
             "disconnectedBody": "自动重试已停止。重新连接以恢复此终端会话。",
@@ -4209,6 +4211,8 @@
             "access_revoked": "Access revoked",
             "access_revoked_summary": "This server revoked access for this computer",
             "access_revoked_explanation": "Re-pair with a new pairing link from the server to reconnect.",
+            "managed_access_revoked_explanation": "Orca 无法通过 SSH 重新与其配对。请连接以重试。",
+            "connect_access_revoked_explanation": "请连接以重试。",
             "update_required": "Update required",
             "update_required_summary": "Orca versions are not compatible",
             "update_required_explanation": "Update Orca on this computer or on the server, then connect again.",
@@ -6395,6 +6399,7 @@
           "sshSaveFailed": "添加 SSH 主机失败。",
           "serverFieldsRequired": "必须填写服务器名称和配对码。",
           "serverSaved": "已添加远程服务器。",
+          "serverAlreadyPaired": "此服务器已作为 {{value0}} 配对；已更新其连接。",
           "serverSaveFailed": "添加远程服务器失败。",
           "serverTitle": "添加远程服务器",
           "sshTitle": "添加 SSH 主机",
@@ -8293,6 +8298,7 @@
           "e57dde9d93": "未保存的更改"
         },
         "RuntimeAccessGrantList": {
+          "sshAccessCaveat": "在此撤销并不能阻止拥有这台电脑 SSH 访问权限的人重新配对。要彻底阻止，请移除其 SSH 访问权限。",
           "8b82879581": "任何拥有有效授权的人都可以连接，直到您撤销授权为止。撤销共享访问会立即断开活动客户端的连接。",
           "68ec21309f": "撤销访问权限",
           "6f6d5188ed": "撤销 {{value0}}",
@@ -8332,7 +8338,7 @@
           "b5b5114cb0": "删除了 {{value0}}。",
           "6cb6eae14f": "无法保存运行时环境。",
           "7b5986c8df": "已连接到 {{value0}}。若要默认在其上创建新项目，请在“高级 > 新项目的默认主机”中选择它。",
-          "5ef712f407": "名为“{{value0}}”的服务器已存在。",
+          "serverAlreadyPaired": "此服务器已作为 {{value0}} 配对；已更新其连接。",
           "0c55a47480": "需要名称和配对代码。",
           "e6410d72c3": "无法加载运行时环境。",
           "6ef71985da": "无终点",
@@ -8403,6 +8409,8 @@
           "serverRuntimeUnavailableDescription": "SSH 传输已连接，但 Orca 运行时未应答。主机可能仍在运行。",
           "serverReconnecting": "重新连接",
           "accessRevoked": "{{value0}} no longer accepts this computer. Re-pair it with a new access link.",
+          "managedAccessRevoked": "{{value0}} 不再接受这台电脑，且 Orca 无法通过 SSH 重新与其配对。请连接以重试。",
+          "connectAccessRevoked": "{{value0}} 不再接受这台电脑。请连接以重试。",
           "repair": "Re-pair…",
           "serverAccessRevoked": "Access revoked",
           "orcaVersionLastSeen": "Orca v{{value0}} (last seen)"
@@ -12632,7 +12640,10 @@
           "linkedProjects_one": "此主机的 Orca 服务器已有 {{paths}}，因此此桌面现在使用服务器的副本。此桌面在那里的标签页和 {{count}} 个自动化未被迁移，它在那里创建的工作树会显示为外部工作树。",
           "linkedProjects_other": "此主机的 Orca 服务器已有 {{paths}}，因此此桌面现在使用服务器的副本。此桌面在那里的标签页和 {{count}} 个自动化未被迁移，它在那里创建的工作树会显示为外部工作树。",
           "linkedProjects": "此主机的 Orca 服务器已有 {{paths}}，因此此桌面现在使用服务器的副本。此桌面在那里的标签页和 {{count}} 个自动化未被迁移，它在那里创建的工作树会显示为外部工作树。",
-          "linkedProjectsNoAutomations": "此主机的 Orca 服务器已有 {{paths}}，因此此桌面现在使用服务器的副本。此桌面在那里的标签页未被迁移，它在那里创建的工作树会显示为外部工作树。"
+          "linkedProjectsNoAutomations": "此主机的 Orca 服务器已有 {{paths}}，因此此桌面现在使用服务器的副本。此桌面在那里的标签页未被迁移，它在那里创建的工作树会显示为外部工作树。",
+          "nodeDownloadBlocked": "这台电脑和这台主机都无法下载 Orca 服务器所需的 Node.js。请使用 Node.js 镜像，或检查两台机器的网络。",
+          "nodeDownloadBlockedNoMirror": "这台电脑和这台主机都无法下载 Orca 服务器所需的 Node.js。请检查两台机器的网络或代理，然后重新连接。",
+          "nodeDownloadBlockedMirrorTried": "这台电脑和这台主机都无法下载 Node.js，包括从 Node.js 下载镜像下载。请检查镜像设置，然后重新连接。"
         },
         "deltaMove": {
           "action": "迁移新项目…",
@@ -12707,6 +12718,25 @@
         },
         "useUsageHostSettings": {
           "updateFailed": "无法更新 {{host}} 上的设置。"
+        },
+        "nodeDistMirrorDialog": {
+          "action": "使用 Node.js 镜像…",
+          "openSetting": "打开镜像设置",
+          "title": "使用 Node.js 镜像",
+          "description": "Orca 服务器需要 Node.js，但这台电脑和这台主机都无法从 nodejs.org 下载。镜像是 nodejs.org/dist 的副本，Orca 会在两台机器上优先尝试镜像。",
+          "urlLabel": "镜像 URL",
+          "checksum": "每次下载仍会按 Orca 为此 Node.js 版本固定的校验和进行验证。保存在 设置 > 高级 > 网络 中。",
+          "cancel": "取消",
+          "save": "保存并重试",
+          "saveFailed": "Orca 无法保存镜像。",
+          "retryFailed": "连接失败",
+          "refusal": {
+            "tooLong": "镜像 URL 过长。",
+            "protocol": "请使用 http 或 https 镜像 URL。",
+            "credentials": "镜像 URL 不能包含用户名或密码。",
+            "query": "镜像 URL 不能包含查询或片段。",
+            "invalid": "请输入有效的镜像 URL。"
+          }
         }
       },
       "right": {
