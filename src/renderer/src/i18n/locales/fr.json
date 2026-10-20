@@ -5320,6 +5320,7 @@
         }
       },
       "sidebar": {
+        "loadingWorkspaces": "Chargement des projets et des espaces de travail…",
         "local": {
           "base": {
             "ref": {

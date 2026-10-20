@@ -36,6 +36,7 @@
     "failed": "Failed to open the file."
   },
   "sidebar": {
+    "loadingWorkspaces": "Loading projects and workspaces…",
     "loadingProject": "Loading project…",
     "revealFiltered": {
       "title": "Reveal hidden workspace?",

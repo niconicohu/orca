@@ -5212,6 +5212,7 @@
         }
       },
       "sidebar": {
+        "loadingWorkspaces": "正在加载项目和工作区…",
         "AddProjectFromFolderDialog": {
           "7d1f51678c": "添加项目",
           "7726a16374": "取消",
