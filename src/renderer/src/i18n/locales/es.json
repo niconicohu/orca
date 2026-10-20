@@ -5205,7 +5205,6 @@
         }
       },
       "sidebar": {
-        "loadingWorkspaces": "Cargando proyectos y espacios de trabajo…",
         "local": {
           "base": {
             "ref": {
@@ -20052,6 +20051,7 @@
     "failed": "No se pudo abrir el archivo."
   },
   "sidebar": {
+    "loadingWorkspaces": "Cargando proyectos y espacios de trabajo…",
     "loadingProject": "Cargando proyecto…",
     "revealFiltered": {
       "title": "¿Mostrar el espacio de trabajo oculto?",

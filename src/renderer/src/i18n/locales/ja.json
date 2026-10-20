@@ -5210,7 +5210,6 @@
         }
       },
       "sidebar": {
-        "loadingWorkspaces": "プロジェクトとワークスペースを読み込み中…",
         "AddProjectFromFolderDialog": {
           "7d1f51678c": "プロジェクトを追加",
           "7726a16374": "キャンセル",
@@ -19823,6 +19822,7 @@
     }
   },
   "sidebar": {
+    "loadingWorkspaces": "プロジェクトとワークスペースを読み込み中…",
     "loadingProject": "プロジェクトを読み込み中…",
     "revealFiltered": {
       "title": "隠されたワークスペースを明らかにしますか?",

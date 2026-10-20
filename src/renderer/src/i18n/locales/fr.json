@@ -5318,7 +5318,6 @@
         }
       },
       "sidebar": {
-        "loadingWorkspaces": "Chargement des projets et des espaces de travail…",
         "local": {
           "base": {
             "ref": {
@@ -19885,6 +19884,7 @@
     }
   },
   "sidebar": {
+    "loadingWorkspaces": "Chargement des projets et des espaces de travail…",
     "loadingProject": "Chargement du projet…",
     "revealFiltered": {
       "title": "Révéler l'espace de travail caché ?",
