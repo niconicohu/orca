@@ -21,6 +21,7 @@ import { MARKDOWN_TONES, scaledMarkdownText, styles } from './mobile-markdown-st
 import { MarkdownText } from './mobile-markdown-text'
 import { codeFenceClosed, plainText } from './mobile-markdown-tree'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
+import { routeMarkdownHref } from './markdown-href-routing'
 
 /** Prose base size — passed to MermaidDiagram fallback mono text. */
 const MERMAID_BASE = 13
@@ -142,7 +143,12 @@ function renderBlock(
   switch (node.type) {
     case 'paragraph': {
       const [only] = node.children
-      if (node.children.length === 1 && only?.type === 'image' && ctx.renderImage) {
+      if (
+        node.children.length === 1 &&
+        only?.type === 'image' &&
+        ctx.renderImage &&
+        routeMarkdownHref(only.url).kind !== 'web'
+      ) {
         return <View key={key}>{ctx.renderImage(only.url, only.alt || 'Image')}</View>
       }
       const visual =

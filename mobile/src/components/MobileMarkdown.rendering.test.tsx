@@ -57,6 +57,25 @@ function press(tree: ReactTestRenderer, label: string): void {
 }
 
 describe('MobileMarkdown rendering', () => {
+  it.each(['https://example.test/chart.png', 'http://example.test/chart.png'])(
+    'keeps external image %s behind the existing tap instead of fetching a thumbnail',
+    (url) => {
+      const renderImage = vi.fn(() => createElement('ChatImage'))
+      act(() => {
+        renderer = create(
+          createElement(MobileMarkdown, {
+            content: `![Remote chart](${url})`,
+            renderImage
+          })
+        )
+      })
+      expect(renderImage).not.toHaveBeenCalled()
+      expect(openURL).not.toHaveBeenCalled()
+      const target = renderer!.root.find((node) => String(node.type) === 'Pressable')
+      act(() => target.props.onPress())
+      expect(openURL).toHaveBeenCalledWith(url)
+    }
+  )
   it.each([
     [
       'C1: nested lists keep their own markers and numbers',
