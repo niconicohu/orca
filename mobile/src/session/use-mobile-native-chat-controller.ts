@@ -1,3 +1,4 @@
+import { useMobileNativeChatResourceSource } from './mobile-native-chat-resource-read'
 import { useLayoutEffect, useRef, type MutableRefObject } from 'react'
 import type { RpcClient } from '../transport/rpc-client'
 import type { ConnectionState } from '../transport/types'
@@ -271,6 +272,8 @@ export function useMobileNativeChatController(args: {
     onSendResolved
   })
 
+  const nativeChatResourceSource = useMobileNativeChatResourceSource(args, activeChatSessionId)
+
   return {
     isTabChatView,
     setTabView,
@@ -289,6 +292,7 @@ export function useMobileNativeChatController(args: {
     /** Structured lane: drives the per-turn status row and live tool progress. */
     nativeChatStructured: activeChatStructured,
     nativeChatVisualSource: activeChatStructured ? structuredNativeChat.visualSource : null,
+    nativeChatResourceSource,
     nativeChatAgentWorking,
     nativeChatTurnIndicator: activeChatStructured ? structuredNativeChat.turnIndicator : null,
     nativeChatWorkingStartedAt: activeChatStructured ? structuredNativeChat.workingStartedAt : null,
