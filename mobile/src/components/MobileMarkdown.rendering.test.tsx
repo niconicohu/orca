@@ -57,6 +57,31 @@ function press(tree: ReactTestRenderer, label: string): void {
 }
 
 describe('MobileMarkdown rendering', () => {
+  it.each(['javascript:alert(1)', 'vscode://file/tmp/chart.png', 'ftp://example.test/chart.png'])(
+    'does not admit unsupported image source %s into the gallery',
+    (url) => {
+      const renderImage = vi.fn(() => createElement('ChatImage'))
+      act(() => {
+        renderer = create(
+          createElement(MobileMarkdown, { content: `![Image](${url})`, renderImage })
+        )
+      })
+      expect(renderImage).not.toHaveBeenCalled()
+      expect(openURL).not.toHaveBeenCalled()
+    }
+  )
+  it.each([
+    'data:image/png;base64,AAAA',
+    'blob:https://example.test/image',
+    'content://media/image/1'
+  ])('retains the supported direct image source %s', (url) => {
+    const renderImage = vi.fn(() => createElement('ChatImage'))
+    act(() => {
+      renderer = create(createElement(MobileMarkdown, { content: `![Image](${url})`, renderImage }))
+    })
+    expect(renderImage).toHaveBeenCalledWith(url, 'Image')
+    expect(openURL).not.toHaveBeenCalled()
+  })
   it.each(['https://example.test/chart.png', 'http://example.test/chart.png'])(
     'keeps external image %s behind the existing tap instead of fetching a thumbnail',
     (url) => {
