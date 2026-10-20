@@ -70,6 +70,7 @@ export function NativeChatAssistantMessageRow({
         blocks={prose}
         runtimeContext={runtimeContext}
         enablePreview={runtimeContext !== undefined}
+        onLinkClick={onLinkClick}
       />
       {words ? (
         <NativeChatPacedMarkdown

@@ -11,6 +11,7 @@ import {
   absoluteFileTarget,
   useTerminalArtifactTempFiles
 } from './orca-runtime-files-terminal-artifact-fixtures'
+import type { NativeChatBlock } from '../../shared/native-chat-types'
 import type { RuntimeNativeChatFileContext } from '../../shared/runtime-types'
 
 vi.mock('fs', async () => (await import('./orca-runtime-files-mock-registry')).fsModuleMock())
@@ -50,96 +51,106 @@ describe('chat artifacts authorized by their actual host Markdown', () => {
   ] as const
   it.each(
     artifacts.flatMap(([extension, bytes]) =>
-      ['agent-session:session-1', 'structured-agent-session-session-1'].map((tabId) => ({
-        extension,
-        bytes,
-        tabId
-      }))
-    )
-  )('$extension grants and exact reads from $tabId', async ({ extension, bytes, tabId }) => {
-    const file = (await tempFile(`result.${extension}`, '')).replaceAll('\\', '/')
-    // Sandbox addresses POSIX hosts; native Windows fixtures use the existing file URI route.
-    const reference = isWindowsAbsolutePathLike(file)
-      ? filesystemPathToFileUri(file)
-      : `sandbox:${encodeURI(file)}`
-    await writeFile(file, bytes)
-    const context = { tabId, sessionId: 'session-1' }
-    const { commands } = createRuntimeFileCommands({
-      path: '/repo',
-      hasRecentNativeChatOutputPath: vi.fn(
-        (
-          _worktree: string,
-          requested: RuntimeNativeChatFileContext,
-          pathText: string,
-          absolutePath: string
-        ) =>
-          nativeChatTranscriptIncludesPath({
-            tabs: [
-              {
-                type: 'agent-session',
-                id: 'agent-session:session-1',
-                sessionId: 'session-1',
-                agent: 'codex',
-                title: 'Chat',
-                isActive: true
-              }
-            ],
-            context: requested,
-            pathText,
-            absolutePath,
-            readStructuredMessages: async () => [
-              {
-                role: 'assistant',
-                blocks: [{ type: 'text', text: `![Result](${reference})` }]
-              }
-            ]
-          })
+      ['agent-session:session-1', 'structured-agent-session-session-1'].flatMap((tabId) =>
+        ['markdown', 'image-ref'].map((referenceKind) => ({
+          extension,
+          bytes,
+          tabId,
+          referenceKind
+        }))
       )
-    })
-    const resolved = await commands.resolveTerminalPath(
-      'id:wt-1',
-      file,
-      null,
-      'client-a',
-      null,
-      true,
-      context
     )
-    const target = absoluteFileTarget(resolved)
-    const preview = await commands.readTerminalArtifactPreview(
-      'id:wt-1',
-      target.grantId,
-      target.absolutePath,
-      'client-a'
-    )
-    expect(Buffer.from(preview.content, preview.isBinary ? 'base64' : 'utf8')).toEqual(bytes)
-    await expect(
-      commands.readTerminalArtifactPreview(
+  )(
+    '$extension $referenceKind grants and exact reads from $tabId',
+    async ({ extension, bytes, tabId, referenceKind }) => {
+      const file = (await tempFile(`result.${extension}`, '')).replaceAll('\\', '/')
+      // Sandbox addresses POSIX hosts; native Windows fixtures use the existing file URI route.
+      const reference = isWindowsAbsolutePathLike(file)
+        ? filesystemPathToFileUri(file)
+        : `sandbox:${encodeURI(file)}`
+      await writeFile(file, bytes)
+      const blocks: NativeChatBlock[] =
+        referenceKind === 'markdown'
+          ? [{ type: 'text', text: `![Result](${reference})` }]
+          : [{ type: 'image-ref', path: file }]
+      const context = { tabId, sessionId: 'session-1' }
+      const { commands } = createRuntimeFileCommands({
+        path: '/repo',
+        hasRecentNativeChatOutputPath: vi.fn(
+          (
+            _worktree: string,
+            requested: RuntimeNativeChatFileContext,
+            pathText: string,
+            absolutePath: string
+          ) =>
+            nativeChatTranscriptIncludesPath({
+              tabs: [
+                {
+                  type: 'agent-session',
+                  id: 'agent-session:session-1',
+                  sessionId: 'session-1',
+                  agent: 'codex',
+                  title: 'Chat',
+                  isActive: true
+                }
+              ],
+              context: requested,
+              pathText,
+              absolutePath,
+              readStructuredMessages: async () => [
+                {
+                  role: 'assistant',
+                  blocks
+                }
+              ]
+            })
+        )
+      })
+      const resolved = await commands.resolveTerminalPath(
+        'id:wt-1',
+        file,
+        null,
+        'client-a',
+        null,
+        true,
+        context
+      )
+      const target = absoluteFileTarget(resolved)
+      const preview = await commands.readTerminalArtifactPreview(
         'id:wt-1',
         target.grantId,
         target.absolutePath,
-        'client-b'
+        'client-a'
       )
-    ).rejects.toThrow('terminal_file_grant_mismatch')
-    const forged = await commands.resolveTerminalPath(
-      'id:wt-1',
-      file,
-      null,
-      'client-a',
-      null,
-      true,
-      { tabId, sessionId: 'another-session' }
-    )
-    expect(forged.openTarget).toBeUndefined()
-    const wrongTab = await commands.resolveTerminalPath(
-      'id:wt-1',
-      file,
-      null,
-      'client-a',
-      null,
-      true,
-      { tabId: 'structured-agent-session-another-session', sessionId: context.sessionId }
-    )
-    expect(wrongTab.openTarget).toBeUndefined()
-  })
+      expect(Buffer.from(preview.content, preview.isBinary ? 'base64' : 'utf8')).toEqual(bytes)
+      await expect(
+        commands.readTerminalArtifactPreview(
+          'id:wt-1',
+          target.grantId,
+          target.absolutePath,
+          'client-b'
+        )
+      ).rejects.toThrow('terminal_file_grant_mismatch')
+      const forged = await commands.resolveTerminalPath(
+        'id:wt-1',
+        file,
+        null,
+        'client-a',
+        null,
+        true,
+        { tabId, sessionId: 'another-session' }
+      )
+      expect(forged.openTarget).toBeUndefined()
+      const wrongTab = await commands.resolveTerminalPath(
+        'id:wt-1',
+        file,
+        null,
+        'client-a',
+        null,
+        true,
+        { tabId: 'structured-agent-session-another-session', sessionId: context.sessionId }
+      )
+      expect(wrongTab.openTarget).toBeUndefined()
+    }
+  )
 })

@@ -16,6 +16,7 @@ import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import { useMemo } from 'react'
 import { setRendererUiLanguage } from '@/i18n/i18n'
+import { NativeChatImageAttachments } from './NativeChatTranscriptChrome'
 
 const mocks = vi.hoisted(() => ({ host: vi.fn(), rpc: vi.fn(), localRead: vi.fn(), open: vi.fn() }))
 vi.mock('@/runtime/host-route-call', () => ({ callHostRoute: mocks.host }))
@@ -106,6 +107,29 @@ afterEach(async () => {
 })
 
 describe('native chat sandbox resources', () => {
+  it('previews a process image-ref through its conversation grant, not an ungranted read', async () => {
+    const source = owner('host-a')
+    render(
+      <NativeChatResourceOwnerContext.Provider value={source}>
+        <NativeChatImageAttachments
+          blocks={[{ type: 'image-ref', path, alt: 'Viewed chart' }]}
+          runtimeContext={source.runtimeContext}
+        />
+      </NativeChatResourceOwnerContext.Provider>
+    )
+    await waitFor(() =>
+      expect(mocks.host).toHaveBeenCalledWith(
+        { target: source.runtimeContext?.target, at: 'local' },
+        'files.resolveTerminalPath',
+        expect.objectContaining({ pathText: path, nativeChatContext: source.nativeChatContext }),
+        expect.anything()
+      )
+    )
+    expect((await screen.findByRole('img', { name: 'Viewed chart' })).getAttribute('src')).toBe(
+      'blob:host-image'
+    )
+    expect(mocks.localRead).not.toHaveBeenCalled()
+  })
   it('shows localized host errors in a Chinese conversation', async () => {
     await setRendererUiLanguage('zh')
     render(<NativeChatMarkdown content="![Chart](sandbox:/mnt/data/chart.png)" />)

@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { PanZoomImageDialog } from '@/components/editor/PanZoomImageDialog'
 import {
@@ -13,8 +14,8 @@ import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { translate } from '@/i18n/i18n'
 import { createNativeChatFileHref } from '../../../../shared/native-chat-href-routing'
 import { useNativeChatResourceOwner } from './NativeChatResourceOwner'
-import { observeTranscriptVisibility } from './NativeChatTranscriptChrome'
-import { keepPreviewOpenForChatMenu } from './native-chat-image-copy'
+import { observeTranscriptVisibility } from './native-chat-transcript-visibility'
+import { copyableNativeChatImageSrc, keepPreviewOpenForChatMenu } from './native-chat-image-copy'
 import type { CommentMarkdownLinkClickHandler } from '@/components/sidebar/CommentMarkdown'
 import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
 import { filesystemPathToFileUri } from '../../../../shared/file-uri-path'
@@ -25,10 +26,12 @@ type ImageState = { identity: string; src?: string; error?: string }
 export function NativeChatMarkdownResourceImage({
   path,
   alt,
+  compact = false,
   onLinkClick
 }: {
   path: string
   alt: string
+  compact?: boolean
   onLinkClick?: CommentMarkdownLinkClickHandler
 }): React.JSX.Element {
   const owner = useNativeChatResourceOwner()
@@ -153,12 +156,21 @@ export function NativeChatMarkdownResourceImage({
             type="button"
             onClick={() => setOpenIdentity(identity)}
             aria-label={label}
-            className="max-w-full rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            data-native-chat-copy-image-src={copyableNativeChatImageSrc(current.src)}
+            className={cn(
+              'max-w-full rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              compact &&
+                'size-20 overflow-hidden border border-border bg-chat-canvas transition-colors hover:border-ring'
+            )}
           >
             <img
               src={current.src}
               alt={alt}
-              className="my-3 max-h-96 max-w-full rounded-md object-contain"
+              className={
+                compact
+                  ? 'size-full object-cover'
+                  : 'my-3 max-h-96 max-w-full rounded-md object-contain'
+              }
               onError={() =>
                 setState({
                   identity,
@@ -176,6 +188,7 @@ export function NativeChatMarkdownResourceImage({
             src={current.src}
             title={label}
             showTitle
+            data-native-chat-copy-image-src={copyableNativeChatImageSrc(current.src)}
             onInteractOutside={keepPreviewOpenForChatMenu}
           />
         </>

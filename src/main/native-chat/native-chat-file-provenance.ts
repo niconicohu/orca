@@ -52,6 +52,33 @@ function transcriptTextIncludesPath(text: string, pathText: string, absolutePath
   return recentTerminalOutputIncludesPath(text, `${pathText}.`, `${absolutePath}.`)
 }
 
+function assistantMessageIncludesPath(
+  message: Pick<NativeChatMessage, 'role' | 'blocks'>,
+  pathText: string,
+  absolutePath: string
+): boolean {
+  return (
+    message.role === 'assistant' &&
+    message.blocks.some((block) => {
+      if (block.type === 'text') {
+        return transcriptTextIncludesPath(block.text, pathText, absolutePath)
+      }
+      if (block.type !== 'image-ref') {
+        return false
+      }
+      return [block.path, block.url].some((reference) => {
+        if (!reference) {
+          return false
+        }
+        const route = routeNativeChatHref(reference)
+        return (
+          route.kind === 'file' && (route.pathText === pathText || route.pathText === absolutePath)
+        )
+      })
+    })
+  )
+}
+
 export async function nativeChatTranscriptIncludesPath(args: {
   tabs: readonly RuntimeMobileSessionClientTab[]
   context: RuntimeNativeChatFileContext
@@ -73,14 +100,8 @@ export async function nativeChatTranscriptIncludesPath(args: {
     try {
       const messages = await args.readStructuredMessages?.(args.context.sessionId)
       return (
-        messages?.some(
-          (message) =>
-            message.role === 'assistant' &&
-            message.blocks.some(
-              (block) =>
-                block.type === 'text' &&
-                transcriptTextIncludesPath(block.text, args.pathText, args.absolutePath)
-            )
+        messages?.some((message) =>
+          assistantMessageIncludesPath(message, args.pathText, args.absolutePath)
         ) ?? false
       )
     } catch {
@@ -113,14 +134,8 @@ export async function nativeChatTranscriptIncludesPath(args: {
     if (!('messages' in result)) {
       return false
     }
-    return result.messages.some(
-      (message) =>
-        message.role === 'assistant' &&
-        message.blocks.some(
-          (block) =>
-            block.type === 'text' &&
-            transcriptTextIncludesPath(block.text, args.pathText, args.absolutePath)
-        )
+    return result.messages.some((message) =>
+      assistantMessageIncludesPath(message, args.pathText, args.absolutePath)
     )
   } catch {
     return false
