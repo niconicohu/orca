@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentProps } from 'react'
+import { useEffect, useMemo, useState, type ComponentProps } from 'react'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import { cn } from '@/lib/utils'
 import { withoutPendingNativeChatVisualDirectiveTail } from '../../../../shared/native-chat-visual-directive'
@@ -6,6 +6,11 @@ import { NativeChatMarkdownRowKeyContext } from './native-chat-disclosure-store'
 import { useNativeChatVisualMarkdownExtension } from './native-chat-visual-markdown-extension'
 import { useNativeChatFileLinkExists } from './use-native-chat-file-link-existence'
 import './native-chat-markdown.css'
+import {
+  NativeChatResourceRenderContext,
+  useNativeChatResourceMarkdownExtension
+} from './native-chat-resource-markdown'
+import { selectCommentMarkdownComponents } from '@/components/sidebar/comment-markdown-element-renderers'
 
 /** Existing words stay opaque when a reply first starts growing. */
 function useWordFadeArmed(fadeWords: boolean): boolean {
@@ -41,24 +46,44 @@ export function NativeChatMarkdown({
   ...props
 }: NativeChatMarkdownProps): React.JSX.Element {
   const wordFadeArmed = useWordFadeArmed(fadeWords)
-  const extension = useNativeChatVisualMarkdownExtension(visualMessageId)
+  const visualExtension = useNativeChatVisualMarkdownExtension(visualMessageId)
+  const extension = useNativeChatResourceMarkdownExtension(visualExtension)
+  const { variant = 'compact', expandImages = false, onLinkClick, renderCodeBlock } = props
+  const resourceRenderContext = useMemo(
+    () => ({
+      onLinkClick,
+      Image:
+        visualExtension?.components.img ??
+        selectCommentMarkdownComponents({
+          variant,
+          expandImages,
+          onLinkClick,
+          renderCodeBlock
+        }).img
+    }),
+    [visualExtension, variant, expandImages, onLinkClick, renderCodeBlock]
+  )
   const fileLinkExists = useNativeChatFileLinkExists(linkifyFilePaths, streaming)
   return (
     <NativeChatMarkdownRowKeyContext.Provider value={rowKey}>
-      <CommentMarkdown
-        {...props}
-        content={
-          extension && streaming ? withoutPendingNativeChatVisualDirectiveTail(content) : content
-        }
-        extension={extension}
-        fileLinkExists={fileLinkExists}
-        fadeWords={fadeWords}
-        renderMermaid={!streaming}
-        keepMermaidSourceWhilePending
-        data-word-fade={wordFadeArmed ? '' : undefined}
-        data-block-fade={wordFadeArmed && streaming ? '' : undefined}
-        className={cn('native-chat-markdown', className)}
-      />
+      <NativeChatResourceRenderContext.Provider value={resourceRenderContext}>
+        <CommentMarkdown
+          {...props}
+          content={
+            visualExtension && streaming
+              ? withoutPendingNativeChatVisualDirectiveTail(content)
+              : content
+          }
+          extension={extension}
+          fileLinkExists={fileLinkExists}
+          fadeWords={fadeWords}
+          renderMermaid={!streaming}
+          keepMermaidSourceWhilePending
+          data-word-fade={wordFadeArmed ? '' : undefined}
+          data-block-fade={wordFadeArmed && streaming ? '' : undefined}
+          className={cn('native-chat-markdown', className)}
+        />
+      </NativeChatResourceRenderContext.Provider>
     </NativeChatMarkdownRowKeyContext.Provider>
   )
 }

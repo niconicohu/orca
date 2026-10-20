@@ -6,6 +6,7 @@ import type { NativeChatViewProps } from './native-chat-view-types'
 import { NativeChatPaneFileDropSurface } from './NativeChatPaneFileDropSurface'
 import { NativeChatVisualOwnerProvider } from './native-chat-visual-owner'
 import { NativeChatFileLinkExistenceProvider } from './use-native-chat-file-link-existence'
+import { NativeChatResourceOwnerProvider } from './NativeChatResourceOwner'
 
 export type { NativeChatViewProps } from './native-chat-view-types'
 
@@ -21,7 +22,9 @@ export default function NativeChatView(props: NativeChatViewProps): React.JSX.El
           tabId={props.tabId}
         >
           <NativeChatFileLinkExistenceProvider tabId={props.tabId}>
-            <NativeChatStructuredSession {...props} />
+            <NativeChatResourceOwnerProvider tabId={props.tabId} sessionId={props.sessionId}>
+              <NativeChatStructuredSession {...props} />
+            </NativeChatResourceOwnerProvider>
           </NativeChatFileLinkExistenceProvider>
         </NativeChatVisualOwnerProvider>
       ) : (
@@ -58,20 +61,22 @@ function NativeChatBridgeView({
     >
       {(resolution) => (
         <NativeChatFileLinkExistenceProvider tabId={terminalTabId}>
-          <NativeChatResolvedView
-            paneKey={resolution.paneKey}
-            agent={resolution.agent}
-            sessionId={resolution.sessionId}
-            transcriptPath={resolution.transcriptPath}
-            isVisible={isVisible}
-            isFocusedGroup={isFocusedGroup}
-            targetPtyId={targetPtyId}
-            terminalTabId={terminalTabId}
-            ownsTabWideLaunchDraft={ownsTabWideLaunchDraft}
-            onSwitchToTerminal={onSwitchToTerminal}
-            readTerminalScreen={readTerminalScreen}
-            contextMenuActions={contextMenuActions}
-          />
+          <NativeChatResourceOwnerProvider tabId={terminalTabId} sessionId={resolution.sessionId}>
+            <NativeChatResolvedView
+              paneKey={resolution.paneKey}
+              agent={resolution.agent}
+              sessionId={resolution.sessionId}
+              transcriptPath={resolution.transcriptPath}
+              isVisible={isVisible}
+              isFocusedGroup={isFocusedGroup}
+              targetPtyId={targetPtyId}
+              terminalTabId={terminalTabId}
+              ownsTabWideLaunchDraft={ownsTabWideLaunchDraft}
+              onSwitchToTerminal={onSwitchToTerminal}
+              readTerminalScreen={readTerminalScreen}
+              contextMenuActions={contextMenuActions}
+            />
+          </NativeChatResourceOwnerProvider>
         </NativeChatFileLinkExistenceProvider>
       )}
     </NativeChatSessionGate>
