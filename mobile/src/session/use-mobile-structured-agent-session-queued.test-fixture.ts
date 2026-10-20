@@ -24,6 +24,7 @@ export const CAPABLE: StructuredAgentSessionHostSupport = {
   sendOptions: false,
   conversationStop: false,
   permissionModes: false,
+  itemDetail: false,
   phoneAttachments: false
 }
 export const LEGACY: StructuredAgentSessionHostSupport = {

@@ -273,6 +273,7 @@ export function useMobileNativeChatController(args: {
   })
 
   const nativeChatResourceSource = useMobileNativeChatResourceSource(args, activeChatSessionId)
+  const nativeChatVisualSource = activeChatStructured ? structuredNativeChat.visualSource : null
 
   return {
     isTabChatView,
@@ -291,8 +292,10 @@ export function useMobileNativeChatController(args: {
     nativeChatSession,
     /** Structured lane: drives the per-turn status row and live tool progress. */
     nativeChatStructured: activeChatStructured,
-    nativeChatVisualSource: activeChatStructured ? structuredNativeChat.visualSource : null,
+    nativeChatVisualSource,
     nativeChatResourceSource,
+    nativeChatItemSource:
+      agentSessionHostSupport?.itemDetail === true ? nativeChatVisualSource : null,
     nativeChatAgentWorking,
     nativeChatTurnIndicator: activeChatStructured ? structuredNativeChat.turnIndicator : null,
     nativeChatWorkingStartedAt: activeChatStructured ? structuredNativeChat.workingStartedAt : null,

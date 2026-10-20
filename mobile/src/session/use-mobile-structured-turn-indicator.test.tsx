@@ -272,6 +272,7 @@ describe("useMobileStructuredAgentSession and the host's Stopping", () => {
         sendOptions: false,
         conversationStop: false,
         permissionModes: false,
+        itemDetail: false,
         phoneAttachments: false
       },
       agent: 'codex',

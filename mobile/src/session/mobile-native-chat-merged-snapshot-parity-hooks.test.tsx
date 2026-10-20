@@ -100,6 +100,7 @@ const HOST_SUPPORT = {
   sendOptions: false,
   conversationStop: false,
   permissionModes: false,
+  itemDetail: false,
   phoneAttachments: false
 }
 
