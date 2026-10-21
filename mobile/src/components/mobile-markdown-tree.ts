@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it'
+import cjkFriendly from 'markdown-it-cjk-friendly'
 import footnote from 'markdown-it-footnote'
 import type {
   AlignType,
@@ -15,7 +16,7 @@ import { normalizeMobileMarkdownPreviewHtml } from './mobile-markdown-preview-ht
 
 // CommonMark with GitHub's tables, strikethrough, autolinks and footnotes: the rules desktop's
 // renderer follows, read by a parser fast enough for the phone's JavaScript engine.
-const markdown = new MarkdownIt({ html: true, linkify: true }).use(footnote)
+const markdown = new MarkdownIt({ html: true, linkify: true }).use(cjkFriendly).use(footnote)
 // Every href parses as a link, file: included; routeMarkdownHref decides what a tap opens.
 markdown.validateLink = () => true
 
