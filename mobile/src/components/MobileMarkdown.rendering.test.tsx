@@ -179,6 +179,13 @@ describe('MobileMarkdown tone', () => {
     return flattenStyle(span.props.style)
   }
 
+  it('draws the Chinese sentence in bold before adjacent prose', () => {
+    const sentence = '单算 Runtime 执行引擎，平均每题 29.78 秒。'
+    const tree = render(`**${sentence}**边界是开始执行到产出结果。`)
+    expect(styleOf(tree.root, sentence)).toMatchObject({ fontWeight: '700' })
+    expect(texts(tree)).toEqual([`${sentence}边界是开始执行到产出结果。`])
+  })
+
   it("draws your own message dark on its light fill, and leaves the agent's prose as it was", () => {
     const content = 'Plain **bold** [docs](https://example.com) `code`'
     act(() => {
