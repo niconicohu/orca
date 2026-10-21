@@ -35,13 +35,15 @@ export function useMobileNativeChatPromptCards({
     structured?.respondPermission ?? terminal.respondPermission,
     onSendResolved
   )
+  const answerQuestion = useNativeChatAcceptedAction(terminal.answerQuestion, onSendResolved)
   const cancel = useNativeChatAcceptedAction(
     structured?.cancelPrompt ?? (async () => false),
     onSendResolved
   )
   const presentation = useMobileNativeChatPromptPresentation({
     ...terminal,
-    respondPermission: respond
+    respondPermission: respond,
+    answerQuestion
   })
   return {
     handleNativeChatAnswerAsk: answerAsk,
