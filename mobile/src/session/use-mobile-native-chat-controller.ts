@@ -13,7 +13,6 @@ import { useMobileNativeChatSessionOptionController } from './use-mobile-native-
 import { useMobileNativeChatSessionLane } from './use-mobile-native-chat-session-lane'
 import { useMobileStructuredNativeChatSendBridge } from './use-mobile-structured-native-chat-send-bridge'
 import { useMobileNativeChatPrompts } from './use-mobile-native-chat-prompts'
-import { useNativeChatAcceptedAction } from './use-native-chat-action-outcomes'
 import { useThrottledLatestValue } from './use-throttled-latest-value'
 import type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
 import { useMobileBridgeChatPromptWrites } from './use-mobile-bridge-chat-prompt-writes'
@@ -69,6 +68,7 @@ export function useMobileNativeChatController(args: {
     activeChatStructured,
     activeTabAgentWorking,
     isTabChatView,
+    sessionViewReady,
     setTabView,
     nativeChatStatus,
     showNativeChat,
@@ -255,8 +255,6 @@ export function useMobileNativeChatController(args: {
     appendComposerTextRef.current = appendComposerText
   }, [appendComposerText, recordNativeChatSessionOptionCommand])
   // Card actions retire the route's held failure banner too, not just sends.
-  const answerAsk = useNativeChatAcceptedAction(handleNativeChatAnswerAsk, onSendResolved)
-  const cancelAsk = useNativeChatAcceptedAction(handleNativeChatCancelAsk, onSendResolved)
   const promptCards = useMobileNativeChatPromptCards({
     terminal: {
       permission: legacyNativeChatPermission,
@@ -266,7 +264,9 @@ export function useMobileNativeChatController(args: {
       sessionKey: streamIdentity,
       observing: showNativeChat && !activeChatStructured && nativeChatStatus != null,
       respondPermission: legacyHandleNativeChatRespondPermission,
-      answerQuestion: legacyHandleNativeChatQuestionAnswer
+      answerQuestion: legacyHandleNativeChatQuestionAnswer,
+      handleNativeChatAnswerAsk,
+      handleNativeChatCancelAsk
     },
     structured: activeChatStructured ? structuredNativeChat : null,
     onSendResolved
@@ -276,6 +276,7 @@ export function useMobileNativeChatController(args: {
   const nativeChatVisualSource = activeChatStructured ? structuredNativeChat.visualSource : null
 
   return {
+    sessionViewReady,
     isTabChatView,
     setTabView,
     toggleTabChatView,
@@ -322,8 +323,6 @@ export function useMobileNativeChatController(args: {
     dismissNativeChatAsk: askDismissal.dismissAsk,
     collapseNativeChatAsk: askDismissal.collapseAsk,
     nativeChatCollapsedPrompt: askDismissal.collapsedAsk ?? promptCards.nativeChatCollapsedPrompt,
-    handleNativeChatAnswerAsk: answerAsk,
-    handleNativeChatCancelAsk: cancelAsk,
     handleNativeChatStop: activeChatStructured ? structuredNativeChat.cancel : handleNativeChatStop,
     // The inactive lane's session is starved of identity, so its cards stay empty.
     nativeChatQueued: structuredNativeChat.queued,

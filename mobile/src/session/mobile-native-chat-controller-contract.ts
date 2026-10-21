@@ -25,6 +25,8 @@ import type { MobileNativeChatResourceSource } from './mobile-native-chat-resour
 import type { MobileNativeChatVisualSource } from './mobile-native-chat-visual-read'
 
 export type MobileNativeChatController = {
+  /** Whether the saved default view and this workspace's per-tab views have been read. */
+  sessionViewReady: boolean
   /** Whether a tab's effective view is chat (per-tab override, else the default). */
   isTabChatView: (tabId: string) => boolean
   setTabView: (tabId: string, view: MobileSessionView) => void
