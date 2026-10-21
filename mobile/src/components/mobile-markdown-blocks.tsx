@@ -39,6 +39,7 @@ export type MarkdownBlockContext = MarkdownInlineContext & {
   directives: readonly NativeChatVisualDirective[]
   renderVisual?: (directive: NativeChatVisualDirective, index: number) => ReactNode
   renderImage?: (uri: string, alt: string) => ReactNode
+  renderExternalImages?: boolean
   mermaidOccurrences: Map<string, number>
 }
 
@@ -150,7 +151,8 @@ function renderBlock(
         only?.type === 'image' &&
         ctx.renderImage &&
         (imageRoute?.kind === 'file' ||
-          (imageRoute?.kind === 'none' && isRenderableImageUri(only.url)))
+          (isRenderableImageUri(only.url) &&
+            (imageRoute?.kind === 'none' || ctx.renderExternalImages)))
       ) {
         return <View key={key}>{ctx.renderImage(only.url, only.alt || 'Image')}</View>
       }

@@ -3,6 +3,20 @@ import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'rea
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { colors, onBrightColors } from '../theme/mobile-theme'
 import { MobileMarkdown } from './MobileMarkdown'
+import { MobileFileMarkdownPreview } from '../files/MobileFileMarkdownPreview'
+
+vi.mock('../files/MobileMarkdownPreviewImage', () => ({
+  MobileMarkdownPreviewImage: 'DocumentPreviewImage'
+}))
+vi.mock('lucide-react-native', () => ({
+  Code: 'Code',
+  Pencil: 'Pencil',
+  Copy: 'Copy',
+  Check: 'Check'
+}))
+vi.mock('../platform/clipboard', () => ({
+  useClipboardWriter: () => ({ writeText: async () => {} })
+}))
 
 const openURL = vi.fn((_url: string) => Promise.resolve())
 
@@ -289,4 +303,38 @@ describe('MobileMarkdown tone', () => {
     expect(styleOf(renderer!.root, 'code').fontSize).toBe(24)
     expect(styleOf(renderer!.root, 'Cell').fontSize).toBe(24)
   })
+})
+
+it('renders document images through the image renderer, including reference syntax', () => {
+  const renderImage = vi.fn((href: string, alt: string) => createElement('View', { href, alt }))
+  act(() => {
+    renderer = create(
+      createElement(MobileMarkdown, {
+        content:
+          '![Architecture](assets/diagram.png)\n\n![Reference][diagram]\n\n[diagram]: assets/other.png',
+        renderImage
+      })
+    )
+  })
+  expect(renderImage).toHaveBeenCalledWith('assets/diagram.png', 'Architecture')
+  expect(renderImage).toHaveBeenCalledWith('assets/other.png', 'Reference')
+})
+
+it('keeps external and relative images in the actual document preview', () => {
+  act(() => {
+    renderer = create(
+      createElement(MobileFileMarkdownPreview, {
+        content: '![Remote](https://example.test/chart.png)\n\n![Local](assets/chart.png)',
+        relativePath: 'docs/report.md',
+        worktreeId: 'worktree-a',
+        truncated: false,
+        byteLength: 80
+      })
+    )
+  })
+  const images = renderer!.root.findAll((node) => String(node.type) === 'DocumentPreviewImage')
+  expect(images.map((node) => node.props.href)).toEqual([
+    'https://example.test/chart.png',
+    'assets/chart.png'
+  ])
 })
