@@ -56,20 +56,20 @@ export async function readRuntimeFileContent({
   pageOversizedBinary
 }: RuntimeFileReadArgs): Promise<RuntimeReadableFileContent> {
   assertExternalSshReadOwnership(target, connectionId, expectedExternalSshTargetId)
-  if (target.kind !== 'environment' || !worktreeId) {
-    return window.api.fs.readFile({
-      filePath,
-      connectionId,
-      includeLocalLogMetadata,
-      ...localAccess(connectionId, access)
-    })
-  }
   if (terminalArtifactGrantId) {
     return readRuntimeTerminalArtifactContent({
       target,
       worktreeId,
       absolutePath: filePath,
       grantId: terminalArtifactGrantId
+    })
+  }
+  if (target.kind !== 'environment' || !worktreeId) {
+    return window.api.fs.readFile({
+      filePath,
+      connectionId,
+      includeLocalLogMetadata,
+      ...localAccess(connectionId, access)
     })
   }
   // A workspace path first; a chat's scratch file is the absolute path no workspace contains.

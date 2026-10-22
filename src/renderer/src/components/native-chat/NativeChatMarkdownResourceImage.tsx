@@ -8,7 +8,10 @@ import {
   onImageCacheInvalidated,
   releaseLocalImageSrcByKey
 } from '@/components/editor/useLocalImageSrc'
-import { resolveHostWorkspaceFile } from '@/components/terminal-pane/terminal-host-workspace-file'
+import {
+  HostFileRefusal,
+  resolveHostWorkspaceFile
+} from '@/components/terminal-pane/terminal-host-workspace-file'
 import { chatImageAccess } from '@/lib/local-file-access'
 import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { translate } from '@/i18n/i18n'
@@ -122,13 +125,18 @@ export function NativeChatMarkdownResourceImage({
         setState({
           identity,
           error:
-            error instanceof RuntimeRpcCallError &&
-            (error.code === 'method_not_found' || error.code === 'invalid_params')
+            error instanceof HostFileRefusal
               ? translate(
-                  'components.native-chat.fileLinks.imageServerUpdateRequired',
-                  'Update the Orca server to preview this chat file'
+                  'components.native-chat.fileLinks.imageFileUnavailable',
+                  'The file is not available on its session host'
                 )
-              : (readIpcErrorMessage(error) ?? String(error))
+              : error instanceof RuntimeRpcCallError &&
+                  (error.code === 'method_not_found' || error.code === 'invalid_params')
+                ? translate(
+                    'components.native-chat.fileLinks.imageServerUpdateRequired',
+                    'Update the Orca server to preview this chat file'
+                  )
+                : (readIpcErrorMessage(error) ?? String(error))
         })
       }
     })

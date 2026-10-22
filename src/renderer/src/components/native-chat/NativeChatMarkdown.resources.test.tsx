@@ -14,9 +14,10 @@ import {
 import { useNativeChatFileLinkClick } from './use-native-chat-file-link-click'
 import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
-import { useMemo } from 'react'
+import { createRef, useMemo } from 'react'
 import { setRendererUiLanguage } from '@/i18n/i18n'
 import { NativeChatImageAttachments } from './NativeChatTranscriptChrome'
+import { NativeChatUserMessageRow } from './NativeChatUserMessageRow'
 
 const mocks = vi.hoisted(() => ({ host: vi.fn(), rpc: vi.fn(), localRead: vi.fn(), open: vi.fn() }))
 vi.mock('@/runtime/host-route-call', () => ({ callHostRoute: mocks.host }))
@@ -107,11 +108,62 @@ afterEach(async () => {
 })
 
 describe('native chat sandbox resources', () => {
+  it('translates a typed host refusal instead of exposing its English reason', async () => {
+    await setRendererUiLanguage('zh')
+    mocks.host.mockResolvedValue({
+      worktree: 'wt-1',
+      relativePath: null,
+      absolutePath: path,
+      exists: false,
+      isDirectory: false
+    })
+    render(<Chat resourceOwner={owner('host-a')} />)
+    await screen.findByText('无法预览图片：会话主机无法提供此文件')
+    expect(mocks.localRead).not.toHaveBeenCalled()
+  })
+
+  it.each(['', 'Attached image'])(
+    'keeps user attachments on their existing host reader with prose %j',
+    async (markdown) => {
+      const source = owner('host-a')
+      const blocks = [
+        {
+          type: 'image-ref' as const,
+          path: '/home/host/.orca/agent-session-attachments/prompt.png',
+          alt: 'Prompt image'
+        }
+      ]
+      render(
+        <NativeChatResourceOwnerContext.Provider value={source}>
+          <NativeChatUserMessageRow
+            message={{ id: 'user-1', role: 'user', blocks, timestamp: null, source: 'transcript' }}
+            markdown={markdown}
+            prose={blocks}
+            rowRef={createRef<HTMLDivElement>()}
+            onRefolded={() => {}}
+            allowFileUriLinks
+            runtimeContext={source.runtimeContext}
+          />
+        </NativeChatResourceOwnerContext.Provider>
+      )
+      await screen.findByRole('img', { name: 'Prompt image' })
+      expect(mocks.rpc).toHaveBeenCalledWith(
+        source.runtimeContext?.target,
+        'agentSessionAttachment.read',
+        { path: blocks[0].path },
+        expect.anything()
+      )
+      expect(mocks.host).not.toHaveBeenCalled()
+      expect(mocks.localRead).not.toHaveBeenCalled()
+    }
+  )
+
   it('previews a process image-ref through its conversation grant, not an ungranted read', async () => {
     const source = owner('host-a')
     render(
       <NativeChatResourceOwnerContext.Provider value={source}>
         <NativeChatImageAttachments
+          allowHostResources
           blocks={[{ type: 'image-ref', path, alt: 'Viewed chart' }]}
           runtimeContext={source.runtimeContext}
         />

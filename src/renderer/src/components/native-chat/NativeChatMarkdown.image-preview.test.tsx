@@ -33,7 +33,8 @@ const localOwner = {
     worktreeId: 'wt-1',
     worktreePath: '/repo/worktree',
     runtimeEnvironmentId: null,
-    sourceTabId: 'tab-1'
+    sourceTabId: 'tab-1',
+    nativeChatContext: { tabId: 'tab-1', sessionId: 'session-1' }
   },
   runtimeContext: {
     target: { kind: 'local' as const },

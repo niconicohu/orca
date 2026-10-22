@@ -147,6 +147,27 @@ test('chat sandbox images render and file links open on their session owner', as
         .toBe(true)
       if (name === 'PDF') {
         await expect(orcaPage.locator('.pdfViewer canvas').first()).toBeVisible()
+      } else if (name === 'SVG') {
+        const chart = orcaPage.getByRole('img', { name: path.basename(svgPath), exact: true })
+        await expect(chart).toBeVisible()
+        await expect(chart).toHaveJSProperty('naturalWidth', 400)
+        await expect(chart).toHaveJSProperty('naturalHeight', 120)
+        await expect
+          .poll(() =>
+            chart.evaluate(async (image) => {
+              if (!(image instanceof HTMLImageElement)) {
+                throw new Error('Missing SVG image')
+              }
+              return (await (await fetch(image.currentSrc)).text()).includes('Generated chart')
+            })
+          )
+          .toBe(true)
+      } else {
+        const grid = orcaPage.getByTestId('csv-grid')
+        await expect(grid).toBeVisible()
+        await expect(grid.getByText('round', { exact: true })).toBeVisible()
+        await expect(grid.getByText('score', { exact: true })).toBeVisible()
+        await expect(grid.getByText('97.1', { exact: true })).toBeVisible()
       }
       await orcaPage.evaluate(
         ({ tabId, worktreeId }) => {

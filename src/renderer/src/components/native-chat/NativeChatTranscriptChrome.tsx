@@ -75,15 +75,17 @@ function transcriptImageReleaseKey(
 function TranscriptImagePreview({
   block,
   runtimeContext,
-  onLinkClick
+  onLinkClick,
+  allowHostResources
 }: {
   block: Extract<NativeChatBlock, { type: 'image-ref' }>
   runtimeContext: RuntimeFileOperationArgs | null | undefined
   onLinkClick?: CommentMarkdownLinkClickHandler
+  allowHostResources: boolean
 }): React.JSX.Element {
   const owner = useNativeChatResourceOwner()
   const source = block.url?.trim() || block.path
-  return owner && source && !renderableImageSource(source) ? (
+  return allowHostResources && owner && source && !renderableImageSource(source) ? (
     <NativeChatMarkdownResourceImage
       path={source}
       alt={nativeChatImageLabel(block)}
@@ -195,12 +197,15 @@ export function NativeChatImageAttachments({
   blocks,
   runtimeContext,
   enablePreview = runtimeContext !== undefined,
+  allowHostResources = false,
   onLinkClick
 }: {
   blocks: NativeChatBlock[]
   runtimeContext?: RuntimeFileOperationArgs | null
   /** Keep legacy terminal chips unchanged until that lane opts into previews. */
   enablePreview?: boolean
+  /** Transcript grants authorize assistant output, not user attachments. */
+  allowHostResources?: boolean
   onLinkClick?: CommentMarkdownLinkClickHandler
 }): React.JSX.Element | null {
   const images = blocks.filter((block) => block.type === 'image-ref')
@@ -250,6 +255,7 @@ export function NativeChatImageAttachments({
             block={image}
             runtimeContext={runtimeContext}
             onLinkClick={onLinkClick}
+            allowHostResources={allowHostResources}
           />
         )
       })}

@@ -67,6 +67,7 @@ export function NativeChatAssistantMessageRow({
       )}
     >
       <NativeChatImageAttachments
+        allowHostResources
         blocks={prose}
         runtimeContext={runtimeContext}
         enablePreview={runtimeContext !== undefined}

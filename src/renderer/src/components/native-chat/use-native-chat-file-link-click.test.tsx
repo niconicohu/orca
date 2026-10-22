@@ -44,7 +44,8 @@ vi.mock('@/store', () => ({
 const context: NativeChatFileLinkContext = {
   worktreeId: 'wt-1',
   worktreePath: '/repo',
-  runtimeEnvironmentId: null
+  runtimeEnvironmentId: null,
+  nativeChatContext: { tabId: 'tab-1', sessionId: 'session-1' }
 }
 
 function Transcript(props: {
@@ -116,6 +117,22 @@ afterEach(() => {
 })
 
 describe('tool and edit-card file activation', () => {
+  it('refuses a rendered sandbox link when its session ownership is unavailable', () => {
+    render(
+      <Transcript
+        markdown="[Report](sandbox:/mnt/data/report.csv)"
+        linkContext={{
+          worktreeId: 'wt-1',
+          worktreePath: '/repo',
+          runtimeEnvironmentId: null
+        }}
+      />
+    )
+    clickLink('Report')
+    expect(mocks.openDetectedFilePath).not.toHaveBeenCalled()
+    expect(mocks.showUnverifiable).toHaveBeenCalledWith('/mnt/data/report.csv', expect.any(Error))
+  })
+
   it.each([
     ['Mac', { metaKey: true }, 'none', 'Enter', 'tool'],
     ['Linux', { ctrlKey: true }, 'actions', ' ', 'tool'],

@@ -3,11 +3,15 @@ import type { CommentMarkdownLinkClickHandler } from '@/components/sidebar/Comme
 import type { LinkActionRequest } from '@/components/link-actions/link-action-request'
 import { openDetectedFilePath } from '@/components/terminal-pane/terminal-file-open-routing'
 import { isTerminalLinkActionActivation } from '@/components/terminal-pane/terminal-link-activation'
+import { translate } from '@/i18n/i18n'
 import { useAppStore } from '../../store'
 import { routeNativeChatHref } from '../../../../shared/native-chat-href-routing'
 import { resolveNativeChatFileLink, type NativeChatFileLinkContext } from './native-chat-file-link'
 import { nativeChatPlainLinkClickBehavior } from './native-chat-link-click-behavior'
-import { showFileLinkUnresolvedToast } from './native-chat-file-link-toasts'
+import {
+  showFileLinkUnresolvedToast,
+  showFileLinkUnverifiableToast
+} from './native-chat-file-link-toasts'
 import {
   nativeChatFileLinkActions,
   nativeChatFileOpenDeps
@@ -36,6 +40,18 @@ export function useNativeChatFileLinkClick(
         ? nativeChatPlainLinkClickBehavior(state.settings)
         : 'open'
       if (behavior === 'none') {
+        return
+      }
+      if (!context.nativeChatContext) {
+        showFileLinkUnverifiableToast(
+          route.pathText,
+          new Error(
+            translate(
+              'components.native-chat.fileLinks.imageHostUnavailable',
+              'The session host is unavailable'
+            )
+          )
+        )
         return
       }
       const target = resolveNativeChatFileLink(href, context)
