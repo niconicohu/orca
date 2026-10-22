@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { useRef } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import type { LinkActionRequest } from '@/components/link-actions/link-action-request'
 import type { NativeChatFileLinkContext } from './native-chat-file-link'
 import { useNativeChatFileLinkClick } from './use-native-chat-file-link-click'
+import { useNativeChatLinkActions } from './use-native-chat-link-actions'
 import { NativeChatToolLine } from './NativeChatToolLine'
 import { NativeChatDiffCard } from './NativeChatDiffCard'
 import { NativeChatMarkdown } from './NativeChatMarkdown'
@@ -66,6 +68,24 @@ function Transcript(props: {
       // The click path is under test; which paths get underlined is covered elsewhere.
       fileLinkExists={() => true}
     />
+  )
+}
+
+function OwnerlessTranscript({ markdown }: { markdown: string }): React.JSX.Element {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const { onLinkClick } = useNativeChatLinkActions(null, rootRef, {
+    sessionId: null,
+    isVisible: true
+  })
+  return (
+    <div ref={rootRef}>
+      <NativeChatMarkdown
+        content={markdown}
+        variant="document"
+        onLinkClick={onLinkClick}
+        allowFileUriLinks={onLinkClick !== undefined}
+      />
+    </div>
   )
 }
 
@@ -309,6 +329,39 @@ describe('tool and edit-card file activation', () => {
 })
 
 describe('useNativeChatFileLinkClick', () => {
+  it('explains an unavailable sandbox host when the entire file context is absent', () => {
+    render(<OwnerlessTranscript markdown="[Report](sandbox:/mnt/data/report.csv)" />)
+
+    clickLink('Report')
+
+    expect(mocks.showUnverifiable).toHaveBeenCalledExactlyOnceWith(
+      '/mnt/data/report.csv',
+      expect.any(Error)
+    )
+    expect(mocks.openDetectedFilePath).not.toHaveBeenCalled()
+    expect(mocks.buildFileLinkActions).not.toHaveBeenCalled()
+  })
+
+  it.each(['file:///repo/report.csv', '/repo/report.csv', 'https://example.com'])(
+    'leaves ordinary %s links alone without a file context',
+    (href) => {
+      const { container } = render(<OwnerlessTranscript markdown={`[Report](${href})`} />)
+      const anchorDefault = vi.fn((event: Event) => {
+        const prevented = event.defaultPrevented
+        event.preventDefault()
+        expect(prevented).toBe(href.startsWith('file:'))
+      })
+      container.addEventListener('click', anchorDefault)
+
+      clickLink('Report')
+
+      expect(anchorDefault).toHaveBeenCalledOnce()
+      expect(mocks.showUnverifiable).not.toHaveBeenCalled()
+      expect(mocks.openDetectedFilePath).not.toHaveBeenCalled()
+      expect(mocks.buildFileLinkActions).not.toHaveBeenCalled()
+    }
+  )
+
   it('opens whole-code bare names from the chat folder', () => {
     render(<Transcript markdown="Done. `decision-explainer.html` and `Makefile:7`." />)
 

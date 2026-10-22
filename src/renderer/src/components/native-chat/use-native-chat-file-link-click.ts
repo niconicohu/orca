@@ -26,11 +26,8 @@ export function useNativeChatFileLinkClick(
 ): CommentMarkdownLinkClickHandler | undefined {
   const openFileLink = useCallback<CommentMarkdownLinkClickHandler>(
     (event, href) => {
-      if (!context) {
-        return
-      }
       const route = routeNativeChatHref(href)
-      if (route.kind !== 'file') {
+      if (route.kind !== 'file' || (!context && route.source !== 'sandbox')) {
         return
       }
       event.preventDefault()
@@ -42,7 +39,7 @@ export function useNativeChatFileLinkClick(
       if (behavior === 'none') {
         return
       }
-      if (route.source === 'sandbox' && !context.nativeChatContext) {
+      if (route.source === 'sandbox' && !context?.nativeChatContext) {
         showFileLinkUnverifiableToast(
           route.pathText,
           new Error(
@@ -52,6 +49,9 @@ export function useNativeChatFileLinkClick(
             )
           )
         )
+        return
+      }
+      if (!context) {
         return
       }
       const target = resolveNativeChatFileLink(href, context)
@@ -79,5 +79,5 @@ export function useNativeChatFileLinkClick(
     },
     [context, request, rootRef]
   )
-  return context ? openFileLink : undefined
+  return openFileLink
 }
