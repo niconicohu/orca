@@ -1,16 +1,26 @@
-import { useEffect, useMemo, useState, type ComponentProps } from 'react'
-import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
+import { Children, isValidElement, useEffect, useMemo, useState, type ComponentProps } from 'react'
+import CommentMarkdown, {
+  type CommentMarkdownExtension,
+  type CommentMarkdownLinkClickHandler
+} from '@/components/sidebar/CommentMarkdown'
+import {
+  createDocumentCommentMarkdownComponents,
+  selectCommentMarkdownComponents
+} from '@/components/sidebar/comment-markdown-element-renderers'
+import {
+  NativeChatResourceRenderContext,
+  useNativeChatResourceMarkdownExtension
+} from './native-chat-resource-markdown'
 import { cn } from '@/lib/utils'
 import { withoutPendingNativeChatVisualDirectiveTail } from '../../../../shared/native-chat-visual-directive'
 import { NativeChatMarkdownRowKeyContext } from './native-chat-disclosure-store'
 import { useNativeChatVisualMarkdownExtension } from './native-chat-visual-markdown-extension'
 import { useNativeChatFileLinkExists } from './use-native-chat-file-link-existence'
-import './native-chat-markdown.css'
 import {
-  NativeChatResourceRenderContext,
-  useNativeChatResourceMarkdownExtension
-} from './native-chat-resource-markdown'
-import { selectCommentMarkdownComponents } from '@/components/sidebar/comment-markdown-element-renderers'
+  NativeChatMarkdownImage,
+  NativeChatMarkdownImageLinkContext
+} from './NativeChatMarkdownImage'
+import './native-chat-markdown.css'
 
 /** Existing words stay opaque when a reply first starts growing. */
 function useWordFadeArmed(fadeWords: boolean): boolean {
@@ -35,6 +45,42 @@ type NativeChatMarkdownProps = Omit<ComponentProps<typeof CommentMarkdown>, 'fil
   rowKey?: string
 }
 
+function createNativeChatImageExtension(
+  visualExtension: CommentMarkdownExtension | undefined,
+  onLinkClick: CommentMarkdownLinkClickHandler | undefined
+): CommentMarkdownExtension {
+  const Anchor = createDocumentCommentMarkdownComponents(onLinkClick).a
+  return {
+    remarkPlugins: visualExtension?.remarkPlugins ?? [],
+    sanitizeAttributes: visualExtension?.sanitizeAttributes ?? {},
+    components: {
+      ...visualExtension?.components,
+      img: ({ src, alt }) => (
+        <NativeChatMarkdownImage src={src} alt={alt} onLinkClick={onLinkClick} />
+      ),
+      a: (props) => {
+        if (
+          props.node?.children.some((child) => child.type === 'element' && child.tagName === 'img')
+        ) {
+          return Children.map(props.children, (child) =>
+            isValidElement<{ node?: { tagName: string } }>(child) &&
+            child.props.node?.tagName === 'img' ? (
+              <NativeChatMarkdownImageLinkContext.Provider value={props.href}>
+                <span data-native-chat-link-href={props.href}>{child}</span>
+              </NativeChatMarkdownImageLinkContext.Provider>
+            ) : typeof Anchor === 'function' ? (
+              <Anchor {...props}>{child}</Anchor>
+            ) : (
+              <a href={props.href}>{child}</a>
+            )
+          )
+        }
+        return typeof Anchor === 'function' ? <Anchor {...props} /> : <a {...props} />
+      }
+    }
+  }
+}
+
 export function NativeChatMarkdown({
   className,
   linkifyFilePaths = false,
@@ -43,17 +89,26 @@ export function NativeChatMarkdown({
   streaming = false,
   rowKey,
   content,
+  variant = 'compact',
+  onLinkClick,
   ...props
 }: NativeChatMarkdownProps): React.JSX.Element {
   const wordFadeArmed = useWordFadeArmed(fadeWords)
   const visualExtension = useNativeChatVisualMarkdownExtension(visualMessageId)
-  const extension = useNativeChatResourceMarkdownExtension(visualExtension)
-  const { variant = 'compact', expandImages = false, onLinkClick, renderCodeBlock } = props
+  const imageExtension = useMemo(
+    () =>
+      variant === 'document'
+        ? createNativeChatImageExtension(visualExtension, onLinkClick)
+        : visualExtension,
+    [onLinkClick, variant, visualExtension]
+  )
+  const extension = useNativeChatResourceMarkdownExtension(imageExtension)
+  const { expandImages = false, renderCodeBlock } = props
   const resourceRenderContext = useMemo(
     () => ({
       onLinkClick,
       Image:
-        visualExtension?.components.img ??
+        imageExtension?.components.img ??
         selectCommentMarkdownComponents({
           variant,
           expandImages,
@@ -61,7 +116,7 @@ export function NativeChatMarkdown({
           renderCodeBlock
         }).img
     }),
-    [visualExtension, variant, expandImages, onLinkClick, renderCodeBlock]
+    [imageExtension, variant, expandImages, onLinkClick, renderCodeBlock]
   )
   const fileLinkExists = useNativeChatFileLinkExists(linkifyFilePaths, streaming)
   return (
@@ -69,6 +124,8 @@ export function NativeChatMarkdown({
       <NativeChatResourceRenderContext.Provider value={resourceRenderContext}>
         <CommentMarkdown
           {...props}
+          variant={variant}
+          onLinkClick={onLinkClick}
           content={
             visualExtension && streaming
               ? withoutPendingNativeChatVisualDirectiveTail(content)

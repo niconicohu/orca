@@ -130,6 +130,29 @@ describe('native chat sandbox resources', () => {
     )
     expect(mocks.localRead).not.toHaveBeenCalled()
   })
+  it('keeps a granted image and the direct web-image preview in the same message', async () => {
+    const source = owner('host-a')
+    render(
+      <Chat
+        resourceOwner={source}
+        content={`![Chart](sandbox:${path})\n\n![Web chart](https://example.com/chart.png)`}
+      />
+    )
+    expect((await screen.findByRole('img', { name: 'Chart' })).getAttribute('src')).toBe(
+      'blob:host-image'
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'View image: Web chart' }))
+    const dialog = screen.getByRole('dialog', { name: 'Web chart' })
+    expect(dialog.querySelector('img')?.getAttribute('src')).toBe('https://example.com/chart.png')
+    expect(mocks.host).toHaveBeenCalledWith(
+      { target: source.runtimeContext?.target, at: 'local' },
+      'files.resolveTerminalPath',
+      expect.objectContaining({ pathText: path, nativeChatContext: source.nativeChatContext }),
+      expect.anything()
+    )
+    expect(mocks.localRead).not.toHaveBeenCalled()
+  })
+
   it('shows localized host errors in a Chinese conversation', async () => {
     await setRendererUiLanguage('zh')
     render(<NativeChatMarkdown content="![Chart](sandbox:/mnt/data/chart.png)" />)
