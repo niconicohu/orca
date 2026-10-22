@@ -9,7 +9,7 @@ import { MobileNativeChatAttachmentContext } from './mobile-native-chat-attachme
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import type { RpcResponse } from '../transport/types'
 import { styles } from './mobile-native-chat-message-styles'
-import { mobileNativeChatRowId } from './MobileNativeChatScrollHold'
+import { mobileNativeChatRowId } from './mobile-native-chat-reading-place'
 
 vi.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: 'View',

@@ -7,6 +7,7 @@ import { useMobileNativeChatPromptPresentation } from './use-mobile-native-chat-
 export function useMobileNativeChatPromptCards({
   terminal,
   structured,
+  structuredAnswer,
   onSendResolved
 }: {
   terminal: Parameters<typeof useMobileNativeChatPromptPresentation>[0] &
@@ -15,6 +16,7 @@ export function useMobileNativeChatPromptCards({
     ReturnType<typeof useMobileStructuredAgentSession>,
     'permission' | 'question' | 'respondPermission' | 'respondQuestion' | 'cancelPrompt' | 'turnId'
   > | null
+  structuredAnswer?: MobileNativeChatController['handleNativeChatAnswerAsk'] | null
   onSendResolved: () => void
 }): Pick<
   MobileNativeChatController,
@@ -29,7 +31,10 @@ export function useMobileNativeChatPromptCards({
   | 'handleNativeChatAnswerAsk'
   | 'handleNativeChatCancelAsk'
 > {
-  const answerAsk = useNativeChatAcceptedAction(terminal.handleNativeChatAnswerAsk, onSendResolved)
+  const answerAsk = useNativeChatAcceptedAction(
+    structuredAnswer ?? terminal.handleNativeChatAnswerAsk,
+    onSendResolved
+  )
   const cancelAsk = useNativeChatAcceptedAction(terminal.handleNativeChatCancelAsk, onSendResolved)
   const respond = useNativeChatAcceptedAction(
     structured?.respondPermission ?? terminal.respondPermission,

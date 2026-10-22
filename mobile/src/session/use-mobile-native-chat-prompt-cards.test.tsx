@@ -54,3 +54,48 @@ it.each([true, false])(
     expect(visibleFailure).toBe(accepted ? null : 'Previous send failed')
   }
 )
+
+it.each([true, false])(
+  'routes an async answer and clears only an accepted failure: %s',
+  async (accepted) => {
+    const bridgeAnswer = vi.fn(async () => false)
+    const structuredAnswer = vi.fn(async () => accepted)
+    const prompt = {
+      questions: [{ question: 'Choose?', options: [{ label: 'Yes' }], multiSelect: false }]
+    }
+    const answers = [{ indices: [0] }]
+    let cards: ReturnType<typeof useMobileNativeChatPromptCards> | undefined
+    let visibleFailure: string | null = null
+    function Harness(): null {
+      const [failure, setFailure] = useState<string | null>('Previous send failed')
+      visibleFailure = failure
+      cards = useMobileNativeChatPromptCards({
+        terminal: {
+          permission: null,
+          question: null,
+          waitStartedAt: null,
+          scopeKey: 'async-question',
+          sessionKey: 'session',
+          observing: true,
+          respondPermission: async () => false,
+          answerQuestion: async () => false,
+          handleNativeChatAnswerAsk: bridgeAnswer,
+          handleNativeChatCancelAsk: async () => false
+        },
+        structured: null,
+        structuredAnswer,
+        onSendResolved: () => setFailure(null)
+      })
+      return null
+    }
+    act(() => {
+      renderer = create(createElement(Harness))
+    })
+    await act(async () => {
+      expect(await cards?.handleNativeChatAnswerAsk(prompt, answers)).toBe(accepted)
+    })
+    expect(structuredAnswer).toHaveBeenCalledExactlyOnceWith(prompt, answers)
+    expect(bridgeAnswer).not.toHaveBeenCalled()
+    expect(visibleFailure).toBe(accepted ? null : 'Previous send failed')
+  }
+)
