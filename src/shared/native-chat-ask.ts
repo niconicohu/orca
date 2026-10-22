@@ -14,10 +14,7 @@ export type { AskOption, AskPrompt, AskQuestion, InteractiveQuestionParser }
 
 const QUESTION_TOOL_PARSERS = new Map<string, InteractiveQuestionParser>()
 
-/** Stable cross-platform identity for one canonical question prompt. */
-export function nativeChatAskDismissKey(prompt: AskPrompt | null): string | null {
-  return prompt ? `question:${JSON.stringify(prompt.questions)}` : null
-}
+export { nativeChatAskDismissKey } from './native-chat-ask-dismiss-key'
 
 export function registerQuestionTool(toolName: string, parser: InteractiveQuestionParser): void {
   QUESTION_TOOL_PARSERS.set(toolName, parser)

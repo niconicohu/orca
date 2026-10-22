@@ -1,9 +1,8 @@
 import { useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
 import { BrowserPageZoomIndicator } from './assemble-chrome/browser-page-zoom-indicator'
 import { useAppStore } from '@/store'
-import type { BrowserLoadError, BrowserPage } from '../../../../shared/browser-workspace-types'
+import type { BrowserLoadError } from '../../../../shared/browser-workspace-types'
 import { toHttpsRecoveryUrl } from '../../../../shared/browser-url'
-import type { RuntimeBrowserClientPlacement } from '../../../../shared/runtime-browser-placement'
 import {
   readBrowserClientPageGuestMetadataIfLive,
   createBrowserClientPageLoadFailureHandler
@@ -47,11 +46,7 @@ import {
   getOpenableExternalUrl,
   toDisplayUrl
 } from './describe-page/browser-page-url-display'
-import type {
-  BrowserChromeShortcutScope,
-  BrowserPageUrlSetter,
-  BrowserTabPageState
-} from './describe-page/browser-page-types'
+import type { ClientHostedBrowserPagePaneProps } from './describe-page/browser-page-types'
 
 export function ClientHostedBrowserPagePane({
   browserTab,
@@ -63,18 +58,7 @@ export function ClientHostedBrowserPagePane({
   chromeShortcutScope,
   onUpdatePageState,
   onSetUrl
-}: {
-  browserTab: BrowserPage
-  workspaceId: string
-  runtimeEnvironmentId: string
-  worktreeId: string
-  /** Null while the tab is still an optimistic stage: the host mints the placement, not this client. */
-  placement: RuntimeBrowserClientPlacement | null
-  isActive: boolean
-  chromeShortcutScope: BrowserChromeShortcutScope
-  onUpdatePageState: (tabId: string, updates: BrowserTabPageState) => void
-  onSetUrl: BrowserPageUrlSetter
-}): React.JSX.Element {
+}: ClientHostedBrowserPagePaneProps): React.JSX.Element {
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const webviewRef = useRef<Electron.WebviewTag | null>(null)
   const addressBarInputRef = useRef<HTMLInputElement | null>(null)
@@ -143,10 +127,7 @@ export function ClientHostedBrowserPagePane({
   // Why: the tour points at controls that cannot work yet, and recording the interaction is a
   // one-way write that would burn the tour on a pane the user has not really seen.
   useClientHostedBrowserIntroTour(isActive && !attachmentError && placement !== null)
-  useBrowserPageFindShortcuts({
-    ...shortcutOwner,
-    setFindOpen
-  })
+  useBrowserPageFindShortcuts({ ...shortcutOwner, setFindOpen })
   useBrowserPageWebviewShortcuts({
     ...shortcutOwner,
     isActiveRef,
@@ -238,9 +219,7 @@ export function ClientHostedBrowserPagePane({
       const activeLoadFailure = activeLoadFailureRef.current
       // URL writes clear certificate challenges, so preserve them while a failure stands.
       if (!activeLoadFailure) {
-        setUrlFromGuest(browserTab.id, metadata.url, {
-          preserveLoadError: true
-        })
+        setUrlFromGuest(browserTab.id, metadata.url, { preserveLoadError: true })
       }
       updatePageStateFromGuest(browserTab.id, {
         title: metadata.title,
@@ -316,6 +295,9 @@ export function ClientHostedBrowserPagePane({
   // Why: the failure is about the URL that failed, not whatever page is still loaded — feeding
   // browserTab.url here named the previous page and offered it an HTTPS retry it never needed.
   const failedNavigationUrl = browserTab.loadError?.validatedUrl ?? toDisplayUrl(browserTab.url)
+  const browserZoomIndicatorState = getBrowserPageZoomIndicatorState({
+    feedbackVisible: zoom.browserZoomFeedbackVisible
+  })
 
   const markup = useClientHostedBrowserMarkup({
     webviewRef,
@@ -386,9 +368,7 @@ export function ClientHostedBrowserPagePane({
       <div ref={viewportRef} className="relative min-h-0 flex-1 overflow-hidden bg-background">
         {markup.overlay}
         <BrowserPageZoomIndicator
-          state={getBrowserPageZoomIndicatorState({
-            feedbackVisible: zoom.browserZoomFeedbackVisible
-          })}
+          state={browserZoomIndicatorState}
           percent={zoom.browserZoomPercent}
         />
         <BrowserFind
