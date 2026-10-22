@@ -42,7 +42,7 @@ export function useNativeChatFileLinkClick(
       if (behavior === 'none') {
         return
       }
-      if (!context.nativeChatContext) {
+      if (route.source === 'sandbox' && !context.nativeChatContext) {
         showFileLinkUnverifiableToast(
           route.pathText,
           new Error(

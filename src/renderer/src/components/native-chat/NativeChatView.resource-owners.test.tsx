@@ -87,7 +87,8 @@ describe('native chat resource and image owners', () => {
           sourceTabId: 'chat-tab'
         },
         runtimeContext: owner,
-        isVisible: true
+        isVisible: true,
+        sessionId: 'session-1'
       }
     })
     view.unmount()

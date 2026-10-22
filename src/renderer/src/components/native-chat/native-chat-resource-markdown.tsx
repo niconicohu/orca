@@ -19,7 +19,7 @@ function rewriteSandboxReferences(node: Nodes): void {
   ) {
     const route = routeNativeChatHref(node.url)
     if (route.kind === 'file') {
-      node.url = createNativeChatFileHref(route.pathText, 'literal')
+      node.url = createNativeChatFileHref(route.pathText, 'sandbox')
     }
   }
   if ('children' in node) {

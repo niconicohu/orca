@@ -8,7 +8,8 @@ describe('routeNativeChatHref', () => {
       kind: 'file',
       pathText,
       line: null,
-      pathKind: 'literal'
+      pathKind: 'literal',
+      source: 'sandbox'
     })
   })
 
@@ -27,7 +28,8 @@ describe('routeNativeChatHref', () => {
       kind: 'file',
       pathText: '/mnt/data/plot #1?%20:12.png',
       line: null,
-      pathKind: 'literal'
+      pathKind: 'literal',
+      source: 'sandbox'
     })
   })
 

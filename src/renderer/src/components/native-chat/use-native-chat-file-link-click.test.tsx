@@ -7,6 +7,7 @@ import type { NativeChatFileLinkContext } from './native-chat-file-link'
 import { useNativeChatFileLinkClick } from './use-native-chat-file-link-click'
 import { NativeChatToolLine } from './NativeChatToolLine'
 import { NativeChatDiffCard } from './NativeChatDiffCard'
+import { NativeChatMarkdown } from './NativeChatMarkdown'
 
 const mocks = vi.hoisted(() => {
   const noSettings: Record<string, unknown> = {}
@@ -52,10 +53,12 @@ function Transcript(props: {
   markdown: string
   linkContext?: NativeChatFileLinkContext
   request?: (request: LinkActionRequest) => void
+  resources?: boolean
 }): React.JSX.Element {
   const onLinkClick = useNativeChatFileLinkClick(props.linkContext ?? context, props.request)
+  const Markdown = props.resources ? NativeChatMarkdown : CommentMarkdown
   return (
-    <CommentMarkdown
+    <Markdown
       content={props.markdown}
       variant="document"
       onLinkClick={onLinkClick}
@@ -117,9 +120,34 @@ afterEach(() => {
 })
 
 describe('tool and edit-card file activation', () => {
+  it.each(['file:///repo/report.csv', '/repo/report.csv'])(
+    'keeps ordinary %s links working while the session is not reported',
+    (href) => {
+      render(
+        <Transcript
+          markdown={`[Report](${href})`}
+          linkContext={{
+            worktreeId: 'wt-1',
+            worktreePath: '/repo',
+            runtimeEnvironmentId: null
+          }}
+        />
+      )
+      clickLink('Report')
+      expect(mocks.openDetectedFilePath).toHaveBeenCalledWith(
+        '/repo/report.csv',
+        null,
+        null,
+        expect.anything()
+      )
+      expect(mocks.showUnverifiable).not.toHaveBeenCalled()
+    }
+  )
+
   it('refuses a rendered sandbox link when its session ownership is unavailable', () => {
     render(
       <Transcript
+        resources
         markdown="[Report](sandbox:/mnt/data/report.csv)"
         linkContext={{
           worktreeId: 'wt-1',
