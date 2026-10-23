@@ -15,9 +15,10 @@ import remend from 'remend'
 import { normalizeMobileMarkdownPreviewHtml } from './mobile-markdown-preview-html'
 import { endLinkifyUrlsAtProsePunctuation } from './markdown-linkify-prose-boundary'
 
-// CommonMark with GitHub's tables, strikethrough, autolinks and footnotes: the rules desktop's
-// renderer follows, read by a parser fast enough for the phone's JavaScript engine.
-const markdown = new MarkdownIt({ html: true, linkify: true }).use(cjkFriendly).use(footnote)
+// CommonMark with GitHub's tables, strikethrough, autolinks, footnotes and CJK-friendly
+// emphasis: the rules desktop's renderer follows, read by a parser fast enough for the phone's
+// JavaScript engine.
+const markdown = new MarkdownIt({ html: true, linkify: true }).use(footnote).use(cjkFriendly)
 // Every href parses as a link, file: included; routeMarkdownHref decides what a tap opens.
 markdown.validateLink = () => true
 endLinkifyUrlsAtProsePunctuation(markdown.linkify)

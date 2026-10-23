@@ -178,6 +178,9 @@
         "pending": "Checks pending"
       },
       "runningElsewhere": "{{count}} running in other workspaces"
+    },
+    "managedProfile": {
+      "createFailed": "Couldn't create this workspace's browser profile. Close this tab and open a new one to try again."
     }
   },
   "editor": {
@@ -405,6 +408,20 @@
           "notifications": "notifications",
           "clipboard": "clipboard"
         }
+      },
+      "profileScope": {
+        "optionShared": "Shared",
+        "optionSharedTooltip": "New tabs use the Default profile (or the one picked under Session & Cookies).",
+        "optionRepo": "Per repo",
+        "optionRepoTooltip": "Each repo's workspaces share one profile, created on first use.",
+        "optionWorktree": "Per workspace",
+        "optionWorktreeTooltip": "Each workspace gets its own profile, deleted with the workspace.",
+        "title": "Profile for new tabs",
+        "description": "Share one Default profile everywhere, or give each repo or workspace its own cookies and storage, so local dev servers stop sharing logins.",
+        "keywordRepo": "repo",
+        "keywordIsolate": "isolate",
+        "repoProfileLabel": "Repo: {{name}}",
+        "worktreeProfileLabel": "Workspace: {{name}}"
       }
     },
     "agents": {
@@ -6101,7 +6118,9 @@
           "automationCreated": "Created by automation",
           "branchIdentity": "Branch",
           "branchFolderPathIdentity": "Branch or folder path",
-          "ef18787206": "Queued for deletion"
+          "ef18787206": "Queued for deletion",
+          "showChildWorktrees": "Show children worktrees",
+          "hideChildWorktrees": "Hide children worktrees"
         },
         "WorktreeCardAgents": {
           "1b0a156717": "Agents"
@@ -9626,7 +9645,7 @@
             "7e2a4b8c1d": "overseas",
             "cursor": {
               "title": "Cursor Usage",
-              "description": "Monthly plan usage read from the Cursor sign-in already on this computer (cursor-agent login).",
+              "description": "Plan usage read from the Cursor sign-in already on this computer (cursor-agent login).",
               "kw": {
                 "cursor": "cursor",
                 "usage": "usage",
@@ -9917,7 +9936,7 @@
             },
             "cursor": {
               "title": "Cursor Usage",
-              "description": "Show monthly Cursor plan usage from the Cursor sign-in on this computer.",
+              "description": "Show Cursor plan usage from the Cursor sign-in on this computer.",
               "kw": {
                 "cursor": "cursor"
               }
@@ -12786,7 +12805,7 @@
             "desktop": "Cursor IDE"
           },
           "title": "Cursor",
-          "subtitle": "Shows your monthly Cursor plan usage from the sign-in already on this computer. Orca only reads it — it never changes your Cursor login.",
+          "subtitle": "Shows your Cursor plan usage from the sign-in already on this computer. Orca only reads it — it never changes your Cursor login.",
           "dashboardLink": "Cursor dashboard",
           "loading": "Loading…",
           "signedIn": "Signed in",
@@ -12796,7 +12815,7 @@
           "signedOut": "No Cursor sign-in found on this computer",
           "signedOutHelp": "Sign in with Cursor IDE, or run cursor-agent login in a terminal, then click Refresh usage here.",
           "refreshUsage": "Refresh usage",
-          "usageTitle": "Monthly plan usage",
+          "usageTitle": "Plan usage",
           "usageDescription": "Cursor bills two pools that reset with your billing cycle, plus on-demand spend once they run out.",
           "planTotal": "Plan",
           "resets": "Resets {{when}}",
@@ -16704,7 +16723,13 @@
               "notice": "This file changed on disk since this section loaded."
             },
             "notUtf8": {
-              "notice": "Autosave is paused for {{name}} because it isn't UTF-8 text. Save it yourself to convert it to UTF-8."
+              "notice": "Autosave is paused for {{name}} because it isn't UTF-8 text. Saving it yourself rewrites it as UTF-8 and replaces any characters that aren't valid UTF-8.",
+              "refused": "This file isn't UTF-8 text, so it wasn't saved.",
+              "confirm": {
+                "title": "Save {{name}} as UTF-8?",
+                "description": "This file isn't UTF-8 text. Saving it as UTF-8 replaces any characters that aren't valid UTF-8 with �, and the original bytes can't be recovered.",
+                "action": "Save as UTF-8"
+              }
             }
           }
         },
@@ -18718,6 +18743,14 @@
     }
   },
   "components": {
+    "WorkspaceEmptyState": {
+      "title": "What would you like to do?",
+      "description": "No tabs are open here. Start an agent or open a tool to get going.",
+      "startAgent": "Start an agent",
+      "terminal": "Open a terminal",
+      "browser": "Open a browser",
+      "openFile": "Open a file"
+    },
     "onboarding": {
       "flow": {
         "stepTooltip": {

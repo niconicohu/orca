@@ -9241,7 +9241,7 @@
             "5d8f1a3b7c": "중국",
             "7e2a4b8c1d": "해외",
             "cursor": {
-              "description": "이 컴퓨터에 이미 있는 Cursor 로그인(cursor-agent login)에서 읽은 월간 플랜 사용량입니다.",
+              "description": "이 컴퓨터에 이미 있는 Cursor 로그인(cursor-agent login)에서 읽은 플랜 사용량입니다.",
               "kw": {
                 "cursor": "cursor",
                 "rateLimit": "속도 제한",
@@ -9527,7 +9527,7 @@
               "background": "배경"
             },
             "cursor": {
-              "description": "이 컴퓨터의 Cursor 로그인에서 월간 Cursor 플랜 사용량을 표시합니다.",
+              "description": "이 컴퓨터의 Cursor 로그인에서 Cursor 플랜 사용량을 표시합니다.",
               "kw": {
                 "cursor": "cursor"
               },
@@ -12467,11 +12467,11 @@
             "keychain": "macOS 키체인(cursor-agent)"
           },
           "staleUsage": "마지막으로 확인된 사용량 — 최신 새로고침이 실패했습니다: {{reason}}",
-          "subtitle": "이 컴퓨터에 이미 있는 로그인에서 Cursor 월간 플랜 사용량을 보여줍니다. Orca는 읽기만 하며 Cursor 로그인을 변경하지 않습니다.",
+          "subtitle": "이 컴퓨터에 이미 있는 로그인에서 Cursor 플랜 사용량을 보여줍니다. Orca는 읽기만 하며 Cursor 로그인을 변경하지 않습니다.",
           "title": "Cursor",
           "usageDescription": "Cursor는 요금 주기에 따라 초기화되는 두 가지 풀과, 소진 후에 발생하는 주문형 지출로 과금합니다.",
           "usageLabel": "사용량",
-          "usageTitle": "월간 플랜 사용량"
+          "usageTitle": "플랜 사용량"
         },
         "NotificationHostToggles": {
           "offCount": "{{count}}대 꺼짐",
@@ -16380,7 +16380,13 @@
               "notice": "이 섹션을 불러온 이후 디스크의 파일이 변경되었습니다."
             },
             "notUtf8": {
-              "notice": "{{name}}이(가) UTF-8 텍스트가 아니므로 자동 저장이 일시 중지되었습니다. UTF-8로 변환하려면 직접 저장하세요."
+              "notice": "{{name}}은(는) UTF-8 텍스트가 아니어서 자동 저장이 일시 중지되었습니다. 직접 저장하면 UTF-8로 다시 쓰이며 유효한 UTF-8이 아닌 문자는 대체됩니다.",
+              "refused": "이 파일은 UTF-8 텍스트가 아니어서 저장되지 않았습니다.",
+              "confirm": {
+                "title": "{{name}}을(를) UTF-8로 저장할까요?",
+                "description": "이 파일은 UTF-8 텍스트가 아닙니다. UTF-8로 저장하면 유효한 UTF-8이 아닌 문자가 �로 대체되며 원래 바이트는 복구할 수 없습니다.",
+                "action": "UTF-8로 저장"
+              }
             }
           }
         },

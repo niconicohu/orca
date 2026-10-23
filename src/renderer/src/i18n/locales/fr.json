@@ -9424,7 +9424,7 @@
             "5d8f1a3b7c": "Chine",
             "7e2a4b8c1d": "outre-mer",
             "cursor": {
-              "description": "Utilisation mensuelle du forfait lue depuis la connexion Cursor déjà présente sur cet ordinateur (cursor-agent login).",
+              "description": "Utilisation du forfait lue depuis la connexion Cursor déjà présente sur cet ordinateur (cursor-agent login).",
               "kw": {
                 "cursor": "cursor",
                 "rateLimit": "limite de débit",
@@ -9710,7 +9710,7 @@
               "background": "arrière-plan"
             },
             "cursor": {
-              "description": "Afficher l'utilisation mensuelle du forfait Cursor à partir de la connexion Cursor sur cet ordinateur.",
+              "description": "Afficher l'utilisation du forfait Cursor à partir de la connexion Cursor sur cet ordinateur.",
               "kw": {
                 "cursor": "cursor"
               },
@@ -12593,11 +12593,11 @@
             "keychain": "Trousseau macOS (cursor-agent)"
           },
           "staleUsage": "Dernière utilisation connue — la dernière actualisation a échoué : {{reason}}",
-          "subtitle": "Affiche l'utilisation mensuelle de votre forfait Cursor à partir de la connexion déjà présente sur cet ordinateur. Orca se contente de la lire — il ne modifie jamais votre connexion Cursor.",
+          "subtitle": "Affiche l'utilisation de votre forfait Cursor à partir de la connexion déjà présente sur cet ordinateur. Orca se contente de la lire — il ne modifie jamais votre connexion Cursor.",
           "title": "Cursor",
           "usageDescription": "Cursor facture deux enveloppes qui se réinitialisent avec votre cycle de facturation, plus des dépenses à la demande une fois épuisées.",
           "usageLabel": "Utilisation",
-          "usageTitle": "Utilisation mensuelle du forfait"
+          "usageTitle": "Utilisation du forfait"
         },
         "NotificationHostToggles": {
           "offCount": "{{count}} désactivées",
@@ -16481,7 +16481,13 @@
         "editor": {
           "save": {
             "notUtf8": {
-              "notice": "L’enregistrement automatique est suspendu pour {{name}} car ce n’est pas du texte UTF-8. Enregistrez-le vous-même pour le convertir en UTF-8."
+              "notice": "L’enregistrement automatique est suspendu pour {{name}}, car ce n’est pas du texte UTF-8. L’enregistrer vous-même le réécrit en UTF-8 et remplace les caractères qui ne sont pas de l’UTF-8 valide.",
+              "refused": "Ce fichier n’est pas du texte UTF-8, il n’a donc pas été enregistré.",
+              "confirm": {
+                "title": "Enregistrer {{name}} en UTF-8 ?",
+                "description": "Ce fichier n’est pas du texte UTF-8. L’enregistrer en UTF-8 remplace par � les caractères qui ne sont pas de l’UTF-8 valide, et les octets d’origine ne pourront pas être récupérés.",
+                "action": "Enregistrer en UTF-8"
+              }
             },
             "failure": {
               "notice": {
