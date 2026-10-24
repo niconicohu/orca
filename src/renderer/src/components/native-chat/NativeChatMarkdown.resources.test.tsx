@@ -310,7 +310,7 @@ describe('native chat sandbox resources', () => {
       path,
       null,
       null,
-      expect.objectContaining({ runtimeEnvironmentId: 'host-a' })
+      expect.objectContaining({ runtimeEnvironmentId: 'host-a', allowClientLocalFallback: false })
     )
     expect(mocks.localRead).not.toHaveBeenCalled()
   })

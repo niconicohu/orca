@@ -91,7 +91,8 @@ export async function resolveHostWorkspaceFile(
   context: RuntimeFileOperationArgs,
   absolutePath: string,
   terminalHandle?: string | null,
-  nativeChatContext?: RuntimeNativeChatFileContext
+  nativeChatContext?: RuntimeNativeChatFileContext,
+  allowClientLocalFallback = false
 ): Promise<HostWorkspaceFile | HostGrantedFile | ClientLocalFile | null> {
   const environmentId = runtimeTargetEnvironmentId(context.target)
   if (
@@ -132,8 +133,8 @@ export async function resolveHostWorkspaceFile(
       // Why: an ungranted host path (a directory, or one no terminal printed) is still the host's.
       throw refusal
     }
-    // A chat's file belongs to its session host even when that host cannot find it.
-    if (nativeChatContext) {
+    // Sandbox references and transcript images never fall back to a same-named client file.
+    if (nativeChatContext && !allowClientLocalFallback) {
       throw new HostFileRefusal(`File unavailable on its session host: ${absolutePath}`)
     }
     return statClientLocalFile(environmentId ?? '', absolutePath, refusal)

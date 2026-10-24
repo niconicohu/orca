@@ -51,6 +51,7 @@ export function nativeChatFileOpenDeps(
     runtimeEnvironmentId: context.runtimeEnvironmentId,
     sourceTabId: context.sourceTabId,
     nativeChatContext: context.nativeChatContext,
+    allowClientLocalFallback: target.source !== 'sandbox',
     onOpenFailure: (failure) => showFileLinkOpenFailureToast(target.absolutePath, failure)
   }
 }

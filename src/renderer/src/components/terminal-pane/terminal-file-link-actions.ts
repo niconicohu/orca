@@ -25,6 +25,7 @@ import type { RuntimeNativeChatFileContext } from '../../../../shared/runtime-ty
 
 export type TerminalFileLinkActionDeps = {
   nativeChatContext?: RuntimeNativeChatFileContext
+  allowClientLocalFallback?: boolean
   worktreeId: string
   worktreePath: string
   runtimeEnvironmentId?: string | null

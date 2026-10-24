@@ -54,6 +54,7 @@ export type FileOpenFailure = {
 
 type TerminalFileOpenDeps = {
   nativeChatContext?: RuntimeNativeChatFileContext
+  allowClientLocalFallback?: boolean
   worktreeId: string
   worktreePath: string
   runtimeEnvironmentId?: string | null
@@ -153,7 +154,8 @@ export function openDetectedFilePath(
         fileContext,
         mappedFilePath,
         deps.terminalHandle,
-        deps.nativeChatContext
+        deps.nativeChatContext,
+        deps.allowClientLocalFallback
       )
       if (linkOwner?.kind === 'grant') {
         hostGrantId = linkOwner.grantId

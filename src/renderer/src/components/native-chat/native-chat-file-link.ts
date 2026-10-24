@@ -23,6 +23,7 @@ export type NativeChatResolvedFileLink = {
   absolutePath: string
   line: number | null
   column: number | null
+  source?: 'sandbox'
 }
 
 export type NativeChatFileLinkState = Pick<
@@ -146,7 +147,14 @@ export function resolveNativeChatFileLink(
   }
   if (route.pathKind === 'literal') {
     const absolutePath = resolveExplicitFileLinkTargetPath(route.pathText, context.worktreePath)
-    return absolutePath ? { absolutePath, line: null, column: null } : null
+    return absolutePath
+      ? {
+          absolutePath,
+          line: null,
+          column: null,
+          ...(route.source ? { source: route.source } : {})
+        }
+      : null
   }
   return resolvePathText(route.pathText, route.line, context)
 }

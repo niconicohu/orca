@@ -210,10 +210,10 @@ export function NativeChatMarkdownResourceImage({
               )
             : translate('components.native-chat.fileLinks.imageLoading', 'Loading image…')}{' '}
           <a
-            href={createNativeChatFileHref(path, 'literal')}
+            href={createNativeChatFileHref(path, 'sandbox')}
             onClick={(event) => {
               event.preventDefault()
-              onLinkClick?.(event, createNativeChatFileHref(path, 'literal'))
+              onLinkClick?.(event, createNativeChatFileHref(path, 'sandbox'))
             }}
             className="text-primary underline underline-offset-2"
           >
