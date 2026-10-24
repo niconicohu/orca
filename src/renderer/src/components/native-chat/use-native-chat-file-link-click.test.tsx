@@ -388,7 +388,11 @@ describe('useNativeChatFileLinkClick', () => {
       '/repo/docs/deck.md',
       null,
       null,
-      expect.objectContaining({ worktreeId: 'wt-1', onOpenFailure: expect.any(Function) })
+      expect.objectContaining({
+        worktreeId: 'wt-1',
+        nativeChatContext: context.nativeChatContext,
+        onOpenFailure: expect.any(Function)
+      })
     )
     failLastOpen('missing')
     expect(mocks.showNotFound).toHaveBeenCalledWith('/repo/docs/deck.md')
