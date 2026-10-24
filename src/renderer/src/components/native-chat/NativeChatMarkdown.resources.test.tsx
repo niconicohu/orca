@@ -182,17 +182,18 @@ describe('native chat sandbox resources', () => {
     )
     expect(mocks.localRead).not.toHaveBeenCalled()
   })
-  it('keeps a granted image and the direct web-image preview in the same message', async () => {
+  it('keeps unknown tags as text alongside granted and direct web images', async () => {
     const source = owner('host-a')
     render(
       <Chat
         resourceOwner={source}
-        content={`![Chart](sandbox:${path})\n\n![Web chart](https://example.com/chart.png)`}
+        content={`<explanation>Chart result</explanation>\n\n![Chart](sandbox:${path})\n\n![Web chart](https://example.com/chart.png)`}
       />
     )
     expect((await screen.findByRole('img', { name: 'Chart' })).getAttribute('src')).toBe(
       'blob:host-image'
     )
+    expect(screen.getByText('<explanation>Chart result</explanation>')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'View image: Web chart' }))
     const dialog = screen.getByRole('dialog', { name: 'Web chart' })
     expect(dialog.querySelector('img')?.getAttribute('src')).toBe('https://example.com/chart.png')
