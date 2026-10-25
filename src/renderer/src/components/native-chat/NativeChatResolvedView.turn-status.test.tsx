@@ -141,6 +141,28 @@ afterEach(() => {
 })
 
 describe('NativeChatResolvedView turn status', () => {
+  it('keeps ownerless file URIs as text while retaining sandbox routing', () => {
+    retained.session = transcript('ready', false, [
+      userTurn,
+      {
+        id: 'answer-file-links',
+        role: 'assistant',
+        blocks: [
+          {
+            type: 'text',
+            text: '[local file](file:///repo/a.ts) and [sandbox file](sandbox:/mnt/data/a.ts)'
+          }
+        ],
+        timestamp: 2,
+        source: 'transcript'
+      }
+    ])
+    renderPane()
+
+    expect(screen.queryByRole('link', { name: 'local file' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'sandbox file' })).toBeInTheDocument()
+  })
+
   it('counts the working turn from the host-stamped epoch, with the live line at the tail', () => {
     retained.session = transcript('working', false)
     setStatus({ state: 'working' }, 75_000)

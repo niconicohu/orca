@@ -81,7 +81,7 @@ export function NativeChatAssistantMessageRow({
           renderCodeBlock={isSystem ? NativeChatPlainCodeBlock : NativeChatCodeBlock}
           onLinkClick={onLinkClick}
           allowFileUriLinks={allowFileUriLinks}
-          linkifyFilePaths={onLinkClick !== undefined}
+          linkifyFilePaths={allowFileUriLinks}
           {...(isSystem ? {} : NATIVE_CHAT_QUOTE_SOURCE_PROPS)}
           visualMessageId={message.role === 'assistant' ? message.id : undefined}
           // Only the live turn’s prose frontier can be mid-sentence; structured rows have no per-row streaming flag.

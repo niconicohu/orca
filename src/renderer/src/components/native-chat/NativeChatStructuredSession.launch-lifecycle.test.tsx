@@ -193,6 +193,23 @@ describe('NativeChatStructuredSession launch lifecycle', () => {
     expect(mocks.retryLaunch).toHaveBeenCalledWith('wt-1', 'session-1')
   })
 
+  it('keeps ordinary file links disabled until the session has an owner', () => {
+    mocks.fileLinkContext = null
+    render(
+      <NativeChatStructuredSession
+        isVisible
+        isFocusedGroup
+        tabId="structured-tab-1"
+        sessionId="session-1"
+        target={{ kind: 'local' }}
+        agent="codex"
+      />
+    )
+
+    expect(mocks.messageListProps?.onLinkClick).toBeDefined()
+    expect(mocks.messageListProps?.allowFileUriLinks).toBe(false)
+  })
+
   it('keys a floating chat launch by its owner even before any path context exists', () => {
     mocks.ownerWorktreeId = FLOATING_TERMINAL_WORKTREE_ID
     mocks.fileLinkContext = null

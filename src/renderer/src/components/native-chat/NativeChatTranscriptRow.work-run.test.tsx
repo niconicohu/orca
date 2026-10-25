@@ -2,6 +2,11 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { MessageRow } from './NativeChatMessageRow'
+import {
+  NativeChatFileLinkExistenceContext,
+  type NativeChatFileLinkExistence
+} from './native-chat-file-link-existence'
 import type { NativeChatMessage } from '../../../../shared/native-chat-types'
 import {
   NativeChatTranscriptRow,
@@ -96,3 +101,41 @@ describe('a transcript row turning into a work run', () => {
     expect(onScrollMessageToTop).toHaveBeenCalledTimes(1)
   })
 })
+
+const fileLinkSnapshot = { check: () => true, peek: () => true }
+const fileLinkExistence: NativeChatFileLinkExistence = {
+  watch: () => ({ subscribe: () => () => {}, getSnapshot: () => fileLinkSnapshot }),
+  recheck: () => {}
+}
+
+it.each([false, true])(
+  'uses file ownership, not the sandbox handler, to link plain paths: %s',
+  (owned) => {
+    render(
+      <NativeChatFileLinkExistenceContext.Provider value={fileLinkExistence}>
+        <MessageRow
+          message={{
+            id: 'file-answer',
+            role: 'assistant',
+            blocks: [
+              {
+                type: 'text',
+                text: 'Edited src/app.ts and [local file](file:///repo/a.ts); see [sandbox file](sandbox:/mnt/data/a.ts).'
+              }
+            ],
+            timestamp: 1,
+            source: 'transcript'
+          }}
+          expandSignal={false}
+          onScrollMessageToTop={() => {}}
+          onLinkClick={vi.fn()}
+          allowFileUriLinks={owned}
+        />
+      </NativeChatFileLinkExistenceContext.Provider>
+    )
+
+    expect(screen.queryByRole('link', { name: 'src/app.ts' }) !== null).toBe(owned)
+    expect(screen.queryByRole('link', { name: 'local file' }) !== null).toBe(owned)
+    expect(screen.getByRole('link', { name: 'sandbox file' })).toBeInTheDocument()
+  }
+)

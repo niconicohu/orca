@@ -10,7 +10,13 @@ import {
 } from './terminal-link-handlers-test-harness'
 
 const doubles = createTerminalLinkTestDoubles()
-const { storeState, statMock, openFileMock, runtimeEnvironmentCallMock } = doubles
+const {
+  storeState,
+  statMock,
+  openFileMock,
+  runtimeEnvironmentCallMock,
+  runtimeEnvironmentTransportCallMock
+} = doubles
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => storeState } }))
 vi.mock('@/lib/worktree-activation', () => ({
@@ -79,6 +85,77 @@ describe('post-session chat links to a file the paired host disowns', () => {
       )
       expect(openFileMock).toHaveBeenCalledWith(
         expect.objectContaining({ filePath: path, runtimeEnvironmentId: null, readOnly: true }),
+        { forceContentReload: true }
+      )
+    }
+  })
+})
+
+describe('local session links without an environment selector', () => {
+  it.each([
+    [path, false, false],
+    [`file://${path}`, false, false],
+    [path, false, true],
+    [`file://${path}`, false, true],
+    [`sandbox:${path}`, true, false],
+    [createNativeChatFileHref(path, 'sandbox'), true, false]
+  ] as const)('%s preserves host-only=%s and missing=%s', async (href, hostOnly, missing) => {
+    const localContext = { ...context, runtimeEnvironmentId: null }
+    const localCall = vi.fn().mockResolvedValue({
+      id: 'local-rpc-1',
+      ok: true,
+      result: {
+        worktree: 'wt-feat',
+        relativePath: null,
+        absolutePath: path,
+        exists: false,
+        isDirectory: false
+      }
+    })
+    vi.stubGlobal('window', { ...window, api: { ...window.api, runtime: { call: localCall } } })
+    if (missing) {
+      statMock.mockRejectedValueOnce(new Error('ENOENT: no such file or directory'))
+    }
+    const target = resolveNativeChatFileLink(href, localContext)
+    if (!target) {
+      throw new Error('Expected a rendered file link target')
+    }
+    const onOpenFailure = vi.fn()
+    openDetectedFilePath(target.absolutePath, target.line, target.column, {
+      ...nativeChatFileOpenDeps(target, localContext),
+      onOpenFailure
+    })
+    await flushDoubleRaf()
+
+    expect(localCall).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        method: 'files.resolveTerminalPath',
+        params: expect.objectContaining({ nativeChatContext: context.nativeChatContext })
+      })
+    )
+    expect(runtimeEnvironmentTransportCallMock).not.toHaveBeenCalled()
+    if (hostOnly) {
+      expect(statMock).not.toHaveBeenCalled()
+      expect(openFileMock).not.toHaveBeenCalled()
+      expect(onOpenFailure).toHaveBeenCalledWith(
+        expect.objectContaining({ verdict: 'unverifiable' })
+      )
+    } else if (missing) {
+      expect(statMock).toHaveBeenCalledOnce()
+      expect(openFileMock).not.toHaveBeenCalled()
+      expect(onOpenFailure).toHaveBeenCalledWith(expect.objectContaining({ verdict: 'missing' }))
+    } else {
+      expect(onOpenFailure).not.toHaveBeenCalled()
+      expect(statMock).toHaveBeenCalledWith(
+        expect.objectContaining({ filePath: path, access: { kind: 'user-file' } })
+      )
+      expect(openFileMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filePath: path,
+          runtimeEnvironmentId: null,
+          worktreeId: 'wt-feat',
+          mode: 'edit'
+        }),
         { forceContentReload: true }
       )
     }

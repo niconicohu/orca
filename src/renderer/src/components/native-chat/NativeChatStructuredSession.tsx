@@ -163,7 +163,7 @@ export function NativeChatStructuredSession(
     rootRef,
     { sessionId: props.sessionId, isVisible: props.isVisible }
   )
-  const fileLinkProps = { onLinkClick, allowFileUriLinks: onLinkClick !== undefined }
+  const fileLinkProps = { onLinkClick, allowFileUriLinks: fileLinkContext !== null }
   const paneCommands = useStructuredNativeChatPaneCommands({
     tabId: props.tabId,
     ownerWorktreeId,

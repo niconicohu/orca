@@ -369,7 +369,7 @@ export function NativeChatResolvedView({
             {...turnTiming}
             awaitingInput={awaitingInput}
             onLinkClick={onLinkClick}
-            allowFileUriLinks={onLinkClick !== undefined}
+            allowFileUriLinks={fileLinkContext !== null}
             deliveryNotices={deliveryNotices}
           />
         )}

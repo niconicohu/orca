@@ -132,7 +132,10 @@ export async function resolveHostWorkspaceFile(
     if (nativeChatContext && !allowClientLocalFallback) {
       throw new HostFileRefusal(`File unavailable on its session host: ${absolutePath}`)
     }
-    return statClientLocalFile(environmentId ?? '', absolutePath, refusal)
+    if (!environmentId) {
+      return null
+    }
+    return statClientLocalFile(environmentId, absolutePath, refusal)
   }
   if (!resolved.exists) {
     throw new HostFileRefusal(`File not found on its host: ${absolutePath}`)
