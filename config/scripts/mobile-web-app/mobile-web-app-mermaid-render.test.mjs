@@ -225,10 +225,10 @@ function normaliseSvg(html, id) {
 
 function flowchartLabelColors() {
   return Array.from(document.querySelectorAll('svg .node')).flatMap((node) => {
-    const shape = node.querySelector('.label-container')
-    return shape
+    const nodeBoundary = node.querySelector('.label-container')
+    return nodeBoundary
       ? Array.from(node.querySelectorAll('text, .nodeLabel')).map((text) => [
-          getComputedStyle(shape).fill,
+          getComputedStyle(nodeBoundary).fill,
           text.localName === 'text' || text.localName === 'tspan'
             ? getComputedStyle(text).fill
             : getComputedStyle(text).color

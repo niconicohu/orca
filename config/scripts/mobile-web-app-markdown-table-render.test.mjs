@@ -6,8 +6,11 @@ import * as esbuild from 'esbuild'
 import { PNG } from 'pngjs'
 import { chromium, webkit } from 'playwright-core'
 import { mobileWebAppBuildOptions } from './build-mobile-web-app-bundle.mjs'
-import { mobileWebAppDependenciesPresent } from './mobile-web-app-bundle-dependencies.mjs'
-import { createBundleServer, readShellCsp } from './mobile-web-app-render-harness.mjs'
+import { mobileWebAppDependenciesPresent } from './mobile-web-app/mobile-web-app-bundle-dependencies.mjs'
+import {
+  createBundleServer,
+  readShellCsp
+} from './mobile-web-app/preview/mobile-web-app-render-harness.mjs'
 
 const mobileDir = fileURLToPath(new URL('../../mobile', import.meta.url))
 const ENTRY = `

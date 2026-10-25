@@ -1,7 +1,7 @@
 import { getMobileColorScheme, type MobileColorScheme } from './mobile-theme'
 
 /** Keep existing named styles, with stable native style objects for each palette. */
-export function createThemedStyles<T extends object>(create: () => T): T {
+export function createThemedStyles<T extends Record<PropertyKey, unknown>>(create: () => T): T {
   const variants = new Map<MobileColorScheme, T>()
   const read = (): T => {
     const scheme = getMobileColorScheme()
@@ -15,7 +15,7 @@ export function createThemedStyles<T extends object>(create: () => T): T {
   return new Proxy(
     { ...read() },
     {
-      get: (_, key) => Reflect.get(read(), key)
+      get: (_, key) => read()[key]
     }
   )
 }

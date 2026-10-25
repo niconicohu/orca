@@ -52,11 +52,13 @@ export function readableMermaidFlowchartSvg(
     )
     for (let index = 0; index < nodes.length; index++) {
       const node = nodes[index]
-      const shape = node.querySelector('.label-container, rect, polygon, circle, ellipse, path')
-      if (!shape) {
+      const nodeBoundary = node.querySelector(
+        '.label-container, rect, polygon, circle, ellipse, path'
+      )
+      if (!nodeBoundary) {
         continue
       }
-      const style = getComputedStyle(shape)
+      const style = getComputedStyle(nodeBoundary)
       const fill = luminance(style.fill)
       if (
         fill === null ||
