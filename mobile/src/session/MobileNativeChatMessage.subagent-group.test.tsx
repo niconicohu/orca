@@ -114,7 +114,6 @@ describe('mobile transcript roster row', () => {
 
   const markdown = (tree: ReactTestRenderer): unknown[] =>
     tree.root.findAll((node) => String(node.type) === 'MobileMarkdown').map((n) => n.props.content)
-  // A system row's own words draw as a faint aside, never as the agent's prose.
   const aside = (tree: ReactTestRenderer): string[] =>
     tree.root.findAll((node) => String(node.type) === 'Text').map(textOf)
   const group = (tree: ReactTestRenderer): ReactTestInstance[] =>

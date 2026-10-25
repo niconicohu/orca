@@ -18,10 +18,7 @@ type Props = {
   /** Multiplier for every text size. Defaults to 1; the chat view passes >1 so its prose reads
    *  larger than the compact base. */
   textScale?: number
-  /** When provided, detected file paths and file-target hrefs render as tappable
-   *  and invoke this with the path text (worktree-relative or absolute, with an
-   *  optional :line(:col) suffix). Omitted on screens with no file viewer, where
-   *  paths render as plain text (no behavior change). */
+  // File targets call this with relative/absolute path and optional :line(:col); omit on screens without viewer to leave paths plain.
   onOpenFile?: (pathText: string) => void
   /** Native-chat assistant prose only: renders `::orca-visual{...}` directive lines. Without it,
    *  a directive line is ordinary text. Must be referentially stable (this component is memoized). */
