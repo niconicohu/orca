@@ -1,5 +1,4 @@
-// Orca mobile design tokens — matches desktop graphite/dark palette.
-// All screen files should import from here instead of using inline hex values.
+// Share desktop graphite tokens across mobile screens instead of introducing inline colors.
 
 import { darkColors } from './mobile-dark-colors'
 export { darkColors } from './mobile-dark-colors'
@@ -73,8 +72,7 @@ export function applyMobileColorScheme(next: MobileColorScheme): void {
   }
 }
 
-/** On your own message's fill (`colors.textPrimary`), where the dark palette's light text would
- *  vanish; its body text is `colors.bgBase`. */
+// Use dark copy on your own message’s bright fill.
 export const onBrightColors = {
   secondary: '#4a4a4a',
   link: '#1e40af',
@@ -96,7 +94,6 @@ export const radii = {
   input: 6,
   camera: 8,
   composer: 24,
-  // Attachment thumbnails and file cards inside the composer.
   composerItem: 12
 } as const
 

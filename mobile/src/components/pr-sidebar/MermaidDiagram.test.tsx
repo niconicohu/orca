@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -28,7 +29,7 @@ function pendingDiagram() {
 }
 
 let renderer: ReactTestRenderer | undefined
-const hosts: { innerHTML: string; replaceChildren: () => void }[] = []
+const hosts: HTMLElement[] = []
 function mount(sources: string[]) {
   const children = sources.map((source, index) =>
     createElement(MermaidDiagram, { key: index, source, base: 15 })
@@ -40,12 +41,7 @@ function mount(sources: string[]) {
       createElement(MobileTranscriptLayoutContext.Provider, { value: register }, ...children),
       {
         createNodeMock: () => {
-          const host = {
-            innerHTML: '',
-            replaceChildren() {
-              this.innerHTML = ''
-            }
-          }
+          const host = document.createElement('div')
           hosts.push(host)
           return host
         }

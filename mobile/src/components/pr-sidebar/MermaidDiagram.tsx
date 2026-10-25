@@ -27,9 +27,9 @@ function MermaidDiagramRender({ source, base }: MermaidDiagramProps) {
   const id = `orca-mermaid-${suffix}`
 
   useEffect(() => {
-    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: react-native-web renders View as a div and forwards the ref to it; this module only ever runs in that build.
-    const host = hostRef.current as unknown as HTMLElement | null
-    if (!host) {
+    // react-native-web renders View as a div and forwards the ref to it.
+    const host = hostRef.current
+    if (!(host instanceof HTMLElement)) {
       return
     }
     let disposed = false
