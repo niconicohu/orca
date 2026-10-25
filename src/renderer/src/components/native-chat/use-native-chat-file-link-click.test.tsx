@@ -65,7 +65,6 @@ function Transcript(props: {
       variant="document"
       onLinkClick={onLinkClick}
       allowFileUriLinks
-      // The click path is under test; which paths get underlined is covered elsewhere.
       fileLinkExists={() => true}
     />
   )

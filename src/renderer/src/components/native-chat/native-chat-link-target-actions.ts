@@ -24,7 +24,6 @@ import {
 import { openNativeChatWebLink } from './native-chat-web-link-actions'
 import { showFileLinkOpenFailureToast } from '@/lib/file-link-open-failure-toast'
 
-/** Who owns a chat http(s) link and where it may open: the rows its popover and menu offer. */
 export function resolveNativeChatHttpLinkRouting(
   state: AppState,
   worktreeId: string
@@ -56,7 +55,6 @@ export function nativeChatFileOpenDeps(
   }
 }
 
-/** The rows a chat file link offers, on click and on right-click alike. */
 export function nativeChatFileLinkActions(
   target: NativeChatResolvedFileLink,
   context: NativeChatFileLinkContext
@@ -70,7 +68,6 @@ export function nativeChatFileLinkActions(
   )
 }
 
-/** The rows a right-clicked chat link offers: its click popover's, or null when it opens nothing. */
 export function nativeChatLinkActions(
   href: string,
   context: NativeChatFileLinkContext | null
