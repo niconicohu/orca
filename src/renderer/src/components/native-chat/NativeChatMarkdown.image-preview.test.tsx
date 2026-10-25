@@ -257,7 +257,8 @@ describe('native chat Markdown image preview', () => {
         worktreeId: 'wt-1',
         forceInApp: openLinksInApp,
         forceSystemBrowser: !openLinksInApp,
-        sourceOwner: { kind: 'local' }
+        sourceOwner: { kind: 'local' },
+        linkContext: { linkIntent: null, isCurrentRequest: expect.any(Function) }
       })
     }
   )
