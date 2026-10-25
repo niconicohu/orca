@@ -71,7 +71,6 @@ src/source-control/use-mobile-hosted-review-eligibility.test.ts
 src/tasks/source-workspace-create.test.ts
 src/tasks/task-source-search-reply-schema.test.ts
 src/terminal/buffered-terminal-draft-restoration.test.ts
-src/terminal/mobile-terminal-query-reply.test.ts
 src/terminal/terminal-caret-rendering-oracle.test.ts
 src/terminal/terminal-live-accessory-raw-send.test.ts
 src/terminal/terminal-live-text-commit.test.ts
@@ -107,9 +106,3 @@ src/transport/rpc-operation.test.ts
 src/transport/rpc-session-liveness-watchdog.test.ts
 src/transport/runtime-capability-probe.test.ts
 src/transport/settings-host-client-lifecycle.test.ts
-src/worktree/agent-row-display.test.ts
-src/worktree/agent-row-lineage.test.ts
-src/worktree/host-worktree-refresh.test.ts
-src/worktree/worktree-host-row-identity.test.ts
-src/worktree/worktree-list-completeness.test.ts
-src/worktree/worktree-list-snapshot.test.ts
