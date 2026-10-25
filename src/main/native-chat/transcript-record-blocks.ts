@@ -1,7 +1,3 @@
-// Centralized record→block mapping for native-chat transcripts. Kept separate
-// from the reader so the Claude and Codex per-record decoders share one place
-// to evolve as CLI transcript schemas drift (plan KTD risk: schema drift).
-
 import type {
   NativeChatBlock,
   NativeChatImageRefBlock,
@@ -10,7 +6,6 @@ import type {
 import { isAgentSessionAttachmentStorePath } from '../../shared/agent-session-attachments'
 import { asRecord, extractString } from '../ai-vault/session-scanner-values'
 
-/** Coerce an arbitrary tool-result payload into a single output string. */
 export function toolResultOutput(value: unknown): string {
   if (typeof value === 'string') {
     return value
@@ -40,7 +35,6 @@ export function toolResultOutput(value: unknown): string {
   return parts.join('\n')
 }
 
-/** Build the blocks for one Claude content array (string or block[]). */
 export function claudeContentBlocks(content: unknown): NativeChatBlock[] {
   if (typeof content === 'string') {
     const text = content.trim()
@@ -76,7 +70,7 @@ function claudeContentBlock(record: Record<string, unknown>): NativeChatBlock | 
       return text ? { type: 'text', text } : null
     }
     case 'thinking': {
-      // Reasoning surfaces as a text block; the message role marks it as reasoning.
+      // Reasoning uses text blocks; message role carries its classification.
       const text = extractString(record.thinking) ?? extractString(record.text)
       return text ? { type: 'text', text } : null
     }
