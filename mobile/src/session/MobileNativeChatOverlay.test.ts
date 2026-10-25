@@ -8,6 +8,8 @@ import type { RpcClient } from '../transport/rpc-client'
 import { MobileNativeChatAttachmentContext } from './mobile-native-chat-attachment-read'
 import { MobileNativeChatResourceContext } from './mobile-native-chat-resource-read'
 import { MobileNativeChatItemSourceContext } from './mobile-native-chat-item-read'
+import type { MobileImageSource } from '../platform/media-picker-contract'
+import { findAllByHostType, findByHostType } from '../test-support/react-test-renderer-host-nodes'
 
 vi.mock('react-native', () => ({
   StyleSheet: { create: (styles: unknown) => styles, absoluteFillObject: {} },
@@ -55,7 +57,7 @@ type Tick = {
   structured?: boolean
   activeTabId?: string | null
   setTabView?: (tabId: string, view: 'terminal') => void
-  attachImage?: (source: 'library' | 'camera') => Promise<void>
+  attachImage?: (source: MobileImageSource) => Promise<void>
 }
 
 function overlayElement(tick: Tick): ReturnType<typeof createElement> {
@@ -185,7 +187,7 @@ describe('MobileNativeChatOverlay streaming gate', () => {
       resourceSource: resource,
       itemSource: source
     })
-    const view = () => renderer!.root.find((node) => node.type === 'ChatView')
+    const view = () => findByHostType(renderer!.root, 'ChatView')
     expect(view().props.attachmentClient).toBe(client)
     expect(view().props.resourceSource).toBe(resource)
     expect(view().props.askRequiresTerminal).toBe(true)
@@ -207,7 +209,7 @@ describe('MobileNativeChatOverlay streaming gate', () => {
 
   /** The bubble text handed to the chat list, or `'hidden'` when chat is off. */
   function streaming(): string | null | 'hidden' {
-    const views = renderer!.root.findAll((node) => node.type === 'ChatView')
+    const views = findAllByHostType(renderer!.root, 'ChatView')
     return views.length === 0 ? 'hidden' : (views[0].props.streaming as string | null)
   }
 
@@ -315,7 +317,7 @@ describe("MobileNativeChatOverlay while a person's Stop ends the turn", () => {
     await act(async () => {
       renderer = create(overlayElement(tick))
     })
-    const view = renderer!.root.find((node) => node.type === 'ChatView')
+    const view = findByHostType(renderer!.root, 'ChatView')
     // The tray's second child is the queued box; the first is the child-work strip.
     return view.props.composerTray?.content?.props?.children?.[1]?.props?.steerHeld
   }
@@ -342,7 +344,7 @@ describe('MobileNativeChatOverlay attach button', () => {
     await act(async () => {
       renderer = create(overlayElement({ agent: 'omp', activeTabId: 'tab-omp', setTabView }))
     })
-    const view = renderer!.root.find((node) => node.type === 'ChatView')
+    const view = findByHostType(renderer!.root, 'ChatView')
     expect(view.props.askRequiresTerminal).toBe(true)
     act(() => view.props.onAnswerInTerminal())
     expect(setTabView).toHaveBeenCalledExactlyOnceWith('tab-omp', 'terminal')
@@ -360,7 +362,7 @@ describe('MobileNativeChatOverlay attach button', () => {
           })
         )
       })
-      const view = renderer!.root.find((node) => node.type === 'ChatView')
+      const view = findByHostType(renderer!.root, 'ChatView')
       expect(view.props.askRequiresTerminal).toBe(scenario === 'missing tab')
       if (scenario === 'missing tab') {
         expect(view.props.onAnswerInTerminal).toBeUndefined()
@@ -373,7 +375,7 @@ describe('MobileNativeChatOverlay attach button', () => {
     await act(async () => {
       renderer = create(overlayElement({ acceptsImages: accepts, attachImage }))
     })
-    const view = renderer!.root.find((node) => node.type === 'ChatView')
+    const view = findByHostType(renderer!.root, 'ChatView')
     expect(typeof view.props.onAttachImage === 'function').toBe(accepts)
     if (accepts) {
       await act(async () => view.props.onAttachImage())

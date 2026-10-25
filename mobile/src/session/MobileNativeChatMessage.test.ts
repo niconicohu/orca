@@ -1,7 +1,7 @@
 vi.mock('../layout/side-safe-area', () => ({
   useWindowSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 })
 }))
-import { createElement } from 'react'
+import { createElement, type ReactNode } from 'react'
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AgentJournalStatusItem } from '../../../src/shared/agent-session-journal-types'
@@ -24,7 +24,7 @@ import { styles } from './mobile-native-chat-message-styles'
 
 vi.mock('react-native', async () => {
   const React = await import('react')
-  const Text = ({ children, ...props }: { children?: unknown }): unknown =>
+  const Text = ({ children, ...props }: { children?: ReactNode }): unknown =>
     React.createElement('Text', props, children)
   return {
     ActivityIndicator: 'ActivityIndicator',
@@ -40,10 +40,10 @@ vi.mock('react-native', async () => {
     Image: 'Image',
     Platform: { OS: 'ios' },
     Pressable: 'Pressable',
-    ScrollView: ({ children, ...props }: { children?: unknown }) =>
+    ScrollView: ({ children, ...props }: { children?: ReactNode }) =>
       React.createElement('ScrollView', props, children),
     Text,
-    View: ({ children, ...props }: { children?: unknown }) =>
+    View: ({ children, ...props }: { children?: ReactNode }) =>
       React.createElement('View', props, children),
     StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 },
     useWindowDimensions: () => ({ width: 400, height: 800 })
@@ -81,6 +81,7 @@ vi.mock('./MobileNativeChatMessageActionsSheet', () => ({
 }))
 
 import { MobileNativeChatMessage } from './MobileNativeChatMessage'
+import { findAllByHostType, findByHostType } from '../test-support/react-test-renderer-host-nodes'
 
 function userMessage(blocks: NativeChatMessage['blocks']): NativeChatMessage {
   return { id: 'u1', role: 'user', blocks, timestamp: null, source: 'transcript' }
@@ -132,7 +133,7 @@ describe('MobileNativeChatMessage', () => {
       .findAll((child) => String(child.type) === 'MobileMarkdown')
       .map((markdown) => markdown.props.content)
   const textIn = (node: ReactTestInstance): string[] =>
-    node.findAllByType('Text' as never).map((text) => String(text.children.join('')))
+    findAllByHostType(node, 'Text').map((text) => String(text.children.join('')))
 
   it('renders the shared clear boundary as one muted divider with prior history retained', () => {
     const message = projectStructuredItemToNativeChat({
@@ -378,7 +379,7 @@ describe('MobileNativeChatMessage', () => {
     }
   })
 
-  it.each([
+  it.each<readonly [string, NativeChatMessage, string]>([
     [
       'an API retry as a warning',
       statusRow({
@@ -464,6 +465,7 @@ describe('MobileNativeChatMessage', () => {
           id: 'notice',
           role,
           timestamp: 1,
+          source: 'transcript',
           blocks: [
             { type: 'text', text: 'provider fallback', presentation: 'history-item-too-large' }
           ]
@@ -552,7 +554,7 @@ describe('MobileNativeChatMessage', () => {
 
   it('renders a loadable preview URI as an image thumbnail', () => {
     const tree = render(userMessage([{ type: 'image-ref', url: 'file:///a.jpg', alt: 'a photo' }]))
-    const image = tree.root.findByType('Image' as never)
+    const image = findByHostType(tree.root, 'Image')
     expect(image.props.source).toEqual({ uri: 'file:///a.jpg' })
     expect(image.props.accessibilityLabel).toBe('a photo')
     expect(
@@ -604,7 +606,7 @@ describe('MobileNativeChatMessage', () => {
     const tree = render(
       userMessage([{ type: 'image-ref', url: 'file:///local.jpg', path: '/tmp/host.png' }])
     )
-    expect(tree.root.findByType('Image' as never).props.source).toEqual({
+    expect(findByHostType(tree.root, 'Image').props.source).toEqual({
       uri: 'file:///local.jpg'
     })
   })
@@ -612,16 +614,14 @@ describe('MobileNativeChatMessage', () => {
   it('falls back to a text placeholder for a bare host path', () => {
     // A host temp path (e.g. on an SSH host) is not loadable on the device.
     const tree = render(userMessage([{ type: 'image-ref', path: '/tmp/host.png' }]))
-    expect(tree.root.findAllByType('Image' as never)).toHaveLength(0)
-    const texts = tree.root
-      .findAllByType('Text' as never)
-      .map((node) => String(node.children.join('')))
+    expect(findAllByHostType(tree.root, 'Image')).toHaveLength(0)
+    const texts = findAllByHostType(tree.root, 'Text').map((node) => String(node.children.join('')))
     expect(texts.some((text) => text.includes('/tmp/host.png'))).toBe(true)
   })
 
   it('draws your message as selectable Markdown in the bubble’s dark-on-light colours', () => {
     const tree = render(userMessage([{ type: 'text', text: '**Fix** `src/a.ts`' }]))
-    const markdown = tree.root.findByType('MobileMarkdown' as never)
+    const markdown = findByHostType(tree.root, 'MobileMarkdown')
     expect(markdown.props).toMatchObject({
       content: '**Fix** `src/a.ts`',
       tone: 'onBright',
@@ -632,7 +632,7 @@ describe('MobileNativeChatMessage', () => {
 
   it('routes assistant prose through selectable Markdown', () => {
     const tree = render(toolMessage([{ type: 'text', text: 'Agent reply prose' }]))
-    const markdown = tree.root.findByType('MobileMarkdown' as never)
+    const markdown = findByHostType(tree.root, 'MobileMarkdown')
     expect(markdown.props.content).toBe('Agent reply prose')
     expect(markdown.props.rangeSelectable).toBe(true)
   })
@@ -657,7 +657,7 @@ describe('MobileNativeChatMessage', () => {
         activeTurnIsWorking: true
       })
       expect(textIn(tree.root)).toEqual(expect.arrayContaining(['Running 1 command', 'npm test']))
-      expect(tree.root.findAllByType('SquareTerminal' as never)).toHaveLength(1)
+      expect(findAllByHostType(tree.root, 'SquareTerminal')).toHaveLength(1)
       // A finished call, and a Codex diff that carries no state, keep the same header.
       act(() =>
         tree.update(
