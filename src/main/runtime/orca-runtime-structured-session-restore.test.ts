@@ -259,6 +259,7 @@ describe('structured session cold restoration', () => {
     internal.hydrateHeadlessMobileSessionTabsFromWorkspaceSession = () => new Set()
     internal.refreshMobileSessionPtyRecords = async () => new Set()
     internal.ensureStructuredAgentSessionHost = async () => undefined
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: this restoration stub supplies the projection and lifecycle members exercised below.
     setStructuredAgentSessionHost({
       deps: { store: { getRecord: () => null }, agents: { capabilities: () => undefined } },
       reconcileRestartLeases: async () => undefined,
@@ -374,6 +375,7 @@ describe('structured session cold restoration', () => {
     internal.hydrateHeadlessMobileSessionTabsFromWorkspaceSession = () => new Set()
     internal.refreshMobileSessionPtyRecords = async () => new Set()
     internal.ensureStructuredAgentSessionHost = async () => undefined
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: this restoration stub supplies the projection and lifecycle members exercised below.
     setStructuredAgentSessionHost({
       deps: { store: { getRecord: () => null }, agents: { capabilities: () => undefined } },
       reconcileRestartLeases: async () => undefined,
