@@ -109,9 +109,7 @@ export function structuredSessionSlashCommands(
   const offered = new Set(hostOwned.map(({ name }) => name))
   return [
     ...hostOwned,
-    ...sessionSlashCommandSuggestions(agent, reported).filter(
-      ({ name }) => !offered.has(name) && (name !== 'btw' || sideChat)
-    )
+    ...sessionSlashCommandSuggestions(agent, reported).filter(({ name }) => !offered.has(name))
   ]
 }
 
@@ -129,13 +127,15 @@ function structuredRecognizedCommands(agent: AgentType): readonly SlashCommandSu
  *  would be silently dropped, whereas a pass-through command is a real send. */
 export function isStructuredAgentSessionComposerCommand(
   text: string,
-  agent: AgentType = 'codex'
+  agent: AgentType = 'codex',
+  sideChat = false
 ): boolean {
   const command = commandParts(text)
   return Boolean(
     command &&
-    (command.name === 'btw' ||
-      structuredRecognizedCommands(agent).some((entry) => entry.name === command.name))
+    (command.name === 'btw'
+      ? sideChat
+      : structuredRecognizedCommands(agent).some((entry) => entry.name === command.name))
   )
 }
 
@@ -191,11 +191,7 @@ export async function dispatchStructuredAgentSessionComposerCommand(
   const command = commandParts(text)
   if (command?.name === 'btw') {
     if (!controller.openSideChat) {
-      return {
-        handled: true,
-        accepted: false,
-        error: 'Side chats are not supported by this chat host.'
-      }
+      return { handled: false, accepted: false, error: null }
     }
     const accepted = await controller.openSideChat(command.argument)
     return { handled: true, accepted, error: accepted ? null : 'Could not open a side chat.' }

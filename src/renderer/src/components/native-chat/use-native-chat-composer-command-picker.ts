@@ -28,6 +28,7 @@ export function useNativeChatComposerCommandPicker(
     ...pickerArgs,
     ...editor,
     agentCommands,
+    sideChat: structuredTransport?.openSideChat !== undefined,
     sessionSkills,
     ...(structuredTransport?.refreshCommands
       ? { onPickerOpened: structuredTransport.refreshCommands }

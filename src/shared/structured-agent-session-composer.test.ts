@@ -77,7 +77,7 @@ describe('structuredSlashCommands', () => {
 })
 
 describe('side chat commands', () => {
-  it.each(['codex', 'claude', 'opencode', 'pi'])(
+  it.each(['codex', 'claude', 'opencode', 'pi'] as const)(
     'uses declared support rather than %s agent names',
     async (agent) => {
       const openSideChat = vi.fn(async () => true)
@@ -112,9 +112,18 @@ describe('side chat commands', () => {
       await dispatchStructuredAgentSessionComposerCommand('/btw', { ...controller, openSideChat })
       expect(openSideChat).toHaveBeenLastCalledWith('')
       expect(openSideChat).toHaveBeenCalledTimes(2)
+      expect(isStructuredAgentSessionComposerCommand('/btw question', agent)).toBe(false)
+      expect(isStructuredAgentSessionComposerCommand('/btw question', agent, true)).toBe(true)
+      expect(
+        structuredSessionSlashCommands(
+          agent,
+          [],
+          [{ name: 'btw', kind: 'command', description: 'Native side question' }]
+        ).filter(({ name }) => name === 'btw')
+      ).toEqual([{ name: 'btw', description: 'Native side question' }])
       expect(
         await dispatchStructuredAgentSessionComposerCommand('/btw question', controller)
-      ).toMatchObject({ handled: true, accepted: false })
+      ).toEqual({ handled: false, accepted: false, error: null })
     }
   )
 })

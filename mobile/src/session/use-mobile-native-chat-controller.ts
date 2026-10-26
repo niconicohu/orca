@@ -203,6 +203,7 @@ export function useMobileNativeChatController(
   })
 
   const structuredNativeChatSend = useMobileStructuredNativeChatSendBridge({
+    sideChat: args.openSideChat !== undefined,
     agent: activeChatResolution?.agent,
     sendStructured: structuredNativeChat.sendWithOutcome,
     captureSendOrigin,

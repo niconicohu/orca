@@ -7,6 +7,7 @@ import type { StructuredMobileSendAttachment } from './use-mobile-structured-sen
 
 export function useMobileStructuredNativeChatSendBridge(args: {
   agent: StructuredAgentId | undefined
+  sideChat?: boolean
   sendStructured: (
     text: string,
     images?: string[],
@@ -28,6 +29,7 @@ export function useMobileStructuredNativeChatSendBridge(args: {
 } {
   const {
     agent,
+    sideChat = false,
     captureSendOrigin,
     clearDraftForSend,
     onSendError,
@@ -46,7 +48,7 @@ export function useMobileStructuredNativeChatSendBridge(args: {
         onSendError('Message not sent (disconnected)')
         return 'rejected'
       }
-      const isHostCommand = isStructuredAgentSessionComposerCommand(text, agent)
+      const isHostCommand = isStructuredAgentSessionComposerCommand(text, agent, sideChat)
       clearDraftForSend(origin, text)
       const outcome =
         attachments !== undefined
@@ -62,7 +64,15 @@ export function useMobileStructuredNativeChatSendBridge(args: {
       }
       return outcome
     },
-    [agent, captureSendOrigin, clearDraftForSend, onSendError, restoreRejectedDraft, sendStructured]
+    [
+      agent,
+      sideChat,
+      captureSendOrigin,
+      clearDraftForSend,
+      onSendError,
+      restoreRejectedDraft,
+      sendStructured
+    ]
   )
   const send = useCallback(
     async (
