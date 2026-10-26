@@ -97,6 +97,7 @@ export function useMobileStructuredAgentSession(
     agent,
     client,
     sessionId,
+    sessionKey,
     enabled,
     fence: state.fence,
     mutate,
@@ -149,12 +150,12 @@ export function useMobileStructuredAgentSession(
   )
   const turnId = runningStructuredAgentSessionTurnId(state)
   const turnTiming = useMobileStructuredAgentTurnTiming(
-    { ...state, items: transcriptItems },
-    turnId
+    { ...state, threadGoalReport: options.threadGoalReport, connected },
+    turnId,
+    transcriptItems
   )
   const activityText =
     selectStructuredAgentTurnActivity(state.items, turnId, state.activity)?.text ?? null
-  const thinking = isStructuredAgentSessionThinking(state)
   const isWorking = structuredAgentSessionHostSaysWorking(state.working, () =>
     isStructuredAgentSessionMainAgentWorking(turnId, state.submissions, state.fence)
   )
@@ -196,7 +197,7 @@ export function useMobileStructuredAgentSession(
   })
   const turnIndicator = useMemo(
     () => ({
-      thinking,
+      thinking: isStructuredAgentSessionThinking(state),
       activityText,
       stopping,
       stopRequestInFlight,
@@ -208,7 +209,7 @@ export function useMobileStructuredAgentSession(
           }
         : {})
     }),
-    [thinking, activityText, stopping, stopRequestInFlight, queueCapable, state]
+    [activityText, stopping, stopRequestInFlight, queueCapable, state]
   )
   const { items, currentRequests, actionablePromptIds, status } = state
   // Prefer host actionability: ended-agent prompts must receive no answer.
@@ -279,6 +280,7 @@ export function useMobileStructuredAgentSession(
     imagePreviewsByMessageId: sends.imagePreviewsByMessageId,
     session: {
       messages,
+      threadGoal: turnTiming.threadGoal,
       status,
       transcriptLoading: status === 'loading',
       error: state.error,

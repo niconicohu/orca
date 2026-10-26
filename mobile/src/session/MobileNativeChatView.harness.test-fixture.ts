@@ -21,6 +21,7 @@ export type Overrides = {
   onSend?: (text: string) => Promise<boolean>
   pending?: Parameters<typeof MobileNativeChatView>[0]['pending']
   structuredActivityUi?: boolean
+  threadGoal?: Parameters<typeof MobileNativeChatView>[0]['threadGoal']
   turnIndicator?: Parameters<typeof MobileNativeChatView>[0]['turnIndicator']
   agentWorking?: boolean
   canStop?: boolean
