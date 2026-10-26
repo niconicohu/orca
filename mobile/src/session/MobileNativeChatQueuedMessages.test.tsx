@@ -8,6 +8,7 @@ import type { MobileQueuedMessageCard } from './mobile-structured-queued-message
 let fontScale = 1
 vi.mock('react-native', () => ({
   useWindowDimensions: () => ({ fontScale }),
+  ActivityIndicator: 'ActivityIndicator',
   Platform: { OS: 'ios' },
   Pressable: 'Pressable',
   ScrollView: 'ScrollView',
@@ -19,6 +20,7 @@ vi.mock('react-native', () => ({
 
 vi.mock('lucide-react-native', () => ({
   AlertCircle: 'AlertCircle',
+  Check: 'Check',
   ChevronDown: 'ChevronDown',
   ChevronRight: 'ChevronRight',
   CornerDownRight: 'CornerDownRight',
@@ -27,7 +29,8 @@ vi.mock('lucide-react-native', () => ({
   Pencil: 'Pencil',
   Play: 'Play',
   Send: 'Send',
-  Trash2: 'Trash2'
+  Trash2: 'Trash2',
+  X: 'X'
 }))
 
 vi.mock('../components/ActionSheetModal', () => ({ ActionSheetModal: 'ActionSheetModal' }))
@@ -65,7 +68,6 @@ describe('MobileNativeChatQueuedMessages', () => {
     return mounted
   }
 
-  /** What a reader sees: the unseen copy that measures the card's text is left out. */
   function texts(mounted: ReactTestRenderer): unknown[] {
     return mounted.root
       .findAll((node) => String(node.type) === 'Text' && !node.props.accessibilityElementsHidden)
@@ -84,7 +86,7 @@ describe('MobileNativeChatQueuedMessages', () => {
     return mounted.root.find((node) => String(node.type) === 'ActionSheetModal')
   }
 
-  it('edits in place of the card row with Save and Cancel while keeping another card visible', async () => {
+  it('edits in place of the card row with an X and a checkmark while keeping another card visible', async () => {
     const change = vi.fn()
     const save = vi.fn(async () => true)
     const cancel = vi.fn()
@@ -111,52 +113,48 @@ describe('MobileNativeChatQueuedMessages', () => {
     })
     const input = mounted.root.findByProps({ accessibilityLabel: 'Edit queued message' })
     expect(input.props.value).toBe('edited text')
-    // The editor's head line stands in for the card's icon, caption and actions; the sender stays.
     const editedRow = mounted.root.findAllByProps({ testID: 'queued-card-row' })[0]!
-    expect(texts(mounted)).toContain('Editing message')
     expect(texts(mounted)).toContain('From Alex')
+    expect(texts(mounted)).not.toContain('Editing message')
     expect(texts(mounted)).not.toContain('Returned')
-    expect(nodeTypes(editedRow)).toContain('Pencil')
+    expect(nodeTypes(editedRow)).toEqual(expect.arrayContaining(['X', 'Check']))
+    expect(nodeTypes(editedRow)).not.toContain('Pencil')
     expect(nodeTypes(editedRow)).not.toContain('AlertCircle')
     expect(
       editedRow.findAll((node) => node.props.accessibilityLabel === 'Delete this queued message')
     ).toHaveLength(0)
     act(() => input.props.onChangeText('updated text'))
     expect(change).toHaveBeenCalledWith('updated text')
-    await act(async () =>
-      mounted.root.findByProps({ accessibilityLabel: 'Save queued message' }).props.onPress()
-    )
+    const button = (label: string) => mounted.root.findByProps({ accessibilityLabel: label })
+    await act(async () => button('Save edited message').props.onPress())
     expect(save).toHaveBeenCalledOnce()
-    act(() =>
-      mounted.root
-        .findByProps({ accessibilityLabel: 'Cancel editing queued message' })
-        .props.onPress()
-    )
+    act(() => button('Cancel editing').props.onPress())
     expect(cancel).toHaveBeenCalledOnce()
     expect(mounted.root.findAllByProps({ testID: 'queued-card-row' })).toHaveLength(2)
     expect(mounted.root.findByProps({ accessibilityLabel: 'More actions' }).props.disabled).toBe(
       true
     )
-    await act(async () =>
-      mounted.update(
-        createElement(MobileNativeChatQueuedMessages, {
-          cards: [card({ messageId: 'a' })],
-          editor: {
-            messageId: 'a',
-            text: 'edited text',
-            saving: true,
-            canSave: true,
-            change,
-            save,
-            cancel
-          }
-        })
+    const editAgain = (state: { saving: boolean; canSave: boolean }) =>
+      act(async () =>
+        mounted.update(
+          createElement(MobileNativeChatQueuedMessages, {
+            cards: [card({ messageId: 'a' })],
+            editor: { messageId: 'a', text: '', change, save, cancel, ...state }
+          })
+        )
       )
-    )
-    expect(
-      mounted.root.findByProps({ accessibilityLabel: 'Cancel editing queued message' }).props
-        .disabled
-    ).toBe(true)
+    await editAgain({ saving: false, canSave: false })
+    expect(button('Save edited message').props.disabled).toBe(true)
+    expect(button('Cancel editing').props.disabled).toBe(false)
+    await editAgain({ saving: true, canSave: true })
+    const saveButton = button('Save edited message')
+    expect(saveButton.props.disabled).toBe(true)
+    expect(saveButton.props.accessibilityState).toEqual({ disabled: true })
+    expect(saveButton.props['aria-busy']).toBe(true)
+    expect(nodeTypes(saveButton)).toContain('ActivityIndicator')
+    expect(nodeTypes(saveButton)).not.toContain('Check')
+    expect(button('Cancel editing').props.disabled).toBe(true)
+    expect(button('Edit queued message').props.editable).toBe(false)
   })
 
   it('draws a plain waiting card as one compact row with no caption', async () => {
@@ -164,7 +162,6 @@ describe('MobileNativeChatQueuedMessages', () => {
     const rows = mounted.root.findAllByProps({ testID: 'queued-card-row' })
     expect(rows).toHaveLength(1)
     expect(texts(mounted)).toEqual(['Queued', 1, 'next', 'Steer'])
-    // At most two lines: the row has no hover title to read the rest from.
     expect(
       mounted.root.find(
         (node) =>
@@ -177,7 +174,6 @@ describe('MobileNativeChatQueuedMessages', () => {
     expect(nodeTypes(rows[0]!)).not.toContain('AlertCircle')
   })
 
-  // The hidden copy lays the whole text out at the card's width; its line count says if it clips.
   async function layOut(mounted: ReactTestRenderer, text: string, lines: number): Promise<void> {
     const measure = mounted.root.find(
       (node) =>
@@ -215,14 +211,12 @@ describe('MobileNativeChatQueuedMessages', () => {
     expect(toggle().props.accessibilityState).toEqual({ expanded: true })
     expect(texts(mounted)).toContain('Show less')
     const row = mounted.root.findByProps({ testID: 'queued-card-row' })
-    // The document follows the compact controls, so its height cannot center actions offscreen.
     const controlLine = row.findByProps({ accessibilityLabel: 'More actions' }).parent?.parent
     expect(controlLine?.findAll((node) => node === body())).toHaveLength(0)
     expect(body().parent?.parent?.parent).toBe(row)
     expect(row.children.indexOf(controlLine!)).toBeLessThan(
       row.children.indexOf(body().parent!.parent!)
     )
-    // The queue's capped list scrolls a long message: the card opens no scroll box of its own.
     const scrolls = mounted.root.findAll((node) => String(node.type) === 'ScrollView')
     expect(scrolls).toHaveLength(1)
     expect(flatStyle(scrolls[0]!.props.style).maxHeight).toBe(160)
@@ -348,7 +342,6 @@ describe('MobileNativeChatQueuedMessages', () => {
       mounted.root.findByProps({ accessibilityLabel: 'Send this message' }).props.onPress()
     })
     expect(onSend).toHaveBeenCalledWith('idle')
-    // Its menu holds only Edit, which a command does not take.
     expect(mounted.root.findAllByProps({ accessibilityLabel: 'More actions' })).toHaveLength(0)
     expect(
       mounted.root.findAllByProps({ accessibilityLabel: 'Delete this queued message' })
@@ -456,7 +449,6 @@ describe('MobileNativeChatQueuedMessages', () => {
       )
     })
     expect(sheet(mounted).props.visible).toBe(false)
-    // A Stop requeues a draft under its own id.
     await act(async () => {
       mounted.update(
         createElement(MobileNativeChatQueuedMessages, {
@@ -476,7 +468,7 @@ describe('MobileNativeChatQueuedMessages', () => {
       mounted.root.find(
         (node) => typeof node.type === 'string' && node.props.accessibilityLabel === label
       )
-    // All three taps land in one frame, before the disabled state can render.
+    // Tap all actions before disabled state renders to expose same-frame duplication.
     await act(async () => {
       button('Submit without interrupting the model').props.onPress()
       button('Submit without interrupting the model').props.onPress()
@@ -580,7 +572,6 @@ describe('MobileNativeChatQueuedMessages', () => {
       let answer: (resumed: boolean) => void = () => undefined
       const onResume = vi.fn(() => new Promise<boolean>((resolve) => (answer = resolve)))
       const mounted = await mountPaused({ pause: { reason: 'stopped' }, onResume })
-      // Both taps land in one frame, before the disabled state can render.
       await act(async () => {
         resumeButton(mounted).props.onPress()
         resumeButton(mounted).props.onPress()
@@ -595,7 +586,6 @@ describe('MobileNativeChatQueuedMessages', () => {
       const mounted = await mountPaused({ pause: { reason: 'stopped' }, onResume })
       await act(async () => resumeButton(mounted).props.onPress())
       expect(resumeButton(mounted).props.disabled).toBe(true)
-      // A lost answer reads as not resumed.
       await act(async () => answer(false))
       expect(resumeButton(mounted).props.disabled).toBe(false)
       await act(async () => resumeButton(mounted).props.onPress())
@@ -606,8 +596,7 @@ describe('MobileNativeChatQueuedMessages', () => {
       const mounted = await mountPaused({ pause: { reason: 'stopped' } })
       const row = mounted.root.findByProps({ testID: 'queued-header' })
       expect(row.props.accessibilityLiveRegion).toBe('polite')
-      // Android drops touches outside the parent: nothing may pull a row or a button past its edge.
-      // The box itself tucks under the composer, by padding nothing in it can be pressed on.
+      // Android ignores touches outside the parent; keep buttons inside and tuck the box with noninteractive padding.
       const styled = mounted.root
         .findByProps({ testID: 'queued-box' })
         .findAll((node) => typeof node.type === 'string' && node.props.style !== undefined)
@@ -623,45 +612,25 @@ describe('MobileNativeChatQueuedMessages', () => {
       }
     })
 
-    it('gives the header and editor buttons a line of their own at large text sizes', async () => {
+    it('at large text keeps Clear all and Resume on their own line while a card is edited', async () => {
       fontScale = 2
       try {
-        const editor = {
-          messageId: 'waiting-1',
-          text: 'next',
-          saving: false,
-          canSave: true,
-          change: vi.fn(),
-          save: vi.fn(async () => true),
-          cancel: vi.fn()
-        }
-        const mounted = await mountPaused({ pause: { reason: 'stopped' } })
+        const mounted = await mountPaused({
+          pause: { reason: 'stopped' },
+          editor: {
+            messageId: 'waiting-1',
+            text: 'next',
+            saving: false,
+            canSave: true,
+            change: vi.fn(),
+            save: vi.fn(async () => true),
+            cancel: vi.fn()
+          }
+        })
         const header = mounted.root.findByProps({ testID: 'queued-header' })
         for (const label of ['Delete every queued message', 'Resume sending the queued messages']) {
           const button = mounted.root.findByProps({ accessibilityLabel: label })
           expect(header.findAll((node) => node === button)).toHaveLength(0)
-        }
-        // Editing, the keyboard leaves no room for that line: it gives way to the editor.
-        await act(async () => {
-          mounted.update(
-            createElement(MobileNativeChatQueuedMessages, {
-              cards: [waiting],
-              onSend: vi.fn(async () => true),
-              onClearAll: vi.fn(async () => true),
-              pause: { reason: 'stopped' },
-              editor
-            })
-          )
-        })
-        expect(
-          mounted.root.findAllByProps({ accessibilityLabel: 'Resume sending the queued messages' })
-        ).toHaveLength(0)
-        const head = mounted.root.find(
-          (node) => String(node.type) === 'Text' && node.props.children === 'Editing message'
-        ).parent!
-        for (const label of ['Cancel editing queued message', 'Save queued message']) {
-          const button = mounted.root.findByProps({ accessibilityLabel: label })
-          expect(head.findAll((node) => node === button)).toHaveLength(0)
         }
       } finally {
         fontScale = 1
@@ -690,7 +659,6 @@ describe('MobileNativeChatQueuedMessages', () => {
       onClearAll: vi.fn(async () => true),
       onEdit: vi.fn(async () => true)
     })
-    // The card's text is its own tap target, sized by the text it shows.
     const buttons = mounted.root.findAll(
       (node) =>
         typeof node.type === 'string' &&
@@ -707,17 +675,14 @@ describe('MobileNativeChatQueuedMessages', () => {
       'Delete this queued message',
       'More actions'
     ])
-    // The header row itself is the fold control, so the whole 32pt row is its target.
     const header = mounted.root.findByProps({ testID: 'queued-header' })
     expect(flatStyle(header.props.style).minHeight).toBe(32)
     expect(style(buttons[0]!)).toMatchObject({ position: 'absolute', top: 0, bottom: 0 })
-    // A minimum, so the header buttons grow with large system text instead of clipping.
     for (const button of buttons.slice(1, 3)) {
       expect(style(button).minHeight).toBe(32)
       expect(style(button).height).toBeUndefined()
       expect(style(button).minWidth).toBeGreaterThanOrEqual(44)
     }
-    // Grouped with no gap; the last one keeps the full 44.
     const cardActions = buttons.slice(3).map(style)
     for (const action of cardActions) {
       expect(action.minHeight).toBeGreaterThanOrEqual(44)
@@ -744,23 +709,19 @@ describe('MobileNativeChatQueuedMessages', () => {
       return mounted.root.find((node) => String(node.type) === 'ScrollView')
     }
     const scroll = await show(ids.map((messageId) => card({ messageId })))
-    // The header stays outside the list, which never grows past desktop's cap.
     expect(flatStyle(scroll.props.style).maxHeight).toBe(160)
     expect(scroll.findAllByProps({ testID: 'queued-header' })).toHaveLength(0)
     expect(scroll.findAllByProps({ testID: 'queued-card-row' })).toHaveLength(5)
     await act(async () => scroll.props.onContentSizeChange(0, ids.length * 44))
     expect(scrollToEnd).not.toHaveBeenCalled()
-    // Another agent's card waits in line unseen; the person's own new card is scrolled to.
     await show([...ids, 'f'].map((messageId) => card({ messageId, attribution: 'From Alex' })))
     expect(scrollToEnd).not.toHaveBeenCalled()
     await show([...ids, 'f', 'g'].map((messageId) => card({ messageId })))
     expect(scrollToEnd).toHaveBeenCalledExactlyOnceWith({ animated: false })
     scrollToEnd.mockClear()
-    // Draining the head and appending our card in one update keeps the same total height.
     await show(['b', 'c', 'd', 'e', 'f', 'g', 'h'].map((messageId) => card({ messageId })))
     expect(scrollToEnd).toHaveBeenCalledExactlyOnceWith({ animated: false })
     scrollToEnd.mockClear()
-    // A later expansion or agent append cannot consume a stranded own-append request.
     await act(async () => scroll.props.onContentSizeChange(0, 2400))
     await show(
       ['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'].map((messageId) =>

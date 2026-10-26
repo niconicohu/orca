@@ -24,10 +24,7 @@ export type OrcadMigrationSshManifestSource = {
   targetLabel: string
 }
 
-/**
- * Local WSL projects on this desktop, moving to the orcad that runs inside their distro. Scope is
- * explicit so a destination never infers it from paths, and `generation` orders delta moves.
- */
+/** Explicit desktop WSL project scope prevents destination path inference; generation orders delta moves. */
 export type OrcadMigrationLocalWslManifestSource = {
   kind: 'local-wsl'
   distro: string
@@ -145,6 +142,18 @@ export type OrcadMigrationCatalogState =
     }
 
 export type OrcadMigrationCatalogAbortResult = OrcadMigrationCatalogState & {
+  aborted: boolean
+  durableAbsent?: true
+}
+
+export type OrcadMigrationCatalogReference = Pick<
+  OrcadMigrationManifest,
+  'migrationId' | 'manifestSha256'
+>
+
+/** An abort by reference: no receipt, since an evicted one is rebuilt only from the manifest. */
+export type OrcadMigrationCatalogReferenceAbortResult = OrcadMigrationCatalogReference & {
+  state: 'absent' | 'committed'
   aborted: boolean
   durableAbsent?: true
 }

@@ -6,7 +6,7 @@ import { getDefaultWorkspaceSession } from '../../../shared/constants'
 import { toSshExecutionHostId } from '../../../shared/execution-host'
 import type { SshTarget } from '../../../shared/ssh-types'
 import type { WorkspaceSessionState } from '../../../shared/workspace-session-state-types'
-import { closeTestStores, createSqliteTestStore } from '../../persistence-test-harness'
+import { closeTestStores, createSqliteTestStore } from '../persistence-test-harness'
 import { Store } from '../loading-store/store'
 import { createOrcadMigrationManifest } from '../../ssh/orcad-migration-manifest-export'
 import {
@@ -188,6 +188,7 @@ describe('exporting a relay-hosted SSH target from the profile store', () => {
     const session = dormantSession('shared output\r\n')
     const shell = session.tabsByWorktree[WORKTREE_ID]![0]!
     const tabIds = ['tab-1', 'tab-2', 'tab-3']
+    const leafOf = (tabId: string): string => (tabId === 'tab-1' ? 'leaf-1' : `leaf-${tabId}`)
     session.tabsByWorktree[WORKTREE_ID] = tabIds.map((id, sortOrder) => ({
       ...shell,
       id,
@@ -195,13 +196,13 @@ describe('exporting a relay-hosted SSH target from the profile store', () => {
     }))
     for (const tabId of tabIds.slice(1)) {
       session.terminalLayoutsByTabId[tabId] = {
-        root: { type: 'leaf', leafId: 'leaf-1' },
-        activeLeafId: 'leaf-1',
+        root: { type: 'leaf', leafId: leafOf(tabId) },
+        activeLeafId: leafOf(tabId),
         expandedLeafId: null
       }
     }
     session.localOnlyScrollbackByTabId = Object.fromEntries(
-      tabIds.map((tabId) => [tabId, { 'leaf-1': output(tabId) }])
+      tabIds.map((tabId) => [tabId, { [leafOf(tabId)]: output(tabId) }])
     )
     store.setWorkspaceSession(session, hostId)
     const saved = store.getWorkspaceSession(hostId).localOnlyScrollbackByTabId
@@ -216,7 +217,7 @@ describe('exporting a relay-hosted SSH target from the profile store', () => {
     for (const snapshot of snapshots) {
       expect(
         dormant?.workspaceSession?.terminalLayoutsByTabId[snapshot.tabId]?.scrollbackRefsByLeafId
-      ).toEqual({ 'leaf-1': snapshot.ref })
+      ).toEqual({ [leafOf(snapshot.tabId)]: snapshot.ref })
       let bytes = ''
       for (let offset = 0, eof = false; !eof;) {
         const chunk = store.readOrcadMigrationSourceSnapshotChunk(manifest, snapshot.ref, offset)
@@ -225,8 +226,8 @@ describe('exporting a relay-hosted SSH target from the profile store', () => {
         offset += piece.length
         eof = chunk.eof
       }
-      // The local-only copy wins over the shared one, as the renderer reads it.
-      expect(bytes).toBe(saved?.[snapshot.tabId]?.['leaf-1'])
+      // Match renderer precedence: local-only scrollback wins.
+      expect(bytes).toBe(saved?.[snapshot.tabId]?.[leafOf(snapshot.tabId)])
     }
   })
 

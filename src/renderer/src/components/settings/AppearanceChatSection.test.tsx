@@ -113,23 +113,50 @@ describe('chat appearance settings controls', () => {
     )
     const text = screen.getByRole('spinbutton', { name: 'Text size' })
     expect(text.getAttribute('value')).toBe('14')
+    const font = screen.getByRole('combobox', { name: 'Font family' })
+    fireEvent.focus(font)
+    fireEvent.change(font, { target: { value: 'Georgia' } })
+    expect(updateSettings).not.toHaveBeenCalled()
+    fireEvent.keyDown(font, { key: 'Enter' })
     fireEvent.change(text, { target: { value: '30' } })
     fireEvent.blur(text)
     const code = screen.getByRole('spinbutton', { name: 'Code text size' })
     fireEvent.change(code, { target: { value: '16' } })
     fireEvent.keyDown(code, { key: 'Enter' })
     fireEvent.click(screen.getByRole('radio', { name: 'Full' }))
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledTimes(3))
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledTimes(4))
     expect(mocks.state.settings?.nativeChatAppearance).toEqual({
+      fontFamily: 'Georgia',
       fontSize: 20,
       codeFontSize: 16,
       width: 'full'
     })
   })
+  it('previews highlighted fonts locally and clears the preview when the picker closes', () => {
+    const settings = getDefaultSettings('/tmp')
+    const updateSettings = persistInMock(settings)
+    render(
+      <AppearanceChatSection
+        settings={settings}
+        updateSettings={updateSettings}
+        fontSuggestions={['Geist', 'Georgia']}
+      />
+    )
+    const font = screen.getByRole('combobox', { name: 'Font family' })
+    fireEvent.focus(font)
+    fireEvent.mouseEnter(screen.getByRole('option', { name: 'Georgia' }))
+    const preview = screen.getByLabelText('Chat font preview')
+    expect(preview.style.getPropertyValue('--chat-font-family')).toContain('Georgia')
+    expect(updateSettings).not.toHaveBeenCalled()
+    fireEvent.keyDown(font, { key: 'Escape' })
+    expect(preview.style.getPropertyValue('--chat-font-family')).toBe('')
+    expect(updateSettings).not.toHaveBeenCalled()
+  })
   it('resets only owned fields and preserves future settings', async () => {
     const settings = {
       ...getDefaultSettings('/tmp'),
       nativeChatAppearance: {
+        fontFamily: 'Georgia',
         fontSize: 18,
         fontWeight: 500,
         codeFontSize: 16,
@@ -187,6 +214,8 @@ describe('chat appearance settings controls', () => {
       'Match terminal interface',
       'Contrast',
       'Text weight',
+      'Font family',
+      'typeface',
       'brighter look',
       'Code text size',
       'tool output',
@@ -203,6 +232,7 @@ describe('chat appearance settings controls', () => {
     const settings = {
       ...getDefaultSettings('/tmp'),
       nativeChatAppearance: {
+        fontFamily: 'Georgia',
         fontSize: 18,
         codeFontSize: 16,
         contrast: 125,
@@ -214,7 +244,10 @@ describe('chat appearance settings controls', () => {
       <AppearanceChatSection settings={settings} updateSettings={updateSettings} />,
       { wrapper: TooltipProvider }
     )
-    expect(screen.getAllByText('Set by terminal interface.')).toHaveLength(4)
+    expect(screen.getAllByText('Set by terminal interface.')).toHaveLength(5)
+    expect(screen.getByRole('combobox', { name: 'Font family' }).hasAttribute('disabled')).toBe(
+      true
+    )
     expect(screen.getByRole('spinbutton', { name: 'Text size' }).hasAttribute('disabled')).toBe(
       true
     )
@@ -230,6 +263,7 @@ describe('chat appearance settings controls', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Wide' }))
     await waitFor(() => expect(mocks.state.settings?.nativeChatAppearance?.width).toBe('wide'))
     expect(mocks.state.settings?.nativeChatAppearance).toMatchObject({
+      fontFamily: 'Georgia',
       fontSize: 18,
       codeFontSize: 16,
       contrast: 125
@@ -245,6 +279,9 @@ describe('chat appearance settings controls', () => {
       <AppearanceChatSection settings={mocks.state.settings!} updateSettings={updateSettings} />
     )
     expect(screen.queryByText('Set by terminal interface.')).toBeNull()
+    expect(screen.getByRole('combobox', { name: 'Font family' }).getAttribute('value')).toBe(
+      'Georgia'
+    )
     expect(screen.getByRole('spinbutton', { name: 'Text size' }).getAttribute('value')).toBe('18')
     expect(screen.getByRole('spinbutton', { name: 'Code text size' }).getAttribute('value')).toBe(
       '16'
@@ -258,6 +295,7 @@ describe('chat appearance settings controls', () => {
   const terminalTooltip =
     'Matching your terminal interface. Turn off Match terminal interface to change this.'
   const controlledControls = [
+    ['combobox', 'Font family'],
     ['spinbutton', 'Text size'],
     ['spinbutton', 'Code text size'],
     ['slider', 'Contrast'],
@@ -279,7 +317,6 @@ describe('chat appearance settings controls', () => {
       expect(trigger).not.toBeNull()
       fireEvent.pointerMove(trigger!, { pointerType: 'mouse' })
       expect((await screen.findByRole('tooltip')).textContent).toBe(terminalTooltip)
-      // Width stays editable and unexplained.
       expect(
         screen.getByRole('radio', { name: 'Wide' }).closest('[data-slot="tooltip-trigger"]')
       ).toBeNull()

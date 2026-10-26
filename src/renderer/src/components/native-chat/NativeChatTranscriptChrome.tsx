@@ -6,7 +6,7 @@ import { basename } from '@/lib/path'
 import type { NativeChatBlock } from '../../../../shared/native-chat-types'
 import { NativeChatCopyButton } from './NativeChatCopyButton'
 import { NativeChatMessageTimestamp } from './NativeChatMessageTimestamp'
-import { nativeChatProviderFrameSummary } from '../../../../shared/native-chat-provider-frame-summary'
+import { nativeChatProviderFrameSummary } from '../../../../shared/native-chat/native-chat-provider-frame-summary'
 import { withoutNativeChatVisualDirectiveLines } from '../../../../shared/native-chat-visual-directive'
 import { PanZoomImageDialog } from '@/components/editor/PanZoomImageDialog'
 import {
@@ -78,12 +78,10 @@ function transcriptImageIdentity(
   }`
 }
 
-// Why one access kind for every role: a turn's role says who sent it, not who chose the path, and these
-// load on scroll with no click, so main only serves local image files by their real type.
+// Roles do not prove who chose an auto-loaded path; main must validate local images by real file type.
 const TRANSCRIPT_IMAGE_ACCESS = chatImageAccess()
 
-// Why the cache key, not the context object: the owner hook rebuilds an equal context on
-// unrelated store updates, and releasing on each one revoked the URL the <img> was showing.
+// Key release by value: equal rebuilt owner contexts must not revoke a URL still shown by img.
 function transcriptImageReleaseKey(
   source: string | undefined,
   filePath: string,
@@ -295,12 +293,14 @@ export function NativeChatAgentControls({
 
 export function ProviderFrameRow({
   block,
-  summary
+  summary,
+  detail
 }: {
   block: NativeChatBlock
   summary?: string
+  detail?: string
 }): React.JSX.Element | null {
-  if (block.type !== 'text' || !block.providerFrame) {
+  if (block.type !== 'text' || (!block.providerFrame && !detail)) {
     return null
   }
   const frame = block.providerFrame
@@ -310,9 +310,11 @@ export function ProviderFrameRow({
         <span className="transition-transform motion-reduce:transition-none group-open:rotate-90">
           ›
         </span>
-        <span className="font-medium text-chat-foreground-strong">{frame.provider}</span>
+        {frame ? (
+          <span className="font-medium text-chat-foreground-strong">{frame.provider}</span>
+        ) : null}
         <span className="truncate">{summary ?? nativeChatProviderFrameSummary(block)}</span>
-        {frame.payload.truncated ? (
+        {frame?.payload.truncated ? (
           <span>
             ·{' '}
             {translate('components.native-chat.providerFrame.byteLength', '{{value0}} bytes', {
@@ -325,8 +327,10 @@ export function ProviderFrameRow({
         data-native-chat-code-content
         className="scrollbar-sleek mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted p-2 font-mono text-chat-code text-foreground"
       >
-        {frame.payload.head}
-        {frame.payload.truncated ? '\n…' : ''}
+        {detail}
+        {detail && frame ? '\n\n' : ''}
+        {frame?.payload.head}
+        {frame?.payload.truncated ? '\n…' : ''}
       </pre>
     </details>
   )

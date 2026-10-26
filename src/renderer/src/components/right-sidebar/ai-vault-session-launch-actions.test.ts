@@ -99,7 +99,7 @@ function renderActions(agentCmdOverrides?: { opencode?: string }) {
   ).result.current
 }
 
-describe('Resume in New CLI launch', () => {
+describe('Switch to Terminal launch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.getState.mockReturnValue({ activeWorktreeId: 'worktree-1', settings: {} })
@@ -198,7 +198,6 @@ describe('Resume in New CLI launch', () => {
     expect(mocks.launchAiVaultSessionInNewTab).not.toHaveBeenCalled()
   })
 
-  // A host whose guard predates the fork refuses it as a second writer.
   it('asks for a host update, once, when an older paired host refuses the fork', async () => {
     mocks.launchAiVaultSessionInNewTab.mockReturnValue({
       tabId: null,

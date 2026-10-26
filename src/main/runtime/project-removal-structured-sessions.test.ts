@@ -1,9 +1,7 @@
-/**
- * A native Claude/Codex chat has no PTY or pane, so the terminal sweep of a project removal never
- * sees it. The host closes those sessions and retires their chat tabs itself.
- */
+/** Project removal must close structured sessions and retire chat tabs itself; PTY sweeps cannot see them. */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Repo } from '../../shared/repo-types'
+import type { RepoHostTarget } from '../../shared/repo-host-identity'
 import { getRepoExecutionHostId } from '../../shared/execution-host'
 
 const hostRef: { current: unknown } = { current: null }
@@ -74,8 +72,11 @@ function createRuntime(rows: Repo[]) {
     ...store,
     getRepo: (id: string) => current.find((row) => row.id === id),
     getRepos: () => current,
-    removeProjectForHost: (id: string, hostId: string) => {
-      current = current.filter((row) => row.id !== id || getRepoExecutionHostId(row) !== hostId)
+    removeProjectForHost: (target: RepoHostTarget) => {
+      const hostId = getRepoExecutionHostId(target)
+      current = current.filter(
+        (row) => row.id !== target.id || getRepoExecutionHostId(row) !== hostId
+      )
     }
   })
   runtime.setPtyController({
@@ -151,5 +152,36 @@ describe('project removal and native chat sessions', () => {
     })
 
     expect(closed).toEqual(['live-chat'])
+  })
+
+  it("closes a local project's chats though a paired server's residue row shares its id", async () => {
+    const localRow = store.getRepo(TEST_REPO_ID)!
+    const residue: Repo = { ...localRow, executionHostId: 'runtime:env-1' }
+    const { closed } = installHost([record('local-chat', TEST_WORKTREE_ID)])
+    const runtime = createRuntime([localRow, residue])
+
+    await runtime.removeProject(localRow)
+
+    expect(closed).toEqual(['local-chat'])
+  })
+
+  it('still asks every terminal to stop once the removal budget is spent', async () => {
+    installHost([])
+    const runtime = createRuntime([store.getRepo(TEST_REPO_ID)!])
+    runtime.registerPty('pty-1', TEST_WORKTREE_ID, null)
+    runtime.registerPty('pty-2', TEST_WORKTREE_ID, null)
+    const kill = vi.fn((_ptyId: string) => true)
+    runtime.setPtyController({
+      write: () => true,
+      kill,
+      stopAndWait: vi.fn(async () => true),
+      getForegroundProcess: async () => null
+    })
+
+    await runtime.stopTerminalsForProject(store.getRepo(TEST_REPO_ID)!, {
+      deadline: Date.now() - 1
+    })
+
+    expect(kill.mock.calls.map(([ptyId]) => ptyId).sort()).toEqual(['pty-1', 'pty-2'])
   })
 })

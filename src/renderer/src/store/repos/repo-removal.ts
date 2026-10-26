@@ -1,3 +1,4 @@
+import { runEnclosingWorktreeRemoval } from '@/store/active-worktree-deselection-intent'
 import { isRemoteRuntimePtyId } from '../../../../shared/remote-runtime-pty-id'
 import type { StateCreator } from 'zustand'
 import { toast } from 'sonner'
@@ -26,6 +27,11 @@ import {
   captureWorkspaceChatDraftKeys,
   deleteWorkspaceChatDrafts
 } from '../slices/worktrees/teardown/removed-worktree-chat-drafts'
+import {
+  flushPurgedWorkspaceEdits,
+  noticeRemovedUnsavedFiles
+} from '../slices/worktrees/teardown/removed-workspace-unsaved-files'
+import { worktreePurgeClosedFileIds } from '../slices/worktrees/teardown/worktree-purge-closed-files'
 
 export function worktreeBelongsToHost(worktree: { hostId?: string }, hostId: string): boolean {
   return (worktree.hostId ?? LOCAL_EXECUTION_HOST_ID) === hostId
@@ -93,7 +99,7 @@ export function createRepoRemovalActions(
   set: Parameters<StateCreator<AppState>>[0],
   get: Parameters<StateCreator<AppState>>[1]
 ): Pick<RepoSlice, 'removeProject'> {
-  return {
+  const actions: Pick<RepoSlice, 'removeProject'> = {
     removeProject: async (projectId, options) => {
       try {
         // Why: exact host match only; the unique-candidate/focused fallbacks could pick another host's row (#13071).
@@ -164,9 +170,7 @@ export function createRepoRemovalActions(
           }
         }
         if (target.kind === 'environment') {
-          // Why: the host confirmed the removal (or is gone), and this desktop's own persisted rows
-          // for that host are swept only by an explicit removal, never by the startup sweep (#17776).
-          // A paired web client keeps no such rows, and its bridge throws synchronously.
+          // Explicit removal sweeps this desktop’s persisted host rows; startup never does (#17776). Paired web stores none and its bridge throws synchronously.
           try {
             await window.api.repos.removeForHost({ repoId: projectId, hostId: ownerHostId })
           } catch (error) {
@@ -178,7 +182,7 @@ export function createRepoRemovalActions(
         const repoPath = get().repos.find((repo) =>
           repoMatchesHostIdentity(repo, projectId, ownerHostId)
         )?.path
-        get().evictGitHubRepoCaches(projectId, repoPath)
+        get().evictGitHubRepoCaches(projectId, repoPath, ownerHostId)
         const { clearRepoSlugCacheEntry } = await import('../../lib/repo-slug-index')
         clearRepoSlugCacheEntry(projectId)
 
@@ -200,6 +204,7 @@ export function createRepoRemovalActions(
                   .flatMap((worktree) => (worktree.projectId ? [worktree.projectId] : []))
               ]
             : []
+        // Backstop for the host's sweep, which a spent budget or reloading graph can cut short.
         for (const wId of exclusiveWorktreeIds) {
           const tabs = get().tabsByWorktree[wId] ?? []
           for (const tab of tabs) {
@@ -211,8 +216,16 @@ export function createRepoRemovalActions(
           }
         }
 
-        // Why: use the canonical per-worktree purge to evict all worktree-scoped maps (hand-deletion leaked most); runs before the set() below so it still sees tabsByWorktree.
-        closeRemovedHostTwinState(get, set, twins, preCallTwins)
+        // Canonical purge clears all worktree maps before set while tabs remain readable; manual deletion leaked state.
+        const purgeTargets = worktreeIds.map((id) => ({ id, hostId: ownerHostId }))
+        flushPurgedWorkspaceEdits(get(), purgeTargets)
+        // Why before the twin close: it closes tabs one by one; the purge below shares this batch.
+        const keepEditorBuffer = noticeRemovedUnsavedFiles(
+          get(),
+          worktreePurgeClosedFileIds(get(), purgeTargets),
+          options.confirmedDiscards
+        )
+        closeRemovedHostTwinState(get, set, twins, preCallTwins, keepEditorBuffer)
         get().purgeWorktreeTerminalState(exclusiveWorktreeIds)
         deleteWorkspaceChatDrafts(chatDraftKeys)
         get().clearLocalDetectedAgentContextsForProjects(localAgentContextProjectIds)
@@ -247,7 +260,7 @@ export function createRepoRemovalActions(
           const nextRepos = s.repos.filter(
             (r) => !repoMatchesHostIdentity(r, projectId, ownerHostId)
           )
-          // Why: when no sibling host owns this id, drop every worktree timestamp (unhydrated SSH ones would otherwise never prune); else stay host-scoped.
+          // Without sibling ownership, remove all timestamps including unhydrated SSH entries; otherwise keep cleanup host-scoped.
           const repoIdFullyRemoved = !nextRepos.some((r) => r.id === projectId)
           let nextLastVisitedAtByWorktreeId = s.lastVisitedAtByWorktreeId
           for (const id of Object.keys(s.lastVisitedAtByWorktreeId)) {
@@ -308,5 +321,12 @@ export function createRepoRemovalActions(
         }
       }
     }
+  }
+  return {
+    removeProject: (projectId, options) =>
+      runEnclosingWorktreeRemoval(
+        options.automaticCleanup ? null : { hostId: options.hostId, repoId: projectId },
+        () => actions.removeProject(projectId, options)
+      )
   }
 }

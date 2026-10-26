@@ -8,9 +8,9 @@ import { MobileNativeChatMessage } from './MobileNativeChatMessage'
 import { mobileNativeChatUnsentNotices } from './mobile-native-chat-unsent-notices'
 import type { useMobileNativeChatTurnDisclosure } from './use-mobile-native-chat-turn-disclosure'
 
-/** Desktop parity: `NativeChatTranscriptRow`'s context. */
 export function useMobileNativeChatRowRenderer({
-  toolsExpanded,
+  rowKeyOf,
+  runOwners,
   taskListPredecessors,
   fontScale,
   onOpenFile,
@@ -21,7 +21,8 @@ export function useMobileNativeChatRowRenderer({
   receipts,
   actionablePromptIds
 }: {
-  toolsExpanded: boolean
+  rowKeyOf: (message: NativeChatMessage) => string
+  runOwners: ReadonlyMap<string, string>
   /** The last plan each task-list tool wrote before each row, by row id. */
   taskListPredecessors: ReadonlyMap<string, NativeChatTaskListPredecessors>
   fontScale: number
@@ -41,8 +42,8 @@ export function useMobileNativeChatRowRenderer({
     ({ item, index }) => (
       <MobileNativeChatMessage
         message={item}
-        toolsExpanded={toolsExpanded}
-        // The calls, not the record: a rebuilt record would defeat the row's memo.
+        rowKey={rowKeyOf(item)}
+        // Depend on stable calls, not their rebuilt containing record, so row memoization survives.
         previousTodoWrite={taskListPredecessors.get(item.id)?.todowrite}
         previousUpdatePlan={taskListPredecessors.get(item.id)?.update_plan}
         fontScale={fontScale}
@@ -53,10 +54,12 @@ export function useMobileNativeChatRowRenderer({
         receipt={receipts?.get(item.id)}
         awaiting={isActionableStructuredAgentSessionPrompt(item.id, actionablePromptIds)}
         {...turns.resolveRow(index, item)}
+        runOwner={runOwners.get(item.id)}
       />
     ),
     [
-      toolsExpanded,
+      rowKeyOf,
+      runOwners,
       taskListPredecessors,
       fontScale,
       onOpenFile,

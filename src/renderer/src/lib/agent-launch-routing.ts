@@ -43,7 +43,7 @@ export function structuredAgentLaunchSupported(
   return structuredAgentLaunchSupport(input).supported
 }
 
-function structuredAgentLaunchSupport(input: Omit<AgentLaunchRoutingInput, 'launchText'>) {
+export function structuredAgentLaunchSupport(input: Omit<AgentLaunchRoutingInput, 'launchText'>) {
   return resolveStructuredNativeChatSupport({
     agent: input.agent,
     executionHostId: input.executionHostId,
@@ -56,8 +56,7 @@ function structuredAgentLaunchSupport(input: Omit<AgentLaunchRoutingInput, 'laun
   })
 }
 
-/** Why a launch the user wanted as a chat did not route to it; null when it did, or when the user's
- *  default for this agent is a terminal. Diagnostics only: the route itself is `resolveAgentLaunchRoute`. */
+/** Diagnostics for chat-to-terminal fallback; route decisions remain owned by resolveAgentLaunchRoute. */
 export function structuredAgentLaunchDowngrade(
   input: AgentLaunchRoutingInput,
   route: AgentLaunchRoute
