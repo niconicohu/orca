@@ -1,10 +1,67 @@
 import { describe, expect, it, vi } from 'vitest'
 import { openCodexThread } from './codex-structured-thread-open'
 import { CodexAppServerRequestError } from './app-server/codex-app-server-request-error'
+import {
+  acquireReadyCodexForTest,
+  adapterFor,
+  answerWithOpenedTurn,
+  fakeCodex,
+  identityFor,
+  THREAD_ID,
+  USER_MESSAGE
+} from './codex-structured-session-adapter-fixture'
 
 const launch = { cwd: '/workspace', resumeThreadId: null, forkThreadId: 'parent', sideChat: true }
 
 describe('Codex side conversations', () => {
+  it.each(['own', 'ask', 'accept-edits', 'auto', 'full-access'] as const)(
+    'keeps every resumed side-chat turn read-only despite the host choosing %s',
+    async (mode) => {
+      const codex = fakeCodex()
+      const adapter = adapterFor(codex, { sideChat: true, resumeThreadId: THREAD_ID })
+      await acquireReadyCodexForTest(adapter, {
+        identity: identityFor('session-1'),
+        fence: 7,
+        spawnToken: 'side-chat-child',
+        permissionMode: 'full-access'
+      })
+      const connection = codex.connections[0]!
+      const acquiredCalls = connection.calls.length
+      try {
+        for (const index of [1, 2]) {
+          const turnId = `side-question-${index}`
+          codex.routes['turn/start'] = answerWithOpenedTurn(codex, turnId)
+          expect(
+            await adapter.dispatch({
+              sessionId: 'session-1',
+              clientMessageId: turnId,
+              fence: 7,
+              body: USER_MESSAGE,
+              admitFreshInput: async (enqueue) => enqueue(mode, false)
+            })
+          ).toMatchObject({ state: 'admitted' })
+          expect(
+            connection.calls.findLast((call) => call.method === 'turn/start')?.params
+          ).toMatchObject({
+            approvalPolicy: 'never',
+            approvalsReviewer: 'user',
+            sandboxPolicy: { type: 'readOnly' }
+          })
+          connection.handlers.onNotification?.('turn/completed', {
+            threadId: THREAD_ID,
+            turn: { id: turnId, status: 'completed' }
+          })
+        }
+        expect(connection.calls.slice(acquiredCalls).map((call) => call.method)).toEqual([
+          'turn/start',
+          'turn/start'
+        ])
+      } finally {
+        await adapter.closeAll()
+      }
+    }
+  )
+
   it('forks provider history into another thread without resuming or interrupting the parent', async () => {
     const request = vi.fn(async (_method: string) => ({
       thread: { id: 'child', historyMode: 'paginated' }

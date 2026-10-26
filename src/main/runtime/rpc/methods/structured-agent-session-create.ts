@@ -2,6 +2,7 @@ import { commitStructuredAgentSessionCreate } from './structured-agent-session-c
 export { commitStructuredAgentSessionCreate } from './structured-agent-session-create-commit'
 // Resolve the host launch identity, then commit an at-rest create or the compatible acquired path.
 
+import { assertAgentPromptRequestActive } from '../../orca-runtime-core'
 import { AGENT_CHAT_PERMISSION_MODE_OPTION_ID } from '../../../../shared/agent-chat-permission-mode'
 import { AgentSessionRefusalError } from '../../../../shared/agent-session-wire-refusals'
 import { computeAgentSessionPayloadFingerprint } from '../../../../shared/agent-session-mutation-envelope'
@@ -216,6 +217,8 @@ export async function createStructuredAgentSessionForWorktree(args: {
   tabId?: string
   /** Create without starting the agent; its first message starts it. */
   atRest?: true
+  firstMessage?: StructuredAgentSessionFirstMessage
+  signal?: AbortSignal
 }): Promise<AgentSessionMutationResult<AgentSessionAttachResult>> {
   // An at-rest create's ledger row is keyed by its intent, as a client's create is.
   const envelope = args.atRest
@@ -230,6 +233,7 @@ export async function createStructuredAgentSessionForWorktree(args: {
   if ('refusal' in prepared) {
     return { ok: false, refusal: prepared.refusal }
   }
+  assertAgentPromptRequestActive(args.signal)
   return commitStructuredAgentSessionCreate({
     runtime: args.runtime,
     caller: args.caller,
