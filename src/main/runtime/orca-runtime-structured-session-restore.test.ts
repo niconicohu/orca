@@ -18,6 +18,7 @@ describe('structured session cold restoration', () => {
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: title projection reads only the record and replacement list from this host stub.
     setStructuredAgentSessionHost({
       deps: {
+        agents: { capabilities: () => undefined },
         store: {
           getRecord: () => ({ location: { workspaceId: 'workspace-1' }, conversationName: name })
         }
@@ -259,6 +260,7 @@ describe('structured session cold restoration', () => {
     internal.refreshMobileSessionPtyRecords = async () => new Set()
     internal.ensureStructuredAgentSessionHost = async () => undefined
     setStructuredAgentSessionHost({
+      deps: { store: { getRecord: () => null }, agents: { capabilities: () => undefined } },
       reconcileRestartLeases: async () => undefined,
       restoreReadableSessions: async () => undefined,
       close: closeStructuredSession,
@@ -373,6 +375,7 @@ describe('structured session cold restoration', () => {
     internal.refreshMobileSessionPtyRecords = async () => new Set()
     internal.ensureStructuredAgentSessionHost = async () => undefined
     setStructuredAgentSessionHost({
+      deps: { store: { getRecord: () => null }, agents: { capabilities: () => undefined } },
       reconcileRestartLeases: async () => undefined,
       restoreReadableSessions: async () => undefined,
       listSessionTabs: () => [

@@ -216,7 +216,7 @@ function structuredAgentLaunchState(
     options.resumeFrom,
     options.hostSeedOptions,
     options.activate,
-    options.sideChatOf
+    ...(options.sideChatOf ? [options.sideChatOf] : [])
   )
   intent.beforeCreate = options.beforeCreate
   intent.surfaceAddress = options.surfaceAddress

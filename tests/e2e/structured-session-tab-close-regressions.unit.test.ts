@@ -195,6 +195,7 @@ describe('reopened structured session close', () => {
     setStructuredAgentSessionHost(
       // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: restore and tab close call only these host members.
       {
+        deps: { store: { getRecord: () => null }, agents: { capabilities: () => undefined } },
         reconcileRestartLeases: async () => undefined,
         restoreReadableSessions: async () => undefined,
         close: async (sessionId: string) => {
@@ -368,6 +369,7 @@ describe('in-flight structured session close', () => {
     setStructuredAgentSessionHost(
       // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: restore and tab close call only these host members.
       {
+        deps: { store: { getRecord: () => null }, agents: { capabilities: () => undefined } },
         reconcileRestartLeases: async () => undefined,
         restoreReadableSessions: async () => undefined,
         close: async (sessionId: string) => {

@@ -44,6 +44,7 @@ function installHost(options: { closeThrows?: boolean; lease?: Record<string, un
     release: () => {},
     subscribe: () => () => {},
     deps: {
+      agents: { capabilities: () => undefined },
       store: {
         getRecord: () => ({
           location: { executionHostId: 'local', wslDistro: null },

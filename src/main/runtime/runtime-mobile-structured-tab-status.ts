@@ -21,8 +21,8 @@ export function withStructuredChatStatus(
   tab = {
     ...tab,
     ...(record?.sideChat ? { sideChatOf: record.sideChat.sourceSessionId } : {}),
-    ...(host
-      ? { sideChatSupported: host.deps.agents.capabilities(tab.agent)?.sideChat === true }
+    ...(host?.deps.agents.capabilities(tab.agent)?.sideChat === true
+      ? { sideChatSupported: true }
       : {})
   }
   const paneKey = structuredAgentSessionPaneKey(
