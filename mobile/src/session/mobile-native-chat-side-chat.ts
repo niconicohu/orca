@@ -33,16 +33,20 @@ export async function openMobileSideChat(input: {
     input.sessionId,
     input.question
   )
-  if (result.kind === 'created') {
-    pendingSelectionRef.current = withLaunchReply(pendingSelectionRef.current, lock, result)
+  const sessionId = 'sessionId' in result ? result.sessionId : undefined
+  if (sessionId) {
+    pendingSelectionRef.current = withLaunchReply(pendingSelectionRef.current, lock, { sessionId })
     const landed = resolveLaunchedSelection(pendingSelectionRef.current, sessionTabsRef.current)
     const tab = sessionTabsRef.current.find((entry) => entry.id === landed.landedTabId)
     if (tab) {
       switchSessionTabRef.current?.(tab)
     }
-    return true
+    if (result.kind === 'created') {
+      return true
+    }
+  } else {
+    pendingSelectionRef.current = withoutUnansweredLaunch(pendingSelectionRef.current, lock)
   }
-  pendingSelectionRef.current = withoutUnansweredLaunch(pendingSelectionRef.current, lock)
   input.onError('message' in result ? result.message : 'This host cannot open a side chat.')
   return false
 }

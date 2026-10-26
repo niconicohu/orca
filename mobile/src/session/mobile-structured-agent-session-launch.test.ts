@@ -39,6 +39,106 @@ const acceptedCreateResult = {
 const acceptedCreate = { ok: true, result: acceptedCreateResult }
 
 describe('mobile side chat launch', () => {
+  it('does not replay an uncertain create into a different client authority generation', async () => {
+    const client = clientReturning()
+    let generation = 0
+    client.getGeneration = () => generation
+    client.sendRequest.mockImplementation(async (method: string, raw: unknown) => {
+      if (method === 'agentSession.createSupport') {
+        return { ok: true, result: { supported: true } }
+      }
+      const params = CreateIntentParams.parse(raw)
+      return {
+        ok: true,
+        result: {
+          ok: false,
+          refusal: { code: 'agent_session_operation_unknown', message: params.envelope.sessionId }
+        }
+      }
+    })
+    const open = () =>
+      createMobileStructuredAgentSession(
+        client,
+        'folder-1',
+        'codex',
+        'codex_parent_123',
+        'Question'
+      )
+    const first = await open()
+    generation += 1
+    const second = await open()
+    expect(first).toMatchObject({ kind: 'unknown', sessionId: expect.any(String) })
+    expect(second).toMatchObject({ kind: 'unknown', sessionId: expect.any(String) })
+    if (first.kind === 'unknown' && second.kind === 'unknown') {
+      expect(second.sessionId).not.toBe(first.sessionId)
+    }
+  })
+
+  it.each(['tabUnconfirmed', 'outcomeUnknown', 'transport'] as const)(
+    'recovers a later retry from %s with the original child, operation and question',
+    async (reason) => {
+      const client = clientReturning()
+      let attempts = 0
+      const unknownAttempts = reason === 'transport' ? 2 : 1
+      client.sendRequest.mockImplementation(async (method: string, raw: unknown) => {
+        if (method === 'agentSession.createSupport') {
+          return { ok: true, result: { supported: true } }
+        }
+        const params = CreateIntentParams.parse(raw)
+        if (++attempts <= unknownAttempts) {
+          if (reason === 'transport') {
+            throw new Error('lost acknowledgement')
+          }
+          return {
+            ok: true,
+            result: {
+              ok: false,
+              refusal: {
+                code: 'agent_session_operation_unknown',
+                message: reason,
+                details: { reason }
+              }
+            }
+          }
+        }
+        return {
+          ok: true,
+          result: {
+            ...acceptedCreateResult,
+            value: {
+              ...acceptedCreateResult.value,
+              sessionId: params.envelope.sessionId,
+              firstMessage: { clientMessageId: params.firstMessage?.clientMessageId }
+            }
+          }
+        }
+      })
+      const open = () =>
+        createMobileStructuredAgentSession(
+          client,
+          'folder-1',
+          'codex',
+          'codex_parent_123',
+          'Question'
+        )
+      const first = await open()
+      const creates = () =>
+        client.sendRequest.mock.calls
+          .filter(([method]) => method === 'agentSession.create')
+          .map(([, params]) => CreateIntentParams.parse(params))
+      const original = creates()[0]!
+      expect(first).toMatchObject({ kind: 'unknown' })
+      await expect(open()).resolves.toEqual({
+        kind: 'created',
+        sessionId: original.envelope.sessionId
+      })
+      expect(first).toMatchObject({ sessionId: original.envelope.sessionId })
+      expect(creates()).toEqual(Array.from({ length: unknownAttempts + 1 }, () => original))
+      await expect(open()).resolves.toMatchObject({ kind: 'created' })
+      expect(creates().at(-1)?.envelope.sessionId).not.toBe(original.envelope.sessionId)
+    }
+  )
+
   it('replays the same child and question after a lost acknowledgement', async () => {
     const client = clientReturning()
     let lost = true

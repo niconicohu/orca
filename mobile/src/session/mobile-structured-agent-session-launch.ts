@@ -37,7 +37,12 @@ export type MobileStructuredAgentLaunchResult =
   | { kind: 'created'; sessionId: string }
   | { kind: 'unsupported'; reason?: StructuredCreateSupport['reason'] }
   | { kind: 'failed'; message: string }
-  | { kind: 'unknown'; message: string }
+  | { kind: 'unknown'; message: string; sessionId?: string }
+
+const pendingSideChatCreates = new WeakMap<
+  RpcClient,
+  Map<string, StructuredAgentSessionCreateParams>
+>()
 
 function createParamsFor(
   agent: StructuredAgentId,
@@ -136,19 +141,47 @@ export async function createMobileStructuredAgentSession(
     return { kind: 'unsupported', reason: support?.reason }
   }
 
-  const params = createParamsFor(agent, worktree, sideChatOf, question)
-  rememberMobileCreatedStructuredSession(params.envelope.sessionId, worktree)
+  const key = sideChatOf
+    ? JSON.stringify([client.getGeneration?.() ?? 0, worktree, agent, sideChatOf, question ?? ''])
+    : null
+  const pending = key
+    ? (pendingSideChatCreates.get(client) ?? new Map<string, StructuredAgentSessionCreateParams>())
+    : null
+  if (pending) {
+    pendingSideChatCreates.set(client, pending)
+  }
+  const params =
+    (key ? pending?.get(key) : undefined) ?? createParamsFor(agent, worktree, sideChatOf, question)
+  if (key) {
+    pending?.set(key, params)
+  }
+  const result = await requestMobileStructuredCreate(client, params)
+  if (result.kind === 'unknown') {
+    return sideChatOf ? { ...result, sessionId: params.envelope.sessionId } : result
+  }
+  if (key && pending?.get(key) === params) {
+    pending.delete(key)
+  }
+  return result
+}
+
+async function requestMobileStructuredCreate(
+  client: RpcClient,
+  params: StructuredAgentSessionCreateParams
+): Promise<MobileStructuredAgentLaunchResult> {
+  const { agent } = params
+  rememberMobileCreatedStructuredSession(params.envelope.sessionId, params.worktree)
   let response
   try {
     response = await structuredAgentSessionCreate.request(client, params, {
-      timeoutMs: sideChatOf ? 195_000 : 15_000,
+      timeoutMs: params.sideChatOf ? 195_000 : 15_000,
       budgetSpansConnect: true
     })
   } catch {
     // Replay the durable envelope once so a lost acknowledgement cannot create a sibling.
     try {
       response = await structuredAgentSessionCreate.request(client, params, {
-        timeoutMs: sideChatOf ? 195_000 : 15_000,
+        timeoutMs: params.sideChatOf ? 195_000 : 15_000,
         budgetSpansConnect: true
       })
     } catch (retryError) {

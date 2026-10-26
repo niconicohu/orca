@@ -64,3 +64,28 @@ it('preserves a newer user tab pick while a side chat is being created', async (
   expect(nav.pendingSelectionRef.current).toEqual({ kind: 'tab', tabId: 'user-picked' })
   expect(nav.switchSessionTabRef.current).not.toHaveBeenCalled()
 })
+
+it('keeps an uncertain child selectable instead of discarding its original session', async () => {
+  const nav = navigation()
+  const onError = vi.fn()
+  vi.mocked(createMobileStructuredAgentSession).mockResolvedValue({
+    kind: 'unknown',
+    sessionId: 'codex_child_123',
+    message: 'Tab publication could not be confirmed'
+  })
+  await expect(
+    openMobileSideChat({
+      client: createFakeRpcClient(),
+      worktreeId: 'folder',
+      sessionId: 'codex_parent_123',
+      agent: 'codex',
+      navigation: nav,
+      onError
+    })
+  ).resolves.toBe(false)
+  expect(nav.pendingSelectionRef.current).toMatchObject({
+    kind: 'launched',
+    surface: { sessionId: 'codex_child_123' }
+  })
+  expect(onError).toHaveBeenCalledOnce()
+})

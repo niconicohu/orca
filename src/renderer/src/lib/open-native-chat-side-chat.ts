@@ -67,5 +67,8 @@ export async function openNativeChatSideChat(
     return false
   }
   const result = await launch.settlement
-  return result.kind === 'structured'
+  if (result.kind !== 'structured') {
+    return false
+  }
+  return result.promptDeliveryResult ? (await result.promptDeliveryResult).delivered : true
 }
