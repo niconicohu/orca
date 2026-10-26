@@ -1,4 +1,4 @@
-import type { AgentSessionHandleProvider } from '../../../src/shared/agent-session-provider-handle'
+import type { StructuredAgentId } from '../../../src/shared/agent-session-provider-handle'
 import type {
   AgentSessionAttachResult,
   AgentSessionMutationResult
@@ -9,7 +9,9 @@ import {
   structuredAgentSessionCreateParams,
   type StructuredAgentSessionCreateParams
 } from '../../../src/shared/structured-agent-session-create'
-import { TUI_AGENT_DISPLAY_NAMES } from '../../../src/shared/tui-agent-display-names'
+import { formatAgentTypeLabel } from '../../../src/shared/agent-type-label'
+import { structuredAgentSessionSendBody } from '../../../src/shared/structured-agent-session-send-mutation'
+import { structuredSessionOperationId } from './structured-session-operation-id'
 import { hasRuntimeRpcErrorCode } from '../../../src/shared/runtime-rpc-error-code'
 import type { RpcClient } from '../transport/rpc-client'
 import {
@@ -38,36 +40,47 @@ export type MobileStructuredAgentLaunchResult =
   | { kind: 'unknown'; message: string }
 
 function createParamsFor(
-  agent: AgentSessionHandleProvider,
-  worktree: string
+  agent: StructuredAgentId,
+  worktree: string,
+  sideChatOf?: string,
+  question?: string
 ): StructuredAgentSessionCreateParams {
   return structuredAgentSessionCreateParams({
     sessionId: createStructuredAgentSessionId(agent, randomV4Uuid),
     worktree,
     agent,
+    ...(sideChatOf ? { sideChatOf } : {}),
+    ...(question?.trim()
+      ? {
+          firstMessage: {
+            clientMessageId: structuredSessionOperationId(),
+            body: structuredAgentSessionSendBody(question, [])
+          }
+        }
+      : {}),
     randomUuid: randomV4Uuid
   })
 }
 
 function unknownCreateResult(
-  agent: AgentSessionHandleProvider,
+  agent: StructuredAgentId,
   error: unknown
 ): MobileStructuredAgentLaunchResult {
   const message = error instanceof Error ? error.message.trim() : ''
   return { kind: 'unknown', message: message || unconfirmedMessage(agent) }
 }
 
-function unconfirmedMessage(agent: AgentSessionHandleProvider): string {
-  return `The ${TUI_AGENT_DISPLAY_NAMES[agent]} chat result could not be confirmed.`
+function unconfirmedMessage(agent: StructuredAgentId): string {
+  return `The ${formatAgentTypeLabel(agent)} chat result could not be confirmed.`
 }
 
-function failedMessage(agent: AgentSessionHandleProvider): string {
-  return `Could not open ${TUI_AGENT_DISPLAY_NAMES[agent]} chat.`
+function failedMessage(agent: StructuredAgentId): string {
+  return `Could not open ${formatAgentTypeLabel(agent)} chat.`
 }
 
 // Only definitive refusal permits failure/fallback; uncertain creates may already own a session and must not create a sibling.
 function classifyCreateRefusal(
-  agent: AgentSessionHandleProvider,
+  agent: StructuredAgentId,
   code: string,
   message: string
 ): MobileStructuredAgentLaunchResult {
@@ -80,7 +93,9 @@ function classifyCreateRefusal(
 export async function createMobileStructuredAgentSession(
   client: RpcClient,
   worktreeId: string,
-  agent: AgentSessionHandleProvider
+  agent: StructuredAgentId,
+  sideChatOf?: string,
+  question?: string
 ): Promise<MobileStructuredAgentLaunchResult> {
   const worktree = `id:${worktreeId}`
   let supportResponse
@@ -121,19 +136,19 @@ export async function createMobileStructuredAgentSession(
     return { kind: 'unsupported', reason: support?.reason }
   }
 
-  const params = createParamsFor(agent, worktree)
+  const params = createParamsFor(agent, worktree, sideChatOf, question)
   rememberMobileCreatedStructuredSession(params.envelope.sessionId, worktree)
   let response
   try {
     response = await structuredAgentSessionCreate.request(client, params, {
-      timeoutMs: 15_000,
+      timeoutMs: sideChatOf ? 195_000 : 15_000,
       budgetSpansConnect: true
     })
   } catch {
     // Replay the durable envelope once so a lost acknowledgement cannot create a sibling.
     try {
       response = await structuredAgentSessionCreate.request(client, params, {
-        timeoutMs: 15_000,
+        timeoutMs: sideChatOf ? 195_000 : 15_000,
         budgetSpansConnect: true
       })
     } catch (retryError) {
@@ -180,5 +195,17 @@ export async function createMobileStructuredAgentSession(
   ) {
     return unknownCreateResult(agent, new Error(unconfirmedMessage(agent)))
   }
-  return { kind: 'created', sessionId: result.value.sessionId }
+  if (
+    params.firstMessage &&
+    result.value.firstMessage?.clientMessageId !== params.firstMessage.clientMessageId
+  ) {
+    return unknownCreateResult(
+      agent,
+      new Error('The side chat’s first question could not be confirmed.')
+    )
+  }
+  return {
+    kind: 'created',
+    sessionId: result.value.sessionId
+  }
 }

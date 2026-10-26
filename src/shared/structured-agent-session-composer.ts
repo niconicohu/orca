@@ -43,6 +43,7 @@ export type StructuredAgentSessionComposerOptions = {
   ) => Promise<Omit<StructuredAgentSessionCommandOutcome, 'handled'>>
   /** Without host goal support, /goal remains agent-handled text. */
   setThreadGoalObjective?: (objective: string) => Promise<boolean>
+  openSideChat?: (question: string) => Promise<boolean>
 }
 
 /** Visible condition holding a refusal: agent/prompt/background work, an in-flight send or a Retry card. */
@@ -65,7 +66,7 @@ function commandParts(text: string): { name: string; argument: string } | null {
   if (!text.startsWith('/')) {
     return null
   }
-  const match = /^\/([^\s]+)(?:\s+(.*))?$/.exec(text.trimEnd())
+  const match = /^\/([^\s]+)(?:\s+([\s\S]*))?$/.exec(text.trimEnd())
   return match ? { name: match[1]!.toLowerCase(), argument: match[2]?.trim() ?? '' } : null
 }
 
@@ -93,16 +94,24 @@ export function structuredSlashCommands(
 export function structuredSessionSlashCommands(
   agent: AgentType,
   conversationCommands: readonly AgentSessionConversationCommand[] | undefined,
-  reported: readonly AgentSessionSlashCommand[] | undefined
+  reported: readonly AgentSessionSlashCommand[] | undefined,
+  sideChat = false
 ): readonly SlashCommandSuggestion[] {
-  const hostOwned = structuredSlashCommands(conversationCommands, agent)
+  const hostOwned = [
+    ...structuredSlashCommands(conversationCommands, agent),
+    ...(sideChat
+      ? [{ name: 'btw', description: 'Start a side chat with this conversation’s context' }]
+      : [])
+  ]
   if (reported === undefined) {
     return hostOwned
   }
   const offered = new Set(hostOwned.map(({ name }) => name))
   return [
     ...hostOwned,
-    ...sessionSlashCommandSuggestions(agent, reported).filter(({ name }) => !offered.has(name))
+    ...sessionSlashCommandSuggestions(agent, reported).filter(
+      ({ name }) => !offered.has(name) && (name !== 'btw' || sideChat)
+    )
   ]
 }
 
@@ -124,7 +133,9 @@ export function isStructuredAgentSessionComposerCommand(
 ): boolean {
   const command = commandParts(text)
   return Boolean(
-    command && structuredRecognizedCommands(agent).some((entry) => entry.name === command.name)
+    command &&
+    (command.name === 'btw' ||
+      structuredRecognizedCommands(agent).some((entry) => entry.name === command.name))
   )
 }
 
@@ -178,6 +189,17 @@ export async function dispatchStructuredAgentSessionComposerCommand(
   controller: StructuredAgentSessionComposerOptions
 ): Promise<StructuredAgentSessionCommandOutcome> {
   const command = commandParts(text)
+  if (command?.name === 'btw') {
+    if (!controller.openSideChat) {
+      return {
+        handled: true,
+        accepted: false,
+        error: 'Side chats are not supported by this chat host.'
+      }
+    }
+    const accepted = await controller.openSideChat(command.argument)
+    return { handled: true, accepted, error: accepted ? null : 'Could not open a side chat.' }
+  }
   if (command?.name === 'goal' && controller.setThreadGoalObjective) {
     if (!command.argument) {
       return { handled: true, accepted: false, error: 'Describe the goal after /goal.' }

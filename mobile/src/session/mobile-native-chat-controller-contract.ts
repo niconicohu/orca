@@ -24,6 +24,7 @@ import type { MobileNativeChatSessionOptionPickersProps } from './MobileNativeCh
 import type { MobileNativeChatVisualSource } from './mobile-native-chat-visual-read'
 
 export type MobileNativeChatController = {
+  openSideChat?: (question: string) => Promise<boolean>
   sessionViewReady: boolean
   isTabChatView: (tabId: string) => boolean
   setTabView: (tabId: string, view: MobileSessionView) => void

@@ -1,3 +1,4 @@
+import { CreateIntentParams } from '../../../src/shared/rpc-contract/structured-agent-session-params'
 import { describe, expect, it, vi } from 'vitest'
 import type { RpcClient } from '../transport/rpc-client'
 import { markRpcDeliveryUnknown } from '../transport/rpc-delivery-ambiguity'
@@ -36,6 +37,62 @@ const acceptedCreateResult = {
   }
 }
 const acceptedCreate = { ok: true, result: acceptedCreateResult }
+
+describe('mobile side chat launch', () => {
+  it('replays the same child and question after a lost acknowledgement', async () => {
+    const client = clientReturning()
+    let lost = true
+    client.sendRequest.mockImplementation(async (method: string, raw: unknown) => {
+      if (method === 'agentSession.createSupport') {
+        return { ok: true, result: { supported: true } }
+      }
+      const params = CreateIntentParams.parse(raw)
+      if (lost) {
+        lost = false
+        throw new Error('acknowledgement lost')
+      }
+      return {
+        ok: true,
+        result: {
+          ...acceptedCreateResult,
+          value: {
+            ...acceptedCreateResult.value,
+            sessionId: params.envelope.sessionId,
+            firstMessage: { clientMessageId: params.firstMessage?.clientMessageId }
+          }
+        }
+      }
+    })
+    await expect(
+      createMobileStructuredAgentSession(
+        client,
+        'folder-1',
+        'codex',
+        'codex_parent_123',
+        'Why this design?'
+      )
+    ).resolves.toMatchObject({ kind: 'created' })
+    expect(client.sendRequest.mock.calls[1]?.[1]).toEqual(client.sendRequest.mock.calls[2]?.[1])
+    expect(client.sendRequest.mock.calls[1]?.[1]).toMatchObject({
+      sideChatOf: 'codex_parent_123',
+      firstMessage: { body: { blocks: [{ type: 'text', text: 'Why this design?' }] } }
+    })
+  })
+
+  it('keeps an unacknowledged question unknown instead of opening another child', async () => {
+    const client = clientReturning({ ok: true, result: { supported: true } }, acceptedCreate)
+    await expect(
+      createMobileStructuredAgentSession(
+        client,
+        'folder-1',
+        'codex',
+        'codex_parent_123',
+        'Question'
+      )
+    ).resolves.toMatchObject({ kind: 'unknown' })
+    expect(client.sendRequest).toHaveBeenCalledTimes(2)
+  })
+})
 
 describe('mobile structured agent-session launch', () => {
   it.each([false, true])(

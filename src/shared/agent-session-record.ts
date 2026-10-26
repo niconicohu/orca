@@ -1,5 +1,6 @@
 import { isAgentSessionRewindRecord, type AgentSessionRewindRecord } from './agent-session-rewind'
 import { isAgentSessionLaunchArgs } from './agent-session-launch-args'
+import { AgentSessionSideChatSchema, type AgentSessionSideChat } from './agent-session-side-chat'
 import { isAgentSessionConversationName } from './agent-session/agent-session-conversation-name'
 import {
   isPersistedAgentSessionHandoffStage,
@@ -119,6 +120,7 @@ export type AgentSessionRecord = {
   /** The agent this session names, whether this build can run it or not. */
   provider: string
   providerHandleChain: AgentSessionProviderHandleLink[]
+  sideChat?: AgentSessionSideChat
   providerContextBoundary?: AgentSessionProviderContextBoundary
   accountHome: AgentSessionAccountHome
   /** Initial launch directory in host path syntax. Floating sessions resume here; worktree/folder IDs resolve their durable location. */
@@ -316,6 +318,8 @@ export function isPersistedAgentSessionRecord(
     isAgentSessionId(record.sessionId) &&
     isAgentSessionExecutionLocation(record.location) &&
     isStructuredAgentId(record.provider) &&
+    (record.sideChat === undefined ||
+      AgentSessionSideChatSchema.safeParse(record.sideChat).success) &&
     isAgentSessionAccountHome(record.accountHome) &&
     (record.launchDirectory === undefined ||
       isBoundedString(record.launchDirectory, MAX_PATH_LENGTH)) &&

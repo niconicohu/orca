@@ -4,7 +4,7 @@ import type {
   StructuredAgentSessionFirstMessage,
   StructuredAgentSessionResumeSource
 } from '../../../../../shared/structured-agent-session-create'
-import { isAgentSessionOptions } from '../../../../../shared/agent-session-record'
+import { isAgentSessionId, isAgentSessionOptions } from '../../../../../shared/agent-session-record'
 import { SendBodyStructure } from '../../../../../shared/rpc-contract/structured-agent-session-message-params'
 import { parseExecutionHostId, type ExecutionHostId } from '../../../../../shared/execution-host'
 import type { StructuredAgentSessionLaunchIntent } from '../../launch-structured-agent-session'
@@ -53,6 +53,7 @@ export type StructuredAgentLaunchPersistedRecord = {
   payloadFingerprint: string
   expectedRuntimeFence: number | null
   resumeFrom?: StructuredAgentSessionResumeSource
+  sideChatOf?: string
   firstMessage?: StructuredAgentSessionFirstMessage
   options?: Readonly<Record<string, string>>
   createMessageSupport?: boolean
@@ -66,7 +67,7 @@ export function structuredAgentLaunchRecordFor(
   intent: StructuredAgentSessionLaunchIntent,
   lifecycle: StructuredAgentLaunchPersistedLifecycle
 ): StructuredAgentLaunchPersistedRecord {
-  const { envelope, resumeFrom, firstMessage, options } = intent.params
+  const { envelope, resumeFrom, firstMessage, options, sideChatOf } = intent.params
   // A local launch re-reads this machine's settings on reload; only a paired server's seed is kept.
   const pairedSeed = intent.target.kind === 'local' ? undefined : intent.seedOptions
   return {
@@ -79,6 +80,7 @@ export function structuredAgentLaunchRecordFor(
     payloadFingerprint: envelope.payloadFingerprint,
     expectedRuntimeFence: envelope.expectedRuntimeFence,
     ...(resumeFrom ? { resumeFrom } : {}),
+    ...(sideChatOf ? { sideChatOf } : {}),
     ...(firstMessage ? { firstMessage } : {}),
     ...(options ? { options } : {}),
     ...(intent.createMessageSupport === undefined
@@ -116,6 +118,7 @@ export function validRecord(value: unknown): value is Omit<
     expectedRuntimeFence
   } = value
   const resumeFrom = 'resumeFrom' in value ? value.resumeFrom : undefined
+  const sideChatOf = 'sideChatOf' in value ? value.sideChatOf : undefined
   const executionHostId = 'executionHostId' in value ? value.executionHostId : undefined
   const failedAt = 'failedAt' in value ? value.failedAt : undefined
   const firstMessage = 'firstMessage' in value ? value.firstMessage : undefined
@@ -134,6 +137,7 @@ export function validRecord(value: unknown): value is Omit<
     (expectedRuntimeFence === null || typeof expectedRuntimeFence === 'number') &&
     (failedAt === undefined || Number.isFinite(failedAt)) &&
     (firstMessage === undefined || validFirstMessage(firstMessage)) &&
+    (sideChatOf === undefined || (isAgentSessionId(sideChatOf) && resumeFrom === undefined)) &&
     (options === undefined || isAgentSessionOptions(options)) &&
     (createMessageSupport === undefined || typeof createMessageSupport === 'boolean') &&
     (resumeFrom === undefined ||

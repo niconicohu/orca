@@ -207,9 +207,11 @@ export async function readStructuredAgentSessionOptions(
   const floor = session.journal.context.floor()
   const contextFloor = floor ? { contextFloor: floor } : {}
   // Intent and the live agent report stay separate: own never claims a mode before startup.
-  const permissionMode = record
-    ? await structuredAgentSessionLaunchPermission(context.deps, record)
-    : null
+  const permissionMode = record?.sideChat
+    ? 'read-only'
+    : record
+      ? await structuredAgentSessionLaunchPermission(context.deps, record)
+      : null
   const resting = live ? await atRest() : null
   const selected = resting ?? options
   const independent = independentAgentModelCatalog(agent)
@@ -305,7 +307,7 @@ export async function readStructuredAgentSessionOptions(
     // Live children may narrow declared capabilities, never expand them.
     acceptsImages: capabilities?.imagePrompts === true && options.acceptsImages !== false,
     ...structuredAgentSessionThreadGoalReport(
-      capabilities?.threadGoal === true,
+      capabilities?.threadGoal === true && !record?.sideChat,
       session.journal.threadGoal(),
       contextFloor
     ),

@@ -35,6 +35,7 @@ export type StructuredAgentSessionCreateIntentInput = {
   agent: StructuredAgentId
   callerKey?: string
   resumeFrom?: StructuredAgentSessionResumeSource
+  sideChatOf?: string
   structuredAgentCliSourceEvidence?: StructuredAgentCliSourceEvidence
 }
 

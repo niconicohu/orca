@@ -109,6 +109,7 @@ export function useMobileSessionAttachments(scope: MobileSessionAccessorySelecti
       onError: triggerError
     })
   const nativeChatStructuredComposer = useMobileNativeChatStructuredComposer({
+    sideChat: nativeChatController.openSideChat !== undefined,
     client,
     hostId,
     sessionId: nativeChatSessionId,

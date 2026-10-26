@@ -19012,6 +19012,9 @@
       "useKnownId": "Use known user ID \"{{value0}}\""
     },
     "native-chat": {
+      "sideChat": {
+        "new": "New side chat"
+      },
       "install": {
         "checking": "Checking whether {{agent}} is ready on this host…"
       },

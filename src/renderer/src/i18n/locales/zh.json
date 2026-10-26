@@ -18611,6 +18611,9 @@
   },
   "components": {
     "native-chat": {
+      "sideChat": {
+        "new": "新建旁聊"
+      },
       "install": {
         "checking": "正在检查 {{agent}} 是否已在此主机上就绪…"
       },

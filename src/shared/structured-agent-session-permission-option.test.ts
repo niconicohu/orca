@@ -188,3 +188,14 @@ describe('the permission mode picker', () => {
     expect(structuredAgentSessionOptionPicks(state, { permissionMode: 'full-access' })).toEqual([])
   })
 })
+
+it('shows a fixed read-only policy for a side chat instead of offering escalation', () => {
+  expect(
+    permission(
+      live('codex', { permissionMode: 'read-only', reportedPermissionMode: 'full-access' })
+    )
+  ).toMatchObject({
+    settable: false,
+    kind: { currentValue: 'read-only', choices: [{ value: 'read-only', label: 'Read only' }] }
+  })
+})

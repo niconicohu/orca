@@ -51,7 +51,7 @@ export function useMobileStructuredSendWithOutcome(args: {
   commandPending: { current: boolean }
   controller: Pick<
     StructuredAgentSessionComposerOptions,
-    'snapshot' | 'setOption' | 'invokeAction' | 'conversationCommands'
+    'snapshot' | 'setOption' | 'invokeAction' | 'conversationCommands' | 'openSideChat'
   >
   onSendError: MobileNativeChatSendErrorReporter
   // Older hosts accept neither per-chat model nor effort.
@@ -78,6 +78,7 @@ export function useMobileStructuredSendWithOutcome(args: {
     stateRef,
     stopping
   } = args
+  const { snapshot, setOption, invokeAction, conversationCommands, openSideChat } = controller
   return useCallback(
     async (
       text: string,
@@ -107,7 +108,14 @@ export function useMobileStructuredSendWithOutcome(args: {
         sessionId,
         fence: currentFence,
         pending: commandPending,
-        controller: { agent: agent ?? undefined, ...controller },
+        controller: {
+          agent: agent ?? undefined,
+          snapshot,
+          setOption,
+          invokeAction,
+          conversationCommands,
+          openSideChat
+        },
         busy: () =>
           actionableStructuredApproval(stateRef.current) ||
           actionableStructuredQuestion(stateRef.current)
@@ -174,7 +182,11 @@ export function useMobileStructuredSendWithOutcome(args: {
       client,
       commandPending,
       commandsWait,
-      controller,
+      snapshot,
+      setOption,
+      invokeAction,
+      conversationCommands,
+      openSideChat,
       enabled,
       hold,
       onSendError,

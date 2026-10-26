@@ -45,6 +45,7 @@ import {
 } from '../../../../shared/agent-session-account-home'
 
 export type AgentSessionReserveRequest = {
+  sideChat?: AgentSessionRecord['sideChat']
   /** Host-resolved floating directory committed with the first owner reservation. */
   launchDirectory?: string
   sessionId: string

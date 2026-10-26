@@ -72,6 +72,9 @@ export async function changeCodexThreadGoalWithSettings(
   timeoutMs: number | undefined,
   current: () => boolean
 ): Promise<{ ok: true } | { ok: false; rejected: string }> {
+  if (session.sideChat) {
+    return { ok: false, rejected: 'Side chats cannot run autonomous goals.' }
+  }
   const generation = session.acquisitionGeneration
   const startsWork =
     input.change.kind === 'set' ||
