@@ -21,7 +21,8 @@ it.each([
 it.each([
   'src/main/runtime/editor-view-layout-apply.test.ts',
   'src/main/runtime/restored-editor-move-restart.test.ts',
-  'src/main/runtime/workspaces/persisted-surfaces/sweep-terminal-placement.test.ts'
-])('routes the real topology SQLite fixture consumer to Node: %s', (file) => {
+  'src/main/runtime/workspaces/persisted-surfaces/sweep-terminal-placement.test.ts',
+  'tests/e2e/helpers/persisted-profile-state.unit.test.ts'
+])('routes the real SQLite fixture consumer to Node: %s', (file) => {
   expect(importsSqliteRuntime(file, readFileSync(file, 'utf8'))).toBe(true)
 })
