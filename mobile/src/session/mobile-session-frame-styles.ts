@@ -166,9 +166,10 @@ export const mobileSessionFrameStyles = StyleSheet.create({
   sideChatBadge: {
     flexShrink: 0,
     overflow: 'hidden',
+    backgroundColor: colors.bgRaised,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
-    borderRadius: radii.card,
+    borderRadius: radii.row,
     paddingHorizontal: spacing.xs,
     color: colors.textSecondary,
     fontWeight: '500',
