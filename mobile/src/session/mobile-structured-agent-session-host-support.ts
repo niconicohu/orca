@@ -10,7 +10,8 @@ import {
   AGENT_SESSION_QUEUED_MESSAGE_EDIT_RUNTIME_CAPABILITY,
   AGENT_SESSION_QUEUED_MESSAGE_IMAGE_EDIT_RUNTIME_CAPABILITY,
   AGENT_SESSION_STATUS_FEED_RUNTIME_CAPABILITY,
-  AGENT_SESSION_REPEATED_STOP_RUNTIME_CAPABILITY
+  AGENT_SESSION_REPEATED_STOP_RUNTIME_CAPABILITY,
+  STRUCTURED_AGENT_SESSION_REGENERATE_NAME_RUNTIME_CAPABILITY
 } from '../../../src/shared/protocol-version'
 import { AGENT_SESSION_SEND_OPTIONS_RUNTIME_CAPABILITY } from '../../../src/shared/agent-session-create-capabilities'
 import {
@@ -20,6 +21,7 @@ import {
 import { AGENT_SESSION_PHONE_ATTACHMENTS_RUNTIME_CAPABILITY } from '../../../src/shared/agent-session-runtime-capabilities'
 
 export type StructuredAgentSessionHostSupport = {
+  regenerateName?: boolean
   sideChat?: boolean
   coherentModelCatalog?: boolean
   promptCancel: boolean
@@ -49,6 +51,9 @@ export function structuredAgentSessionHostSupport(
   capabilities: readonly string[]
 ): StructuredAgentSessionHostSupport {
   return {
+    regenerateName: capabilities.includes(
+      STRUCTURED_AGENT_SESSION_REGENERATE_NAME_RUNTIME_CAPABILITY
+    ),
     sideChat: capabilities.includes(AGENT_SESSION_SIDE_CHAT_RUNTIME_CAPABILITY),
     coherentModelCatalog: capabilities.includes(AGENT_SESSION_COHERENT_MODEL_CATALOG_CAPABILITY),
     promptCancel: capabilities.includes(AGENT_SESSION_PROMPT_CANCEL_RUNTIME_CAPABILITY),

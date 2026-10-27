@@ -2,6 +2,7 @@ import type { TerminalTab } from '../../../../shared/terminal-tab-types'
 import { CliChatResumeMenuItems } from './CliChatResumeMenuItems'
 import { NativeChatCliForkMenuItems } from './NativeChatCliForkMenuItems'
 import type { NativeChatTabSession } from './tab-session-history-switch'
+import { NativeChatRegenerateNameMenuItem } from './NativeChatRegenerateNameMenuItem'
 import { NativeChatSideChatMenuItem } from './NativeChatSideChatMenuItem'
 
 export function TabSessionSurfaceSwitchMenuItems(props: {
@@ -14,6 +15,7 @@ export function TabSessionSurfaceSwitchMenuItems(props: {
     <>
       <NativeChatCliForkMenuItems {...props} nativeChat={props.nativeChat} />
       <NativeChatSideChatMenuItem {...props} nativeChat={props.nativeChat} />
+      <NativeChatRegenerateNameMenuItem {...props} nativeChat={props.nativeChat} />
     </>
   ) : (
     <CliChatResumeMenuItems {...props} />

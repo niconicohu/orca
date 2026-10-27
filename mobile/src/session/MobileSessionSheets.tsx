@@ -1,3 +1,4 @@
+import { getMobileChatNamingActions } from './mobile-native-chat-naming-actions'
 import { getMobileSideChatActions } from './mobile-native-chat-side-chat-actions'
 import { Platform } from 'react-native'
 import { useClipboardWriter } from '../platform/clipboard'
@@ -98,6 +99,11 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
   } = controller
   const clipboard = useClipboardWriter()
   const onPairedHost = useWorkspaceOnPairedHost()
+  const chatActionArgs = {
+    controller,
+    tab: agentSessionActionTarget,
+    onDismiss: () => setAgentSessionActionTarget(null)
+  }
   return (
     <>
       <MobileSessionHeaderMoreActionsSheet
@@ -280,16 +286,11 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
         visible={agentSessionActionTarget != null}
         title={agentSessionActionTarget?.title || 'Chat'}
         actions={[
-          ...getMobileSideChatActions({
-            controller,
-            tab: agentSessionActionTarget,
-            onDismiss: () => setAgentSessionActionTarget(null)
-          }),
+          ...getMobileSideChatActions(chatActionArgs),
+          ...getMobileChatNamingActions(chatActionArgs),
           ...getMobileNativeChatCliForkActions({
-            controller,
-            tab: agentSessionActionTarget,
-            workspaceOnPairedHost: onPairedHost,
-            onDismiss: () => setAgentSessionActionTarget(null)
+            ...chatActionArgs,
+            workspaceOnPairedHost: onPairedHost
           }),
           ...closeWithBulkActions(agentSessionActionTarget, () => setAgentSessionActionTarget(null))
         ]}

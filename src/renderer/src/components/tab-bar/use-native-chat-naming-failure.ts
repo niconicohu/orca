@@ -1,12 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { StructuredChatTabNamingFailure } from '@/runtime/structured-conversation-name'
 import { structuredAgentSessionTargetForHost } from '@/runtime/structured-agent-session-owner'
-import { regenerateStructuredAgentSessionName } from '@/runtime/structured-agent-session-client'
-import { useStructuredAgentSessionHostCapabilityState } from '@/runtime/structured-agent-session-host-capability'
-import { getStructuredAgentSessionStatusFeed } from '@/runtime/structured-agent-session-status-feed'
-import { STRUCTURED_AGENT_SESSION_REGENERATE_NAME_RUNTIME_CAPABILITY } from '../../../../shared/protocol-version'
-
-const noSubscription = () => () => {}
+import { useNativeChatNameGeneration } from './use-native-chat-name-generation'
 
 export type NativeChatNamingFailureControls = {
   message: string
@@ -32,25 +27,11 @@ export function useNativeChatNamingFailure(
     () => (failing ? structuredAgentSessionTargetForHost(executionHostId) : null),
     [executionHostId, failing]
   )
-  const support = useStructuredAgentSessionHostCapabilityState(
-    target,
-    STRUCTURED_AGENT_SESSION_REGENERATE_NAME_RUNTIME_CAPABILITY
-  )
-  const feed = useMemo(
-    () => (target ? getStructuredAgentSessionStatusFeed(target) : null),
-    [target]
-  )
-  useEffect(() => feed?.activate(), [feed])
-  const regenerating = useSyncExternalStore(
-    feed?.subscribe ?? noSubscription,
-    () => (sessionId ? (feed?.getNamingActive(sessionId) ?? null) : null),
-    () => null
-  )
+  const generation = useNativeChatNameGeneration(target, sessionId)
+  const { regenerate: requestNameGeneration } = generation
   const regenerate = useCallback(() => {
-    if (target && sessionId && support === 'supported') {
-      void regenerateStructuredAgentSessionName(target, sessionId)
-    }
-  }, [target, support, sessionId])
+    void requestNameGeneration()
+  }, [requestNameGeneration])
   const readFullOutput = useCallback(async () => {
     // The full output never leaves the host that ran the agent; a paired one shows the message.
     const local = structuredAgentSessionTargetForHost(executionHostId)?.kind === 'local'
@@ -64,8 +45,8 @@ export function useNativeChatNamingFailure(
   }
   return {
     message: failure.error.message,
-    canRegenerate: support === 'supported',
-    regenerating: regenerating === true,
+    canRegenerate: generation.canRegenerate,
+    regenerating: generation.regenerating,
     regenerate,
     dialogOpen,
     setDialogOpen,
