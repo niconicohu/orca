@@ -206,7 +206,10 @@ export function runLocalSourceControlPlan(input: {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         finalize({
           success: false,
-          error: `${plan.binary} not found on PATH. Install ${plan.label} to use AI commit messages.`
+          error:
+            operation === 'conversation-name'
+              ? `${plan.binary} not found on PATH. Choose an installed agent in Settings -> Chat -> Chat names.`
+              : `${plan.binary} not found on PATH. Install ${plan.label} to use AI commit messages.`
         })
         return
       }

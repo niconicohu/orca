@@ -349,7 +349,15 @@ describe('context-owned one-shot settlement', () => {
           )
           child.emit('close', 127)
         }
-        await expect(request).resolves.toMatchObject({ success: false })
+        await expect(request).resolves.toMatchObject({
+          success: false,
+          ...(route !== 'throw'
+            ? {
+                error:
+                  'chosen-agent not found on PATH. Choose an installed agent in Settings -> Chat -> Chat names.'
+              }
+            : {})
+        })
         expect(child.kill).not.toHaveBeenCalled()
       } finally {
         errors.mockRestore()
