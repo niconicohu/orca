@@ -58,6 +58,10 @@ import { MobileNativeChatRowList } from './MobileNativeChatRowList'
 import { useMobileNativeChatRowRenderer } from './use-mobile-native-chat-row-renderer'
 import type { MobileNativeChatStatus } from './use-mobile-native-chat-session'
 import type { OlderPagePhase } from './use-mobile-older-page-loader'
+import {
+  MobileNativeChatThreadGoalBanner,
+  type MobileNativeChatThreadGoal
+} from './MobileNativeChatThreadGoalBanner'
 
 export type MobileNativeChatInputLockReason = 'disconnected' | 'waiting'
 
@@ -74,6 +78,7 @@ type Props = ComposerTrayProps & {
   canStop?: boolean
   structuredActivityUi?: boolean
   turnIndicator?: NativeChatLiveTurnIndicator | null
+  threadGoal?: MobileNativeChatThreadGoal | null
   workingStartedAt?: number | null
   settledTurns?: NativeChatSettledTurns | null
   turnJournal?: NativeChatTurnJournal | null
@@ -144,6 +149,7 @@ export function MobileNativeChatView({
   canStop = agentWorking,
   structuredActivityUi = false,
   turnIndicator = null,
+  threadGoal = null,
   workingStartedAt,
   settledTurns,
   turnJournal = null,
@@ -372,6 +378,7 @@ export function MobileNativeChatView({
       ) : null}
       {}
       {trayContent}
+      {threadGoal ? <MobileNativeChatThreadGoalBanner key={sendSurfaceId} {...threadGoal} /> : null}
       <MobileNativeChatComposer
         structured={structuredActivityUi ? structuredComposer : null}
         value={composerText}

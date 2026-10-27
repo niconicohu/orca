@@ -68,7 +68,6 @@ export function useMobileStructuredAgentSession(
   // Gate queueing by capability while accepting published cards from every host.
   const queueCapable = hostSupport?.queuedMessages === true
   const commandsWait = queueCapable && hostSupport?.queuedCommands === true
-  const promptCancelSupported = hostSupport?.promptCancel ?? null
   const hostAnswersRepeatedStops = hostSupport?.quietRepeatedStop ?? null
   const hostStopsConversation = hostSupport?.conversationStop ?? null
   const sessionKey = encodeNativeChatTranscriptIdentity([sourceIdentity, agent, sessionId])
@@ -97,6 +96,7 @@ export function useMobileStructuredAgentSession(
     agent,
     client,
     sessionId,
+    sessionKey,
     enabled,
     fence: state.fence,
     mutate,
@@ -149,12 +149,12 @@ export function useMobileStructuredAgentSession(
   )
   const turnId = runningStructuredAgentSessionTurnId(state)
   const turnTiming = useMobileStructuredAgentTurnTiming(
-    { ...state, items: transcriptItems },
-    turnId
+    { ...state, threadGoalReport: options.threadGoalReport, connected },
+    turnId,
+    transcriptItems
   )
   const activityText =
     selectStructuredAgentTurnActivity(state.items, turnId, state.activity)?.text ?? null
-  const thinking = isStructuredAgentSessionThinking(state)
   const isWorking = structuredAgentSessionHostSaysWorking(state.working, () =>
     isStructuredAgentSessionMainAgentWorking(turnId, state.submissions, state.fence)
   )
@@ -197,7 +197,7 @@ export function useMobileStructuredAgentSession(
   })
   const turnIndicator = useMemo(
     () => ({
-      thinking,
+      thinking: isStructuredAgentSessionThinking(state),
       activityText,
       stopping,
       stopRequestInFlight,
@@ -209,7 +209,7 @@ export function useMobileStructuredAgentSession(
           }
         : {})
     }),
-    [thinking, activityText, stopping, stopRequestInFlight, queueCapable, state]
+    [activityText, stopping, stopRequestInFlight, queueCapable, state]
   )
   const { items, currentRequests, actionablePromptIds, status } = state
   // Prefer host actionability: ended-agent prompts must receive no answer.
@@ -253,7 +253,7 @@ export function useMobileStructuredAgentSession(
         inFlight: inFlightStopsRef.current,
         onSendError,
         prompt,
-        promptCancelSupported,
+        promptCancelSupported: hostSupport?.promptCancel ?? null,
         sessionId,
         stateRef
       }),
@@ -263,7 +263,7 @@ export function useMobileStructuredAgentSession(
       hostAnswersRepeatedStops,
       hostStopsConversation,
       onSendError,
-      promptCancelSupported,
+      hostSupport?.promptCancel,
       sessionId,
       stateRef
     ]
@@ -280,6 +280,7 @@ export function useMobileStructuredAgentSession(
     imagePreviewsByMessageId: sends.imagePreviewsByMessageId,
     session: {
       messages,
+      threadGoal: turnTiming.threadGoal,
       status,
       transcriptLoading: status === 'loading',
       error: state.error,

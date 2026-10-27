@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { MobileNativeChatOverlay } from './MobileNativeChatOverlay'
 import type { MobileNativeChatController } from './use-mobile-native-chat-controller'
+import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
 import type { MobileImageSource } from '../platform/media-picker-contract'
 import { findAllByHostType, findByHostType } from '../test-support/react-test-renderer-host-nodes'
 
@@ -42,13 +43,18 @@ type Tick = {
   activeTabId?: string | null
   setTabView?: (tabId: string, view: 'terminal') => void
   attachImage?: (source: MobileImageSource) => Promise<void>
+  threadGoal?: MobileNativeChatThreadGoal | null
 }
 
 function overlayElement(tick: Tick): ReturnType<typeof createElement> {
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the overlay reads only these controller members; the rest of the controller is unreachable from it.
   const controller = {
     showNativeChat: tick.show ?? true,
-    nativeChatSession: { messages: tick.messages ?? [], status: 'ready' },
+    nativeChatSession: {
+      messages: tick.messages ?? [],
+      status: 'ready',
+      threadGoal: tick.threadGoal
+    },
     nativeChatAgent: tick.agent ?? 'claude',
     nativeChatStructured: tick.structured ?? false,
     setTabView: tick.setTabView ?? vi.fn(),
@@ -126,6 +132,26 @@ describe('MobileNativeChatOverlay streaming gate', () => {
     const views = findAllByHostType(renderer!.root, 'ChatView')
     return views.length === 0 ? 'hidden' : (views[0].props.streaming as string | null)
   }
+
+  it('passes the structured goal through the overlay and removes it when cleared', async () => {
+    const threadGoal: MobileNativeChatThreadGoal = {
+      goal: {
+        objective: 'Finish the mobile work',
+        status: 'paused',
+        tokenBudget: null,
+        tokensUsed: 0,
+        timeUsedSeconds: 12,
+        createdAt: 1,
+        updatedAt: 2
+      },
+      runningTurn: null,
+      hostClockOffsetMs: 0
+    }
+    await render({ structured: true, threadGoal })
+    expect(findByHostType(renderer!.root, 'ChatView').props.threadGoal).toEqual(threadGoal)
+    await update({ structured: true, threadGoal: null })
+    expect(findByHostType(renderer!.root, 'ChatView').props.threadGoal).toBeNull()
+  })
 
   it('keeps streaming a reply that repeats the previous turn as a prefix', async () => {
     const prior = [assistantTurn('a1', 'The tests pass.')]

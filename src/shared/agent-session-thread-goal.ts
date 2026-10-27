@@ -2,6 +2,7 @@
 
 import { isRootAgentJournalItem } from './agent-session-journal-producer'
 import { isAgentSessionContextClear } from './agent-session-context-clear'
+import type { AgentSessionOptionsResult } from './agent-session-options-result'
 import {
   AGENT_JOURNAL_THREAD_GOAL_STATUSES,
   type AgentJournalItemBody,
@@ -65,6 +66,20 @@ export function currentAgentSessionThreadGoal(
     }
   }
   return undefined
+}
+
+/** Live rows override the whole-journal report; a context clear fences out older goals. */
+export function agentSessionThreadGoalFromReport(
+  items: readonly GoalCandidate[],
+  report: AgentSessionOptionsResult['threadGoal'] | AgentSessionOptionsResult['reportedThreadGoal'],
+  journalEpoch?: string | null
+): AgentJournalThreadGoal | null {
+  const floor =
+    report?.contextFloor && (!journalEpoch || report.contextFloor.epoch === journalEpoch)
+      ? report.contextFloor.sequence
+      : 0
+  const loaded = currentAgentSessionThreadGoal(items, floor)
+  return loaded === undefined ? (report?.current ?? null) : loaded
 }
 
 /** The same answer and its source for items a caller holds unordered, such as the host's map. */
