@@ -33,6 +33,7 @@ it("publishes the desktop's chat tab name over the saved name, and the saved nam
     deps: {
       agents: { capabilities: () => undefined },
       store: {
+        getRecord: () => null,
         getConversation: () => ({
           location: { workspaceId: TEST_WORKTREE_ID },
           conversationName: 'auth/login'

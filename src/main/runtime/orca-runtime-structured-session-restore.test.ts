@@ -20,6 +20,7 @@ describe('structured session cold restoration', () => {
       deps: {
         agents: { capabilities: () => undefined },
         store: {
+          getRecord: () => null,
           getConversation: () => ({
             location: { workspaceId: 'workspace-1' },
             conversationName: name
@@ -264,7 +265,10 @@ describe('structured session cold restoration', () => {
     internal.ensureStructuredAgentSessionHost = async () => undefined
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: this restoration stub supplies the projection and lifecycle members exercised below.
     setStructuredAgentSessionHost({
-      deps: { store: { getRecord: () => null }, agents: { capabilities: () => undefined } },
+      deps: {
+        store: { getRecord: () => null, getConversation: () => null },
+        agents: { capabilities: () => undefined }
+      },
       reconcileRestartLeases: async () => undefined,
       restoreReadableSessions: async () => undefined,
       close: closeStructuredSession,
@@ -380,7 +384,10 @@ describe('structured session cold restoration', () => {
     internal.ensureStructuredAgentSessionHost = async () => undefined
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: this restoration stub supplies the projection and lifecycle members exercised below.
     setStructuredAgentSessionHost({
-      deps: { store: { getRecord: () => null }, agents: { capabilities: () => undefined } },
+      deps: {
+        store: { getRecord: () => null, getConversation: () => null },
+        agents: { capabilities: () => undefined }
+      },
       reconcileRestartLeases: async () => undefined,
       restoreReadableSessions: async () => undefined,
       listSessionTabs: () => [
