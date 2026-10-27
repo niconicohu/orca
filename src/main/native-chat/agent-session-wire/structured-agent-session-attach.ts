@@ -2,6 +2,7 @@ import { activeProviderContext } from '../../../shared/agent-session-provider-co
 // Store CAS and idempotency rows make retried create/ensure replay instead of reserving another owner.
 
 import type { AgentSessionJournalIdentity } from '../../../shared/agent-session-journal-types'
+import type { StructuredAgentSessionFirstMessage } from '../../../shared/structured-agent-session-create'
 import type { AgentSessionOwnerProbe } from '../../../shared/agent-session-lease-adjudication'
 import type {
   StructuredAgentId,
@@ -49,6 +50,8 @@ export type AgentSessionAttachParams = {
   runtimeKind: 'native'
   /** Host-only create defaults; remote schemas reject these. */
   options?: Readonly<Record<string, string>>
+  sideChat?: AgentSessionRecord['sideChat']
+  createMessage?: StructuredAgentSessionFirstMessage
   /** Exclude tab placement from conversation identity/fingerprints. */
   surfaceTabId?: string
   launchArgs?: string[]
@@ -84,6 +87,8 @@ export function attachFingerprintFields(params: AgentSessionAttachParams): Recor
     providerHandle: params.providerHandle,
     // Adoption changes identity; transcript location is transient and excluded.
     adoptedProviderHandle: params.adopt?.providerHandle,
+    sideChat: params.sideChat,
+    createMessage: params.createMessage,
     expectedRuntimeFence: params.envelope.expectedRuntimeFence
   }
 }
@@ -203,6 +208,7 @@ export function reserveRequestFor(input: {
     location: params.location,
     provider: params.provider,
     accountHome: params.accountHome,
+    ...(params.sideChat ? { sideChat: params.sideChat } : {}),
     ...(params.options ? { options: params.options, models: input.models } : {}),
     ...(params.envelope.expectedRuntimeFence === null && params.surfaceTabId
       ? { surfaceTabId: params.surfaceTabId }

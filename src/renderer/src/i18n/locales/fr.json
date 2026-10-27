@@ -18820,6 +18820,9 @@
   },
   "components": {
     "native-chat": {
+      "sideChat": {
+        "new": "Nouvelle discussion annexe"
+      },
       "imagePreview": {
         "fileActions": "Actions sur le fichier",
         "linkActions": "Actions sur le lien"

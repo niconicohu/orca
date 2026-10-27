@@ -15,7 +15,8 @@ export function tabItemLabel(
     return getBrowserTabLabel(item.data)
   }
   if (item.type === 'agent-session') {
-    return savedName ?? item.data.label
+    const label = savedName ?? item.data.label
+    return item.data.sideChatOf ? `↳ ${label}` : label
   }
   if (item.type === 'simulator') {
     return item.data.label || 'Mobile Emulator'

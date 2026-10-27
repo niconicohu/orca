@@ -21,8 +21,7 @@ import {
   addStructuredLaunchCaller,
   createStructuredLaunchCallerGroup,
   releaseStructuredLaunchCallerAfterUnknownOutcome,
-  type StructuredAgentLaunchOptions,
-  type StructuredLaunchCaller
+  type StructuredAgentLaunchOptions
 } from '@/lib/structured-agent-session-launch-callers'
 import * as launchDraft from './structured-agent-session-launch-draft'
 import {
@@ -68,12 +67,6 @@ export {
 } from './agent-session/launch/structured-agent-session-launch-registry'
 export * from './structured-agent-session-launch-status'
 export { useStructuredAgentSessionLaunchSelection } from './structured-agent-session-launch-options'
-
-type StructuredLaunchStateResult = {
-  state: StructuredLaunchState
-  caller: StructuredLaunchCaller
-  joined: boolean
-}
 
 export type StructuredAgentLaunchResult = {
   joined: boolean
@@ -166,7 +159,7 @@ function joinStructuredLaunchState(
   existing: StructuredLaunchState,
   agent: TuiAgent,
   options: StructuredAgentLaunchOptions
-): StructuredLaunchStateResult | undefined {
+) {
   // A re-delivery of the same action shares the text it staged, so it is sent once.
   const repeat = repeatedStructuredLaunchAttempt(existing.callers.attempt, options.requestId)
   const retrying = existing.visibilityUnknown
@@ -202,7 +195,7 @@ function structuredAgentLaunchState(
   worktreeId: string,
   agent: TuiAgent,
   options: StructuredAgentLaunchOptions
-): StructuredLaunchStateResult {
+) {
   const identity = structuredLaunchIdentity(worktreeId, agent, options)
   const existing = getJoinableStructuredLaunchState(identity, options.requestId)
   const joined = existing && joinStructuredLaunchState(existing, agent, options)
@@ -216,7 +209,8 @@ function structuredAgentLaunchState(
     options.executionHostId,
     options.resumeFrom,
     options.hostSeedOptions,
-    options.activate
+    options.activate,
+    ...(options.sideChatOf ? [options.sideChatOf] : [])
   )
   intent.explicitLaunchOptions = options.launchOptions ? { ...options.launchOptions } : undefined
   intent.beforeCreate = options.beforeCreate

@@ -18714,6 +18714,9 @@
       }
     },
     "native-chat": {
+      "sideChat": {
+        "new": "新しいサイドチャット"
+      },
       "install": {
         "checking": "このホストで {{agent}} の準備ができているか確認しています…"
       },

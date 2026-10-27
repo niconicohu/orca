@@ -119,7 +119,11 @@ function TabBarItemRow({
     )
   }
   if (item.type === 'agent-session') {
-    const nativeChat = { sessionId: item.data.entityId, agent: item.data.agentSessionAgent }
+    const nativeChat = {
+      sessionId: item.data.entityId,
+      agent: item.data.agentSessionAgent,
+      ...(item.data.sideChatOf ? { sideChat: true } : {})
+    }
     return (
       <SortableTab
         {...sortableTabProps}

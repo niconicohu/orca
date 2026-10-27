@@ -8,12 +8,16 @@ import {
 import type { AgentChatPermissionChoice } from '../../shared/agent-chat-permission-mode'
 import type { CodexSession } from './codex-structured-session-state'
 import { readCodexAutoSandbox } from './codex-structured-auto-sandbox'
-import { codexStructuredPermissionPolicy } from '../../shared/codex-permission-policy'
+import {
+  CODEX_SIDE_CHAT_PERMISSION_POLICY,
+  codexStructuredPermissionPolicy
+} from '../../shared/codex-permission-policy'
 import type { CodexSandboxPolicy } from './codex-structured-sandbox-policy'
 
 type PermissionHost = {
   connection: Pick<CodexSession['connection'], 'request'>
   permissions?: CodexSession['permissions']
+  sideChat?: CodexSession['sideChat']
 }
 
 /** Prepared outside the host serialize so a configuration request never holds up accepting sends. */
@@ -23,7 +27,7 @@ export async function prepareCodexTurnPermission(
   signal?: AbortSignal
 ): Promise<void> {
   const state = session.permissions
-  if (!state) {
+  if (!state || session.sideChat) {
     return
   }
   const auto =
@@ -43,6 +47,7 @@ export function codexPermissionRequiresAcquisition(
 ): boolean {
   const state = session.permissions
   return (
+    !session.sideChat &&
     mode === 'auto' &&
     !!state &&
     !state.preparedAuto &&
@@ -55,6 +60,10 @@ export function codexTurnPermission(
   mode: AgentChatPermissionChoice,
   inheritRunning = false
 ): { approvalPolicy?: string; approvalsReviewer?: string; sandboxPolicy?: CodexSandboxPolicy } {
+  if (session.sideChat) {
+    const { approvalPolicy, approvalsReviewer } = CODEX_SIDE_CHAT_PERMISSION_POLICY
+    return { approvalPolicy, approvalsReviewer, sandboxPolicy: { type: 'readOnly' } }
+  }
   if (mode === 'own') {
     return {}
   }

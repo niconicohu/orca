@@ -25,6 +25,7 @@ import type { MobileNativeChatVisualSource } from './mobile-native-chat-visual-r
 import type { useMobileStructuredSessionCommands } from './use-mobile-structured-session-commands'
 
 export type MobileNativeChatController = {
+  openSideChat?: (question: string) => Promise<boolean>
   sessionViewReady: boolean
   isTabChatView: (tabId: string) => boolean
   setTabView: (tabId: string, view: MobileSessionView) => void

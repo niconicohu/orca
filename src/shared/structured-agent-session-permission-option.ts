@@ -73,6 +73,22 @@ export function structuredAgentSessionPermissionDescriptor(state: {
   permissionOwnSupported?: boolean | null
   reportedPermissionMode?: string | null
 }): SessionOptionDescriptor | null {
+  if (state.permissionMode === 'read-only') {
+    return {
+      id: AGENT_CHAT_PERMISSION_MODE_OPTION_ID,
+      label: 'Permissions',
+      category: 'mode',
+      description: 'Read only',
+      transport: 'agent-session',
+      valueSource: 'applied',
+      settable: false,
+      kind: {
+        type: 'select',
+        currentValue: 'read-only',
+        choices: [{ value: 'read-only', label: 'Read only' }]
+      }
+    }
+  }
   const support = agentChatPermissionModes(state.record.agent)
   const own = state.permissionMode === 'own'
   if (!support || (!own && !support.modes.some((mode) => mode === state.permissionMode))) {

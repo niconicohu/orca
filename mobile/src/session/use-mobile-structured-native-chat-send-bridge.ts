@@ -9,6 +9,7 @@ import type { StructuredMobileSendAttachment } from './use-mobile-structured-sen
 export function useMobileStructuredNativeChatSendBridge(args: {
   agent: StructuredAgentId | undefined
   sessionCommands?: readonly AgentSessionSlashCommand[]
+  sideChat?: boolean
   sendStructured: (
     text: string,
     images?: string[],
@@ -30,6 +31,7 @@ export function useMobileStructuredNativeChatSendBridge(args: {
 } {
   const {
     agent,
+    sideChat = false,
     captureSendOrigin,
     clearDraftForSend,
     onSendError,
@@ -49,7 +51,12 @@ export function useMobileStructuredNativeChatSendBridge(args: {
         onSendError('Message not sent (disconnected)')
         return 'rejected'
       }
-      const isHostCommand = isStructuredAgentSessionComposerCommand(text, agent, sessionCommands)
+      const isHostCommand = isStructuredAgentSessionComposerCommand(
+        text,
+        agent,
+        sessionCommands,
+        sideChat
+      )
       clearDraftForSend(origin, text)
       const outcome =
         attachments !== undefined
@@ -67,6 +74,7 @@ export function useMobileStructuredNativeChatSendBridge(args: {
     },
     [
       agent,
+      sideChat,
       captureSendOrigin,
       clearDraftForSend,
       onSendError,

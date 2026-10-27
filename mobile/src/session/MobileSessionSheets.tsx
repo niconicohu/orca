@@ -1,3 +1,4 @@
+import { getMobileSideChatActions } from './mobile-native-chat-side-chat-actions'
 import { Platform } from 'react-native'
 import { useClipboardWriter } from '../platform/clipboard'
 import { Copy, FileText, Globe, RefreshCw, SquareTerminal } from 'lucide-react-native'
@@ -279,6 +280,11 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
         visible={agentSessionActionTarget != null}
         title={agentSessionActionTarget?.title || 'Chat'}
         actions={[
+          ...getMobileSideChatActions({
+            controller,
+            tab: agentSessionActionTarget,
+            onDismiss: () => setAgentSessionActionTarget(null)
+          }),
           ...getMobileNativeChatCliForkActions({
             controller,
             tab: agentSessionActionTarget,

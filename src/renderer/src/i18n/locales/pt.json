@@ -19219,6 +19219,9 @@
       "useKnownId": "Usar o ID de usuário conhecido \"{{value0}}\""
     },
     "native-chat": {
+      "sideChat": {
+        "new": "Nova conversa paralela"
+      },
       "taskList": {
         "title": "Tarefas",
         "completed": "Concluída",

@@ -24,6 +24,12 @@ const FULL_ACCESS_POLICY = {
   approvalsReviewer: 'user'
 } as const
 
+export const CODEX_SIDE_CHAT_PERMISSION_POLICY = {
+  approvalPolicy: 'never',
+  sandbox: 'read-only',
+  approvalsReviewer: 'user'
+} as const
+
 // Explicit fields prevent inheriting permissive config or previous thread policies.
 /** Workspace writes need approval even when the user's configured sandbox permits them. */
 const ASK_POLICY = {

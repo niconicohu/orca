@@ -105,15 +105,13 @@ export function useMobileStructuredAgentSession(
   })
   const { conversationCommands, invokeStructuredOption, optionSnapshot, setStructuredOption } =
     options
-  const sendController = useMemo(
-    () => ({
-      snapshot: optionSnapshot,
-      setOption: setStructuredOption,
-      invokeAction: invokeStructuredOption,
-      conversationCommands
-    }),
-    [conversationCommands, invokeStructuredOption, optionSnapshot, setStructuredOption]
-  )
+  const sendController = {
+    snapshot: optionSnapshot,
+    setOption: setStructuredOption,
+    invokeAction: invokeStructuredOption,
+    conversationCommands,
+    openSideChat: args.openSideChat
+  }
 
   const { groupedDraft, respondPermission, respondQuestion } = useMobileStructuredPromptResponses({
     stateRef,

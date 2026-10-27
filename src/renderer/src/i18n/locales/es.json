@@ -18680,6 +18680,9 @@
   },
   "components": {
     "native-chat": {
+      "sideChat": {
+        "new": "Nuevo chat paralelo"
+      },
       "imagePreview": {
         "fileActions": "Acciones de archivo",
         "linkActions": "Acciones de enlace"

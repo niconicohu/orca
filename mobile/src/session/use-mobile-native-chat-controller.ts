@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, type MutableRefObject } from 'react'
 import type { RpcClient } from '../transport/rpc-client'
 import type { ConnectionState } from '../transport/types'
-import type { MobileNativeChatTab } from './native-chat/mobile-native-chat-eligibility'
 import type { StructuredAgentSessionHostSupport } from './mobile-structured-agent-session-host-support'
 import { useMobileNativeChatAskDismiss } from './use-mobile-native-chat-ask-dismiss'
 import { useMobileNativeChatDrafts } from './native-chat/composer/use-mobile-native-chat-drafts'
@@ -22,23 +21,20 @@ import { mobileNativeChatScopeKey } from './native-chat/mobile-native-chat-scope
 
 export type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
 
-export function useMobileNativeChatController(args: {
-  client: RpcClient | null
-  hostId: string
-  worktreeId: string
-  activeSessionTab: MobileNativeChatTab | null
-  activeSessionTabId: string | null
-  activeHandleRef: MutableRefObject<string | null>
-  deviceTokenRef: MutableRefObject<string | null>
-  nativeChatTranscriptIsLocalReadable: boolean
-  nativeChatInputLeaseReady: boolean
-  /** Live socket state; the lease collapses on disconnect but one render later. */
-  connState: ConnectionState
-  agentSessionHostSupport?: StructuredAgentSessionHostSupport | null
-  onSendError: Parameters<typeof useMobileNativeChatSessionLane>[0]['onSendError']
-  // Any accepted chat write clears the held failure banner, including answers and permission replies.
-  onSendResolved: () => void
-}): MobileNativeChatController {
+export function useMobileNativeChatController(
+  args: Parameters<typeof useMobileNativeChatActiveResolution>[0] & {
+    client: RpcClient | null
+    deviceTokenRef: MutableRefObject<string | null>
+    nativeChatInputLeaseReady: boolean
+    /** Live socket state; the lease collapses on disconnect but one render later. */
+    connState: ConnectionState
+    agentSessionHostSupport?: StructuredAgentSessionHostSupport | null
+    onSendError: Parameters<typeof useMobileNativeChatSessionLane>[0]['onSendError']
+    // Any accepted chat write clears the held failure banner, including answers and permission replies.
+    onSendResolved: () => void
+    openSideChat?: (question: string) => Promise<boolean>
+  }
+): MobileNativeChatController {
   const {
     client,
     hostId,
@@ -75,6 +71,7 @@ export function useMobileNativeChatController(args: {
   // Fixed hook order mounts the lane before drafts; defer Edit’s append through a ref and delete nothing until copying succeeds.
   const appendComposerTextRef = useRef<(text: string) => boolean>(() => false)
   const nativeChatLane = useMobileNativeChatSessionLane({
+    openSideChat: args.openSideChat,
     client,
     hostId,
     structured: activeChatStructured,
@@ -203,6 +200,7 @@ export function useMobileNativeChatController(args: {
   })
 
   const structuredNativeChatSend = useMobileStructuredNativeChatSendBridge({
+    sideChat: args.openSideChat !== undefined,
     agent: activeChatResolution?.agent,
     sessionCommands: nativeChatLane.sessionCommands.commands,
     sendStructured: structuredNativeChat.sendWithOutcome,
@@ -258,6 +256,7 @@ export function useMobileNativeChatController(args: {
   })
 
   return {
+    openSideChat: args.openSideChat,
     sessionViewReady,
     isTabChatView,
     setTabView,

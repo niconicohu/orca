@@ -3,7 +3,10 @@ import { providerDiagnostic, withProviderDiagnostic } from '../../shared/agent-s
 import { throwIfSignalAborted } from '../../shared/abort-signal-reason'
 import { isCodexAppServerRequestError } from './app-server/codex-app-server-request-error'
 import type { CodexAppServerConnection } from './app-server/codex-app-server-connection-types'
-import type { CodexStructuredPermissionPolicy } from '../../shared/codex-permission-policy'
+import {
+  CODEX_SIDE_CHAT_PERMISSION_POLICY,
+  type CodexStructuredPermissionPolicy
+} from '../../shared/codex-permission-policy'
 import { readCodexThreadId } from './codex-structured-thread-facts'
 import { readCodexSandboxPolicy, type CodexSandboxPolicy } from './codex-structured-sandbox-policy'
 
@@ -48,6 +51,8 @@ export async function openCodexThread(
   launch: {
     cwd: string
     resumeThreadId: string | null
+    forkThreadId?: string
+    sideChat?: boolean
     supersedeIfUnsaved?: boolean
     permissionPolicy?: CodexStructuredPermissionPolicy
     /** Avoid a duplicate base prompt caused by switching models on the first turn. */
@@ -64,6 +69,7 @@ export async function openCodexThread(
   const threadSettings = {
     cwd: launch.cwd,
     ...launch.permissionPolicy,
+    ...(launch.sideChat ? CODEX_SIDE_CHAT_PERMISSION_POLICY : {}),
     ...(Object.keys(config).length > 0 ? { config } : {})
   }
   const startThread = (): Promise<unknown> => {
@@ -76,7 +82,18 @@ export async function openCodexThread(
   }
   let supersededThreadId: string | undefined
   let opened: unknown
-  if (!resumeThreadId) {
+  if (launch.forkThreadId && !resumeThreadId) {
+    throwIfSignalAborted(signal)
+    opened = await connection.request(
+      'thread/fork',
+      {
+        threadId: launch.forkThreadId,
+        ...threadSettings,
+        excludeTurns: true
+      },
+      { timeoutMs }
+    )
+  } else if (!resumeThreadId) {
     opened = await startThread()
   } else {
     // Omitting model preserves the resumed thread's model, provider and effort.
@@ -118,6 +135,19 @@ export async function openCodexThread(
   const threadId = readCodexThreadId(opened)
   if (!threadId) {
     throw new Error('codex app-server did not name the thread it opened')
+  }
+  if (launch.forkThreadId && threadId === launch.forkThreadId) {
+    throw new Error('codex app-server returned the source thread instead of a side chat')
+  }
+  if (launch.forkThreadId) {
+    throwIfSignalAborted(signal)
+    try {
+      await connection.request('thread/goal/clear', { threadId, origin: 'user' }, { timeoutMs })
+    } catch (error) {
+      if (!isCodexAppServerRequestError(error) || error.code !== -32601) {
+        throw error
+      }
+    }
   }
   if (supersededThreadId === undefined && resumeThreadId && threadId !== resumeThreadId) {
     throw new Error(`codex app-server resumed ${threadId} instead of ${resumeThreadId}`)

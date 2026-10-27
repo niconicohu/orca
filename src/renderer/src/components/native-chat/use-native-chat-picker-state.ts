@@ -56,6 +56,7 @@ export type NativeChatPickerState = {
 
 export function useNativeChatPickerState(args: {
   agent: AgentType
+  sideChat?: boolean
   terminalTabId: string
   draftScopeKey: string
   draft: string
@@ -103,9 +104,15 @@ export function useNativeChatPickerState(args: {
       classifyPickerCommands(agentCommands, discovery.skills, {
         // A chat that keeps scanned skills (OpenCode) may report each as a command too.
         reportMayListSkills: profile?.keepsScannedSkills === true,
-        isSendCommand: (name) => isStructuredAgentSessionComposerCommand(`/${name}`, agent)
+        isSendCommand: (name) =>
+          isStructuredAgentSessionComposerCommand(
+            `/${name}`,
+            agent,
+            agentCommands,
+            args.sideChat === true
+          )
       }),
-    [agent, agentCommands, discovery.skills, profile]
+    [agent, agentCommands, discovery.skills, profile, args.sideChat]
   )
   const listboxId = `native-chat-picker-${useId().replaceAll(':', '')}`
   const dismissalContext = `${draftScopeKey}:${agent}`

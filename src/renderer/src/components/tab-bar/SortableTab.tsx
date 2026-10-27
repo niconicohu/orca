@@ -125,8 +125,9 @@ export default function SortableTab({
   const shellForIcon = tab.shellOverride
 
   // Why: with a provider icon shown, strip the agent's own leading glyph so the tab doesn't show two icons for one agent.
-  const displayTitle =
+  const undecoratedTitle =
     tab.customTitle ?? (tabAgent ? stripLeadingAgentTitleDecoration(tab.title) : tab.title)
+  const displayTitle = nativeChat?.sideChat ? `↳ ${undecoratedTitle}` : undecoratedTitle
 
   const { attributes, listeners, setNodeRef } = useSortable({
     id: tab.id,

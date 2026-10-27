@@ -23,6 +23,7 @@ export type StructuredAgentLaunchOptions = {
   promptKeptByCaller?: true
   // Conversation adoption is launch identity, not a preference; see launchIdentity.
   resumeFrom?: StructuredAgentSessionResumeSource
+  sideChatOf?: string
   /** The host the route decided on; read only by the caller that starts the launch. */
   executionHostId?: ExecutionHostId
   /** The saved selection a paired host reported it will seed; read only by the starting caller. */
