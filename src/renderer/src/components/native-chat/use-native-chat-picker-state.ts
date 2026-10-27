@@ -108,7 +108,7 @@ export function useNativeChatPickerState(args: {
           isStructuredAgentSessionComposerCommand(
             `/${name}`,
             agent,
-            agentCommands,
+            undefined,
             args.sideChat === true
           )
       }),

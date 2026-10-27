@@ -372,6 +372,7 @@ describe('local watcher lifecycle (randomized model)', () => {
     expect(liveSubscriptions).toBe(0)
   })
 
+  // The 1,000 seeded histories each run 20–60 steps; the existing deadline covers that model sweep.
   it('never leaks listeners, roots or native subscriptions across random watch histories', async () => {
     for (let run = 0; run < RUNS; run += 1) {
       const seed = 7_000_000 + run
