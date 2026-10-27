@@ -1,3 +1,4 @@
+import { SideChatTabBadge } from './SideChatTabBadge'
 import { createElement } from 'react'
 import { Globe, Terminal as TerminalIcon } from 'lucide-react'
 import { FileTypeIcon } from '@/components/FileTypeIcon'
@@ -28,6 +29,7 @@ export default function TabDragPreview({ drag }: { drag: TabDragItemData }): Rea
       <span className="inline-flex shrink-0">
         <LeadingIcon drag={drag} />
       </span>
+      {drag.sideChat && <SideChatTabBadge />}
       <span className="truncate">{drag.label}</span>
       {drag.color ? (
         <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: drag.color }} />

@@ -18821,7 +18821,8 @@
   "components": {
     "native-chat": {
       "sideChat": {
-        "new": "Nouvelle discussion annexe"
+        "new": "Nouvelle discussion annexe",
+        "badge": "btw"
       },
       "imagePreview": {
         "fileActions": "Actions sur le fichier",

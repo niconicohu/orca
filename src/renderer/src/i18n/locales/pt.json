@@ -19220,7 +19220,8 @@
     },
     "native-chat": {
       "sideChat": {
-        "new": "Nova conversa paralela"
+        "new": "Nova conversa paralela",
+        "badge": "btw"
       },
       "taskList": {
         "title": "Tarefas",

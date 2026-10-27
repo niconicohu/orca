@@ -18715,7 +18715,8 @@
     },
     "native-chat": {
       "sideChat": {
-        "new": "새 사이드 채팅"
+        "new": "새 사이드 채팅",
+        "badge": "btw"
       },
       "install": {
         "checking": "이 호스트에서 {{agent}}이(가) 준비되었는지 확인하는 중…"

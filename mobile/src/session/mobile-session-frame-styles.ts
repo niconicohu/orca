@@ -163,6 +163,17 @@ export const mobileSessionFrameStyles = StyleSheet.create({
   tabIcon: {
     flexShrink: 0
   },
+  sideChatBadge: {
+    flexShrink: 0,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
+    borderRadius: radii.card,
+    paddingHorizontal: spacing.xs,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    fontSize: typography.metaSize
+  },
   tabText: {
     flexShrink: 1,
     color: colors.textSecondary,

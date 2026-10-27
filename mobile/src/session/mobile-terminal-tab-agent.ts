@@ -71,8 +71,7 @@ export function getMobileSessionTabTitle(
     return tab.title || 'File'
   }
   if (tab.type === 'agent-session') {
-    const title = tab.title || 'Chat'
-    return tab.sideChatOf ? `↳ ${title}` : title
+    return tab.title || 'Chat'
   }
   // Strip status glyphs when showing provider icons; glyph-only iOS titles otherwise leave stray colored boxes.
   if (resolveMobileTerminalTabAgentId(tab, hostAgentIdentity)) {

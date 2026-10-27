@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { X, Minimize2, Pin } from 'lucide-react'
+import { SideChatTabBadge } from './SideChatTabBadge'
 import { stripLeadingAgentTitleDecoration } from '../../../../shared/agent-title-decoration'
 import { getAgentLabel } from '@/lib/agent-catalog'
 import { basename } from '@/lib/path'
@@ -121,13 +122,9 @@ export default function SortableTab({
   )
   const { activityStatus, programProgress } = useTerminalTabActivity(tab)
 
-  // Why: shellOverride is stamped at create time, so changing the default shell later won't repaint existing tabs.
-  const shellForIcon = tab.shellOverride
-
   // Why: with a provider icon shown, strip the agent's own leading glyph so the tab doesn't show two icons for one agent.
-  const undecoratedTitle =
+  const displayTitle =
     tab.customTitle ?? (tabAgent ? stripLeadingAgentTitleDecoration(tab.title) : tab.title)
-  const displayTitle = nativeChat?.sideChat ? `↳ ${undecoratedTitle}` : undecoratedTitle
 
   const { attributes, listeners, setNodeRef } = useSortable({
     id: tab.id,
@@ -253,7 +250,7 @@ export default function SortableTab({
       <TerminalTabLeadingIcon
         agent={tabAgent}
         activityStatus={activityStatus}
-        shell={shellForIcon}
+        shell={tab.shellOverride}
         showUnreadActivity={showUnreadActivity}
         isActive={isActive}
         progress={programProgress}
@@ -261,6 +258,7 @@ export default function SortableTab({
       {isPinned && !isEditing && (
         <Pin className="mr-1 size-3 shrink-0 text-muted-foreground" aria-hidden />
       )}
+      {nativeChat?.sideChat && !isEditing && <SideChatTabBadge />}
       {isEditing ? (
         <Input
           ref={setRenameInputElement}
@@ -377,15 +375,15 @@ export default function SortableTab({
             programName={
               tabAgent
                 ? getAgentLabel(tabAgent)
-                : shellForIcon
-                  ? basename(shellForIcon)
+                : tab.shellOverride
+                  ? basename(tab.shellOverride)
                   : translate('tabHoverCard.terminal', 'Terminal')
             }
             icon={
               <TerminalTabLeadingIcon
                 agent={tabAgent}
                 activityStatus={activityStatus}
-                shell={shellForIcon}
+                shell={tab.shellOverride}
                 showUnreadActivity={false}
                 isActive
                 progress={programProgress}

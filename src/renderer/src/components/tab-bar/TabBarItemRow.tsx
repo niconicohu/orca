@@ -79,6 +79,7 @@ function TabBarItemRow({
     tabType: item.type,
     label: getTabDragLabel(item, generatedTabTitlesEnabled, useAppStore.getState()),
     iconPath: item.type === 'editor' ? item.data.filePath : undefined,
+    sideChat: item.type === 'agent-session' && !!item.data.sideChatOf,
     color: item.type === 'terminal' ? (item.data.color ?? null) : null
   }
   const shared = {
