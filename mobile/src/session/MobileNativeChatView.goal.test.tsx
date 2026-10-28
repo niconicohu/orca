@@ -44,6 +44,9 @@ vi.mock('./native-chat/input/MobileNativeChatQuestion', () => ({
   MobileNativeChatQuestion: 'ChatQuestion'
 }))
 vi.mock('../components/ActionSheetModal', () => ({ ActionSheetModal: 'ActionSheetModal' }))
+vi.mock('./MobileQueuedMessageComposer', () => ({
+  MobileQueuedMessageComposer: 'QueuedComposer'
+}))
 vi.mock('./native-chat/composer/MobileNativeChatComposer', async () => {
   const { composerStub } = await import('./MobileNativeChatView.render-stubs.test-fixture')
   return composerStub()
