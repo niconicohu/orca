@@ -29,10 +29,16 @@ export async function isUnregisteredRemovalLeftover(
   return canSafelyRemoveOrphanedWorktreeDirectory(worktreePath, repoPath, CLIENT_REMOVAL_HOME)
 }
 
+export class WorktreeCheckoutReplacedError extends Error {
+  constructor(worktreePath: string) {
+    super(
+      `A different checkout is now at ${worktreePath}; Orca left it in place. Delete it again to remove it.`
+    )
+  }
+}
+
 export function differentCheckoutAtPathError(worktreePath: string): Error {
-  return new Error(
-    `A different checkout is now at ${worktreePath}; Orca left it in place. Delete it again to remove it.`
-  )
+  return new WorktreeCheckoutReplacedError(worktreePath)
 }
 
 export async function registeredRemovalCheckout(record: {
