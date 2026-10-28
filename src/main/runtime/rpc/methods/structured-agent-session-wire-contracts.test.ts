@@ -40,7 +40,6 @@ import {
   hostTestOperationId
 } from '../../../native-chat/agent-session-wire/structured-agent-session-host-test-data'
 import { holdDelivery } from '../../../native-chat/agent-session-wire/structured-agent-session-delivery-hold.test-fixture'
-import { HISTORY_PAGE_CONTENT_BUDGET_BYTES } from '../../../native-chat/agent-session-wire/agent-session-history-page-bounds'
 
 beforeEach(installStructuredHostStub)
 afterEach(clearStructuredHostStub)
@@ -85,15 +84,7 @@ it.each([
   const request = { sessionId: SESSION, direction: 'after', cursor: { epoch: 'e', sequence: 1 } }
   await call('agentSession.history', request, client)
   const replaceHistory = snapshot && input?.readsCurrentRequests === true
-  expect(hostCalls.history).toHaveBeenCalledWith(
-    request,
-    undefined,
-    replaceHistory,
-    expect.objectContaining({
-      budgetBytes: bounded ? 96 * 1024 : HISTORY_PAGE_CONTENT_BUDGET_BYTES,
-      form: expect.any(Function)
-    })
-  )
+  expect(hostCalls.history).toHaveBeenCalledWith(request, undefined, replaceHistory)
 })
 
 it('allows the local desktop renderer to replace a missed gap with a snapshot', async () => {

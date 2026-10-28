@@ -33,8 +33,6 @@ import { jsonBytes } from './json-string-shortening'
 import { AgentSessionSubscribers } from './structured-agent-session-subscribers'
 import { StructuredAgentSessionCurrentWork } from './structured-agent-session-current-work'
 import type { QueuePublication } from './structured-agent-session-queued-publication'
-import { subscriberHistoryReader } from './agent-session-bounded-frames'
-import { sealMobileE2EEV2Frame } from '../../../shared/mobile-e2ee-v2-framing'
 
 // Widest allowed session ID enlarges every frame envelope.
 const SESSION = `s${'x'.repeat(511)}`
@@ -146,84 +144,6 @@ describe('a bounded row', () => {
 })
 
 describe('frames to a bounded-frame subscriber', () => {
-  it('retains an indivisible sequence group larger than the weak-link page target', async () => {
-    await append(message('a'.repeat(60 * 1024)))
-    await append(message('b'.repeat(60 * 1024)))
-    const snapshot = journal.snapshot()
-    const items = snapshot.items.map((item) => ({ ...item, sequence: 1 }))
-    const result = readAgentSessionHistory(
-      journal,
-      { sessionId: SESSION, direction: 'tail' },
-      {
-        snapshot: { ...snapshot, items },
-        reader: subscriberHistoryReader({ boundedFrames: true })
-      }
-    )
-    expect(result.ok).toBe(true)
-    expect(result.page.items).toEqual(items)
-    expect(result.page.hasOlder).toBe(false)
-  })
-
-  it('delivers a weak-link first page before idle probing while retaining all older content', async () => {
-    for (let index = 0; index < 32; index++) {
-      await append(message(`${index}:${'x'.repeat(18 * 1024)}`))
-    }
-    const frames: AgentSessionSubscribeEvent[] = []
-    const subscribers = new AgentSessionSubscribers()
-    const close = subscribers.open({
-      id: 'mobile',
-      sessionId: SESSION,
-      journal,
-      fence: 1,
-      boundedFrames: true,
-      emit: (event) => frames.push(event)
-    })
-    const first = frames.find((event) => event.type === 'snapshot')
-    if (first?.type !== 'snapshot') {
-      throw new Error('Expected the opening snapshot')
-    }
-    const sealed = sealMobileE2EEV2Frame({
-      payload: new TextEncoder().encode(JSON.stringify({ id: 'wire', ok: true, result: first })),
-      key: new Uint8Array(32),
-      sessionId: new Uint8Array(32),
-      direction: 'desktop-to-mobile',
-      payloadKind: 'text',
-      counter: 0n
-    })
-    // At the observed ~8 KiB/s, finish one message before the 20-second idle probe starts.
-    expect(Buffer.from(sealed).toString('base64').length + 10).toBeLessThan(20 * 8 * 1024)
-    expect(first.page.hasOlder).toBe(true)
-    const collected = [...first.page.items]
-    let page = first.page
-    while (page.hasOlder) {
-      const cursor = { epoch: page.epoch, sequence: page.items[0]!.sequence }
-      const older = readAgentSessionHistory(
-        journal,
-        { sessionId: SESSION, direction: 'before', cursor },
-        {
-          reader: subscriberHistoryReader({ boundedFrames: true })
-        }
-      )
-      expect(older.ok).toBe(true)
-      expect(older.page.items.length).toBeGreaterThan(0)
-      collected.unshift(...older.page.items)
-      page = older.page
-    }
-    expect(collected).toEqual(journal.snapshot().items)
-    const desktop: AgentSessionSubscribeEvent[] = []
-    const closeDesktop = subscribers.open({
-      id: 'desktop',
-      sessionId: SESSION,
-      journal,
-      fence: 1,
-      emit: (event) => desktop.push(event)
-    })
-    const desktopFirst = desktop.find((event) => event.type === 'snapshot')
-    expect(desktopFirst?.type === 'snapshot' && desktopFirst.page.items).toEqual(collected)
-    closeDesktop()
-    close()
-  })
-
   it('delivers every effective send within the byte budget on open, replay and no-row changes', async () => {
     const cursor = journal.cursor()
     const ids = Array.from({ length: 255 }, (_, index) => `unconfirmed-${index}`)

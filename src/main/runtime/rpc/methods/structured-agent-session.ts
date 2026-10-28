@@ -18,7 +18,6 @@ import {
   projectTurnItemHistory
 } from './structured-agent-session-turn-item-capability'
 import { defineMethod, defineStreamingMethod } from '../core'
-import { subscriberHistoryReader } from '../../../native-chat/agent-session-wire/agent-session-bounded-frames'
 import {
   ensureStructuredHostInstalled as ensureHostInstalled,
   requireInstalledStructuredHost as requireInstalledHost,
@@ -229,8 +228,7 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
             await host.history(
               params,
               undefined,
-              clientSupportsSnapshotCatchUp(ctx) && clientReadsCurrentRequests(ctx),
-              subscriberHistoryReader({ boundedFrames: ctx.clientKind === 'mobile' })
+              clientSupportsSnapshotCatchUp(ctx) && clientReadsCurrentRequests(ctx)
             ),
             ctx
           ),
