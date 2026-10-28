@@ -5,10 +5,12 @@ import { toast } from 'sonner'
 import type { ReactNode } from 'react'
 import { NativeChatSideChatMenuItem } from './NativeChatSideChatMenuItem'
 
+type MenuState = { unifiedTabsByWorktree: { workspace: { id: string }[] } }
+
 const mocks = vi.hoisted(() => ({ open: vi.fn() }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 vi.mock('@/store', () => ({
-  useAppStore: (select: (state: object) => unknown) =>
+  useAppStore: (select: (state: MenuState) => unknown) =>
     select({
       unifiedTabsByWorktree: { workspace: [{ id: 'parent-tab' }] }
     })
