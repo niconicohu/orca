@@ -14,10 +14,43 @@ import {
 const launch = { cwd: '/workspace', resumeThreadId: null, forkThreadId: 'parent', sideChat: true }
 
 describe('Codex side conversations', () => {
+  it('allows an explicitly requested goal on the child through the ordinary goal path', async () => {
+    const codex = fakeCodex()
+    const adapter = adapterFor(codex, { sideChat: true, resumeThreadId: THREAD_ID })
+    await acquireReadyCodexForTest(adapter, {
+      identity: identityFor('session-1'),
+      fence: 7,
+      spawnToken: 'side-chat-goal'
+    })
+    try {
+      await expect(
+        adapter.changeThreadGoal({
+          sessionId: 'session-1',
+          fence: 7,
+          change: { kind: 'set', objective: 'Investigate this branch' },
+          replacesGoal: false
+        })
+      ).resolves.toEqual({ ok: true })
+      expect(
+        codex.connections[0]!.calls.findLast((call) => call.method === 'thread/goal/set')?.params
+      ).toMatchObject({
+        threadId: THREAD_ID,
+        objective: 'Investigate this branch'
+      })
+    } finally {
+      await adapter.closeAll()
+    }
+  })
   it.each(['own', 'ask', 'accept-edits', 'auto', 'full-access'] as const)(
-    'keeps every resumed side-chat turn read-only despite the host choosing %s',
+    'applies the ordinary %s policy to every resumed side-chat turn',
     async (mode) => {
       const codex = fakeCodex()
+      codex.routes['config/read'] = () => ({
+        config: {
+          sandbox_workspace_write: { writable_roots: ['/configured'], network_access: true }
+        }
+      })
+      codex.routes['configRequirements/read'] = () => ({ requirements: null })
       const adapter = adapterFor(codex, { sideChat: true, resumeThreadId: THREAD_ID })
       await acquireReadyCodexForTest(adapter, {
         identity: identityFor('session-1'),
@@ -40,22 +73,36 @@ describe('Codex side conversations', () => {
               admitFreshInput: async (enqueue) => enqueue(mode, false)
             })
           ).toMatchObject({ state: 'admitted' })
-          expect(
-            connection.calls.findLast((call) => call.method === 'turn/start')?.params
-          ).toMatchObject({
-            approvalPolicy: 'never',
-            approvalsReviewer: 'user',
-            sandboxPolicy: { type: 'readOnly' }
-          })
+          const params = connection.calls.findLast((call) => call.method === 'turn/start')?.params
+          if (mode === 'own') {
+            expect(params).not.toHaveProperty('sandboxPolicy')
+            expect(params).not.toHaveProperty('approvalPolicy')
+          } else {
+            expect(params).toMatchObject({
+              approvalPolicy: mode === 'full-access' ? 'never' : 'on-request',
+              approvalsReviewer: mode === 'auto' ? 'auto_review' : 'user',
+              sandboxPolicy: {
+                type:
+                  mode === 'full-access'
+                    ? 'dangerFullAccess'
+                    : mode === 'auto'
+                      ? 'workspaceWrite'
+                      : 'readOnly',
+                ...(mode === 'auto' ? { networkAccess: true, writableRoots: ['/configured'] } : {})
+              }
+            })
+          }
           connection.handlers.onNotification?.('turn/completed', {
             threadId: THREAD_ID,
             turn: { id: turnId, status: 'completed' }
           })
         }
-        expect(connection.calls.slice(acquiredCalls).map((call) => call.method)).toEqual([
-          'turn/start',
-          'turn/start'
-        ])
+        expect(
+          connection.calls
+            .slice(acquiredCalls)
+            .filter((call) => call.method === 'turn/start')
+            .map((call) => call.method)
+        ).toEqual(['turn/start', 'turn/start'])
       } finally {
         await adapter.closeAll()
       }
@@ -78,10 +125,7 @@ describe('Codex side conversations', () => {
       {
         threadId: 'parent',
         cwd: '/workspace',
-        excludeTurns: true,
-        sandbox: 'read-only',
-        approvalPolicy: 'never',
-        approvalsReviewer: 'user'
+        excludeTurns: true
       },
       { timeoutMs: 2000 }
     )
@@ -109,7 +153,7 @@ describe('Codex side conversations', () => {
     expect(request).toHaveBeenCalledOnce()
   })
 
-  it('retains read-only policy on subsequent resumes, overriding full-access settings', async () => {
+  it('honors the selected policy on subsequent resumes instead of overriding it', async () => {
     const request = vi.fn(async () => ({ thread: { id: 'child' } }))
     await openCodexThread(
       { request },
@@ -131,7 +175,7 @@ describe('Codex side conversations', () => {
         threadId: 'child',
         cwd: '/workspace',
         excludeTurns: true,
-        sandbox: 'read-only',
+        sandbox: 'danger-full-access',
         approvalPolicy: 'never',
         approvalsReviewer: 'user'
       },

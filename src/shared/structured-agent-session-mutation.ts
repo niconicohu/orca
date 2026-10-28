@@ -51,6 +51,7 @@ export function structuredAgentSessionCreateFingerprint(input: {
   sideChatOf?: string
   tabId?: string
   firstMessage?: StructuredAgentSessionFirstMessage
+  optionsMode?: 'replace-model-selection'
   options?: Readonly<Record<string, string>>
 }): string {
   return structuredAgentSessionPayloadFingerprint({
@@ -65,6 +66,7 @@ export function structuredAgentSessionCreateFingerprint(input: {
       // Include tabId in the host digest; retries replay its recorded host-owned ID.
       tabId: input.tabId,
       firstMessage: input.firstMessage,
+      optionsMode: input.optionsMode,
       options: input.options
     }
   })

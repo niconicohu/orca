@@ -164,7 +164,8 @@ it('refuses a combined resume and side-chat request before starting another chil
   expect(rig.adapter.acquire).toHaveBeenCalledOnce()
 })
 
-it('refuses permission escalation on the host after the child is created', async () => {
+it('changes the child permission independently without changing the source chat', async () => {
+  const sourceBefore = structuredClone(rig.store.getRecord(SOURCE))
   expect(await call('agentSession.create', create(false), client, runtime)).toMatchObject({
     ok: true,
     result: { ok: true }
@@ -183,5 +184,7 @@ it('refuses permission escalation on the host after the child is created', async
       })
     }
   })
-  expect(result).toMatchObject({ ok: false, refusal: { details: { reason: 'optionRejected' } } })
+  expect(result).toMatchObject({ ok: true })
+  expect(rig.store.getRecord(CHILD)?.permissionMode).toBe('full-access')
+  expect(rig.store.getRecord(SOURCE)).toEqual(sourceBefore)
 })

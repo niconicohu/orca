@@ -55,6 +55,8 @@ export type StructuredAgentLaunchPersistedRecord = {
   resumeFrom?: StructuredAgentSessionResumeSource
   sideChatOf?: string
   firstMessage?: StructuredAgentSessionFirstMessage
+  explicitLaunchOptions?: Readonly<Record<string, string>>
+  optionsMode?: 'replace-model-selection'
   options?: Readonly<Record<string, string>>
   createMessageSupport?: boolean
   /** A paired server's reported seed, which this machine cannot re-derive after a reload. */
@@ -67,7 +69,7 @@ export function structuredAgentLaunchRecordFor(
   intent: StructuredAgentSessionLaunchIntent,
   lifecycle: StructuredAgentLaunchPersistedLifecycle
 ): StructuredAgentLaunchPersistedRecord {
-  const { envelope, resumeFrom, firstMessage, options, sideChatOf } = intent.params
+  const { envelope, resumeFrom, firstMessage, optionsMode, options, sideChatOf } = intent.params
   // A local launch re-reads this machine's settings on reload; only a paired server's seed is kept.
   const pairedSeed = intent.target.kind === 'local' ? undefined : intent.seedOptions
   return {
@@ -82,7 +84,11 @@ export function structuredAgentLaunchRecordFor(
     ...(resumeFrom ? { resumeFrom } : {}),
     ...(sideChatOf ? { sideChatOf } : {}),
     ...(firstMessage ? { firstMessage } : {}),
+    ...(optionsMode ? { optionsMode } : {}),
     ...(options ? { options } : {}),
+    ...(intent.explicitLaunchOptions
+      ? { explicitLaunchOptions: intent.explicitLaunchOptions }
+      : {}),
     ...(intent.createMessageSupport === undefined
       ? {}
       : { createMessageSupport: intent.createMessageSupport }),
@@ -122,6 +128,7 @@ export function validRecord(value: unknown): value is Omit<
   const executionHostId = 'executionHostId' in value ? value.executionHostId : undefined
   const failedAt = 'failedAt' in value ? value.failedAt : undefined
   const firstMessage = 'firstMessage' in value ? value.firstMessage : undefined
+  const optionsMode = 'optionsMode' in value ? value.optionsMode : undefined
   const options = 'options' in value ? value.options : undefined
   const createMessageSupport =
     'createMessageSupport' in value ? value.createMessageSupport : undefined
@@ -138,7 +145,11 @@ export function validRecord(value: unknown): value is Omit<
     (failedAt === undefined || Number.isFinite(failedAt)) &&
     (firstMessage === undefined || validFirstMessage(firstMessage)) &&
     (sideChatOf === undefined || (isAgentSessionId(sideChatOf) && resumeFrom === undefined)) &&
+    (optionsMode === undefined || optionsMode === 'replace-model-selection') &&
     (options === undefined || isAgentSessionOptions(options)) &&
+    (!('explicitLaunchOptions' in value) ||
+      value.explicitLaunchOptions === undefined ||
+      isAgentSessionOptions(value.explicitLaunchOptions)) &&
     (createMessageSupport === undefined || typeof createMessageSupport === 'boolean') &&
     (resumeFrom === undefined ||
       (typeof resumeFrom === 'object' &&

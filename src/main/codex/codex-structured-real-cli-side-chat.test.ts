@@ -7,7 +7,7 @@ import { openCodexAppServerConnection } from './codex-app-server-connection'
 import { openCodexThread } from './codex-structured-thread-open'
 
 it.skipIf(process.env.ORCA_REAL_CODEX_CLI_TEST !== '1')(
-  'forks actual provider history and cold-resumes the independent read-only child',
+  'forks actual provider history and cold-resumes the independent child with selected permissions',
   async () => {
     const base = mkdtempSync(join(tmpdir(), 'orca-real-side-chat-'))
     const cwd = join(base, 'workspace')
@@ -44,12 +44,22 @@ it.skipIf(process.env.ORCA_REAL_CODEX_CLI_TEST !== '1')(
       try {
         const opened = await openCodexThread(
           child,
-          { cwd, resumeThreadId: null, forkThreadId: source.threadId, sideChat: true },
+          {
+            cwd,
+            resumeThreadId: null,
+            forkThreadId: source.threadId,
+            sideChat: true,
+            permissionPolicy: {
+              sandbox: 'danger-full-access',
+              approvalPolicy: 'never',
+              approvalsReviewer: 'user'
+            }
+          },
           20_000
         )
         childId = opened.threadId
         expect(childId).not.toBe(source.threadId)
-        expect(opened.reportedPermissionMode).toBe('read-only')
+        expect(opened.reportedPermissionMode).toBe('full-access')
         const history = await child.request('thread/read', {
           threadId: childId,
           includeTurns: true
@@ -70,15 +80,15 @@ it.skipIf(process.env.ORCA_REAL_CODEX_CLI_TEST !== '1')(
             resumeThreadId: childId,
             sideChat: true,
             permissionPolicy: {
-              sandbox: 'danger-full-access',
-              approvalPolicy: 'never',
+              sandbox: 'read-only',
+              approvalPolicy: 'on-request',
               approvalsReviewer: 'user'
             }
           },
           20_000
         )
         expect(reopened.threadId).toBe(childId)
-        expect(reopened.reportedPermissionMode).toBe('read-only')
+        expect(reopened.reportedPermissionMode).toBe('ask')
       } finally {
         allClosed = (await resumed.close()) && allClosed
       }

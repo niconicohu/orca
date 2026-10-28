@@ -3,11 +3,14 @@ import {
   getTextDrivenNativeChatCommands
 } from './native-chat-agent-profiles'
 import type { AgentType } from './agent-status-types'
-import type { SessionOptionDescriptor, SessionOptionValue } from './native-chat-session-options'
+import type {
+  SessionOptionDescriptor,
+  SessionOptionValue
+} from './native-chat/input/native-chat-session-options'
 import {
   sessionSlashCommandSuggestions,
   type SlashCommandSuggestion
-} from './native-chat-slash-commands'
+} from './native-chat/input/native-chat-slash-commands'
 import type { AgentSessionConversationCommand } from './agent-session/agent-session-conversation-command'
 import type { AgentSessionSlashCommand } from './agent-session-wire'
 
@@ -37,6 +40,8 @@ export type StructuredAgentSessionComposerOptions = {
   snapshot: readonly SessionOptionDescriptor[]
   invokeAction: (id: string) => Promise<boolean>
   setOption: (id: string, value: SessionOptionValue) => Promise<boolean>
+  /** What the running session reported for its `/` menu; undefined until read or on an older host. */
+  sessionCommands?: readonly AgentSessionSlashCommand[]
   conversationCommands?: readonly AgentSessionConversationCommand[]
   runConversationCommand?: (
     command: AgentSessionConversationCommand
@@ -113,12 +118,19 @@ export function structuredSessionSlashCommands(
   ]
 }
 
-/** Claim hidden TUI-only commands too, preventing literal prose delivery; leave agent-handled commands unclaimed for passthrough. */
-function structuredRecognizedCommands(agent: AgentType): readonly SlashCommandSuggestion[] {
+/** Claim hidden TUI-only commands too, preventing literal prose delivery; leave agent-handled
+ *  and session-reported commands unclaimed for passthrough. */
+function structuredRecognizedCommands(
+  agent: AgentType,
+  reported: readonly AgentSessionSlashCommand[] | undefined
+): readonly SlashCommandSuggestion[] {
+  const sessionHandled = new Set(
+    reported?.filter((entry) => entry.kind === 'command').map((entry) => entry.name)
+  )
   return [
     ...STRUCTURED_AGENT_SESSION_SLASH_COMMANDS,
     ...CONVERSATION_COMMANDS,
-    ...getHostClaimedNativeChatCommands(agent)
+    ...getHostClaimedNativeChatCommands(agent).filter((entry) => !sessionHandled.has(entry.name))
   ]
 }
 
@@ -128,6 +140,7 @@ function structuredRecognizedCommands(agent: AgentType): readonly SlashCommandSu
 export function isStructuredAgentSessionComposerCommand(
   text: string,
   agent: AgentType = 'codex',
+  reported?: readonly AgentSessionSlashCommand[],
   sideChat = false
 ): boolean {
   const command = commandParts(text)
@@ -135,8 +148,19 @@ export function isStructuredAgentSessionComposerCommand(
     command &&
     (command.name === 'btw'
       ? sideChat
-      : structuredRecognizedCommands(agent).some((entry) => entry.name === command.name))
+      : structuredRecognizedCommands(agent, reported).some((entry) => entry.name === command.name))
   )
+}
+
+export function prepareStructuredAgentSessionComposerCommand(
+  agent: AgentType,
+  reported?: readonly AgentSessionSlashCommand[]
+): (text: string) => boolean {
+  const names = new Set(structuredRecognizedCommands(agent, reported).map((entry) => entry.name))
+  return (text) => {
+    const command = commandParts(text)
+    return command !== null && names.has(command.name)
+  }
 }
 
 /** `/clear` or `/compact` alone: a conversation command with nothing after it. */
@@ -207,7 +231,15 @@ export async function dispatchStructuredAgentSessionComposerCommand(
       error: null
     }
   }
-  if (!command || !isStructuredAgentSessionComposerCommand(text, controller.agent)) {
+  if (
+    !command ||
+    !isStructuredAgentSessionComposerCommand(
+      text,
+      controller.agent,
+      controller.sessionCommands,
+      controller.openSideChat !== undefined
+    )
+  ) {
     return { handled: false, accepted: false, error: null }
   }
   if (command.name === 'clear' || command.name === 'compact') {

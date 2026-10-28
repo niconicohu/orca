@@ -105,7 +105,8 @@ function publishWithHeldOptions(
   state: StructuredLaunchState,
   created: Promise<StructuredAgentLaunchReceipt>
 ): Promise<StructuredAgentLaunchReceipt> {
-  state.intent.prepareCreate = () => prepareStructuredLaunchCreateMessage(state)
+  state.intent.prepareCreate = (hostTakesExplicitOptions) =>
+    prepareStructuredLaunchCreateMessage(state, hostTakesExplicitOptions)
   return created.then((receipt) => publishStructuredLaunchCreateOptions(state, receipt))
 }
 
@@ -133,8 +134,7 @@ function resetStructuredLaunchCallers(state: StructuredLaunchState): void {
 }
 
 function restartStructuredLaunchState(state: StructuredLaunchState): void {
-  const wasVisibilityUnknown = state.visibilityUnknown
-  if (!wasVisibilityUnknown) {
+  if (!state.visibilityUnknown) {
     const surfaceAddress = state.intent.surfaceAddress
     state.intent = retryStructuredAgentSessionLaunchIntent(state.intent)
     state.intent.surfaceAddress = surfaceAddress
@@ -150,7 +150,7 @@ function restartStructuredLaunchState(state: StructuredLaunchState): void {
   state.onHostSeed = (seedOptions) => adoptPairedHostSeed(state, seedOptions)
   state.promise = publishWithHeldOptions(
     state,
-    wasVisibilityUnknown ? reconcileUnknownLaunch(state) : launchAndReconcile(state)
+    state.visibilityUnknown ? reconcileUnknownLaunch(state) : launchAndReconcile(state)
   )
   trackLaunchSettlement(state, state.promise)
   trackStructuredLaunchConfirmationDeadline(state, state.promise)
@@ -218,6 +218,7 @@ function structuredAgentLaunchState(
     options.activate,
     ...(options.sideChatOf ? [options.sideChatOf] : [])
   )
+  intent.explicitLaunchOptions = options.launchOptions ? { ...options.launchOptions } : undefined
   intent.beforeCreate = options.beforeCreate
   intent.surfaceAddress = options.surfaceAddress
   const text = launchPromptText(options)

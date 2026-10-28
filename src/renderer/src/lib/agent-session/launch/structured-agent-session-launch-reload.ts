@@ -37,7 +37,11 @@ export function restorePersistedStructuredLaunchState(
       ...(record.sideChatOf ? { sideChatOf: record.sideChatOf } : {}),
       ...(record.seedOptions ? { seedOptions: record.seedOptions } : {}),
       ...(record.firstMessage ? { firstMessage: record.firstMessage } : {}),
+      ...(record.optionsMode ? { optionsMode: record.optionsMode } : {}),
       ...(record.options ? { options: record.options } : {}),
+      ...(record.explicitLaunchOptions
+        ? { explicitLaunchOptions: record.explicitLaunchOptions }
+        : {}),
       ...(record.createMessageSupport === undefined
         ? {}
         : { createMessageSupport: record.createMessageSupport })

@@ -61,16 +61,6 @@ export async function recordStructuredAgentSessionOptionIntent(
 ): Promise<TurnOutcome<AgentSessionOptionResult>> {
   const { sessionId, fence } = ctx
   const record = deps.store.getRecord(sessionId)
-  if (record?.sideChat && input.key === AGENT_CHAT_PERMISSION_MODE_OPTION_ID) {
-    return {
-      ok: false,
-      refusal: refuse(
-        'agent_session_operation_invalid',
-        { reason: 'optionRejected' },
-        'Side chat permissions are read only.'
-      )
-    }
-  }
   if (!record || !acceptsOptionPick(deps.agents, record.provider, input.key, input.value)) {
     return {
       ok: false,

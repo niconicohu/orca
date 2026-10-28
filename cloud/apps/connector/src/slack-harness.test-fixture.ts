@@ -1,11 +1,16 @@
 import { createHmac, randomBytes } from 'node:crypto'
-import { CONNECTOR_PATHS, type ConnectorProject } from '@orca-cloud/connector-contract'
-import { vi } from 'vitest'
+import {
+  CONNECTOR_PATHS,
+  ConnectorPollResponseSchema,
+  type ConnectorProject
+} from '@orca-cloud/connector-contract'
+import { expect, vi } from 'vitest'
 import { createConnectorHarness } from './connector-server-harness.test-fixture.js'
 import type { SlackConfig } from './slack-config.js'
 import { runSlackOperator } from './slack-operator.js'
 
 export const SIGNING_SECRET = 'test-signing-secret'
+export const APP = 'A1'
 export const TEAM = 'T1'
 export const CHANNEL = 'C1'
 export const BOT = 'UBOT'
@@ -57,8 +62,6 @@ export async function createSlackHarness(slack: Partial<SlackConfig> = {}) {
   const tokenKey = randomBytes(32)
   const harness = await createConnectorHarness({
     slack: {
-      signingSecret: SIGNING_SECRET,
-      teamIds: new Set([TEAM]),
       paused: false,
       tokenKey,
       ...slack
@@ -72,16 +75,25 @@ export async function createSlackHarness(slack: Partial<SlackConfig> = {}) {
     runSlackOperator(argv, {
       database: harness.database,
       tokenKey,
-      readSecret: async () => 'xoxb-test-token',
+      readSecret: async () =>
+        argv[0] === 'register-app'
+          ? JSON.stringify({ clientSecret: 'test-client-secret', signingSecret: SIGNING_SECRET })
+          : 'xoxb-test-token',
       now: harness.now
     })
-  await operator('install', '--team', TEAM, '--bot-user', BOT)
+  await operator('register-app', '--app-id', APP, '--client-id', '1.2')
+  await operator('install', '--team', TEAM, '--bot-user', BOT, '--app-id', APP)
 
-  const signedPost = (body: string, timestamp = Math.floor(harness.now() / 1000)) =>
-    harness.request('/slack/events', {
+  const signedPost = (
+    body: string,
+    timestamp = Math.floor(harness.now() / 1000),
+    path = `/slack/apps/${APP}/events`,
+    contentType = 'application/json'
+  ) =>
+    harness.request(path, {
       method: 'POST',
       headers: {
-        'content-type': 'application/json',
+        'content-type': contentType,
         'x-slack-request-timestamp': String(timestamp),
         'x-slack-signature': `v0=${createHmac('sha256', SIGNING_SECRET).update(`v0:${timestamp}:${body}`).digest('hex')}`
       },
@@ -102,6 +114,7 @@ export async function createSlackHarness(slack: Partial<SlackConfig> = {}) {
     signedPost(
       JSON.stringify({
         type: 'event_callback',
+        api_app_id: APP,
         team_id: TEAM,
         event: {
           type: 'message',
@@ -112,6 +125,25 @@ export async function createSlackHarness(slack: Partial<SlackConfig> = {}) {
         },
         ...envelope
       })
+    )
+
+  // A button press, form-encoded as Slack sends interactions.
+  const click = (fields: { user?: string; messageTs: string; value: string; actionId?: string }) =>
+    signedPost(
+      new URLSearchParams({
+        payload: JSON.stringify({
+          type: 'block_actions',
+          api_app_id: APP,
+          team: { id: TEAM },
+          user: { id: fields.user ?? OWNER },
+          channel: { id: CHANNEL },
+          container: { type: 'message', message_ts: fields.messageTs, channel_id: CHANNEL },
+          actions: [{ action_id: fields.actionId ?? 'answer:0', value: fields.value }]
+        })
+      }).toString(),
+      undefined,
+      `/slack/apps/${APP}/interactivity`,
+      'application/x-www-form-urlencoded'
     )
 
   // A connected machine of `account` listing `projects`.
@@ -125,7 +157,6 @@ export async function createSlackHarness(slack: Partial<SlackConfig> = {}) {
       CONNECTOR_PATHS.hello,
       {
         v: 1,
-        helloRev: 1,
         contract: 1,
         hostName,
         platform: 'darwin',
@@ -134,11 +165,12 @@ export async function createSlackHarness(slack: Partial<SlackConfig> = {}) {
         agents: ['claude', 'codex'],
         promptKinds: ['approval'],
         features: ['answer', 'cancel', 'reply'],
+        sources: ['slack'],
         projects
       },
       'PUT'
     )
-    if (response.status !== 204) {
+    if (response.status !== 200) {
       throw new Error(`hello failed: ${response.status}`)
     }
     return machine
@@ -146,8 +178,76 @@ export async function createSlackHarness(slack: Partial<SlackConfig> = {}) {
 
   const posts = async () =>
     await harness.database.query(
-      'SELECT post_id, kind, body, state, next_at, slack_ts FROM connector_slack_posts ORDER BY post_id'
+      'SELECT post_id, kind, body, state, next_at, message_ref FROM connector_posts ORDER BY post_id'
     )
 
-  return { ...harness, edge, fake, tokenKey, operator, signedPost, message, machineWith, posts }
+  return {
+    ...harness,
+    core: harness.runtime.core,
+    edge,
+    fake,
+    tokenKey,
+    operator,
+    signedPost,
+    message,
+    click,
+    machineWith,
+    posts
+  }
+}
+
+export const THREAD = '1800000000.000100'
+export const EXTERNAL_ID = `${TEAM}:${CHANNEL}:${THREAD}:${OWNER}`
+export const conversation = { source: 'slack' as const, externalId: EXTERNAL_ID }
+export const TURN = 1_800_000_001_000
+
+// A linked owner's conversation, its start handed to their machine.
+export async function startedThread() {
+  const harness = await createSlackHarness()
+  await harness.operator(
+    'link',
+    '--team',
+    TEAM,
+    '--user',
+    OWNER,
+    '--account',
+    'user-1',
+    '--default-project',
+    'orca'
+  )
+  const machine = await harness.machineWith('user-1', [project('orca')])
+  await harness.message({ text: `<@${BOT}> fix it`, ts: THREAD })
+  const [start] = ConnectorPollResponseSchema.parse((await machine.poll()).body).deliveries
+  let seq = 0
+  const events = async (...batch: unknown[]) => {
+    const response = await machine.call(CONNECTOR_PATHS.events, {
+      v: 1,
+      helloRev: 1,
+      seq: ++seq,
+      events: batch
+    })
+    expect(response.status).toBe(204)
+  }
+  const status = async () => {
+    const [row] = await harness.database.query(
+      'SELECT body FROM connector_posts WHERE post_id = ?',
+      [`status:${EXTERNAL_ID}`]
+    )
+    return JSON.parse(String(row?.body)).text
+  }
+  const reply = (replyId: string, text: string, by = machine) =>
+    by.call(CONNECTOR_PATHS.replies, { v: 1, replyId, conversation, turnId: TURN, text })
+  const pass = () => harness.core.sendDue()
+  return { ...harness, machine, start, events, status, reply, pass }
+}
+
+export const turnStarted = { kind: 'turn-started', conversation, paneKey: 'pane-1', at: TURN }
+export const turnEnded = {
+  kind: 'turn-ended',
+  conversation,
+  paneKey: 'pane-1',
+  turnId: TURN,
+  at: TURN + 5_000,
+  stopReason: 'end_turn',
+  lastAssistantMessage: 'Fixed <!channel> & done'
 }

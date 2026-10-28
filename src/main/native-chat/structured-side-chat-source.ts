@@ -1,4 +1,5 @@
 import { activeProviderContext } from '../../shared/agent-session-provider-context'
+import { isAgentChatPermissionChoice } from '../../shared/agent-chat-permission-mode'
 import { agentSessionExecutionLocationsEqual } from '../../shared/agent-session-record'
 import { agentSessionRefusalError } from '../../shared/agent-session-wire-refusals'
 import type { AgentSessionExecutionLocation } from '../../shared/agent-session-record'
@@ -61,7 +62,9 @@ export function resolveStructuredSideChatSource(input: {
   }
   return {
     accountHome: record.accountHome,
-    options: record.options,
+    options: isAgentChatPermissionChoice(record.permissionMode)
+      ? { ...record.options, permissionMode: record.permissionMode }
+      : record.options,
     sideChat: prior?.sideChat ?? {
       sourceSessionId: input.sourceSessionId,
       sourceProviderSessionId: threadId!

@@ -5,7 +5,8 @@ import { isAgentSessionConversationName } from './agent-session/agent-session-co
 import {
   isPersistedAgentSessionHandoffStage,
   isPersistedAgentSessionRuntimeKind,
-  type PersistedAgentSessionLease,
+  type PersistedAgentSessionObservationLease,
+  type PersistedAgentSessionObservationRecord,
   type PersistedAgentSessionRecord
 } from './agent-session-legacy-handoff-lease'
 /** Identity pins location, provider and account home independently of terminal tabs; the lease separately grants one process writer authority. */
@@ -31,6 +32,7 @@ import {
 } from './agent-session-account-home'
 
 export type { AgentSessionAccountHome } from './agent-session-account-home'
+export type { AgentSessionOptionsReplacement } from './agent-session-options-replacement'
 
 export const AGENT_SESSION_RECORD_SCHEMA_VERSION = 2 as const
 
@@ -146,14 +148,6 @@ export type AgentSessionRecord = {
   updatedAt: number
 }
 
-/** Replaces the provider options or sets the permission mode, never both, so neither write
- *  touches the other. */
-export type AgentSessionOptionsReplacement = {
-  sessionId: string
-  fence: number
-  now: number
-} & ({ options: Readonly<Record<string, string>> } | { permissionMode: string })
-
 const MAX_ID_LENGTH = 512
 /** A death evidence's `detail` past this fails a load, so whoever writes one cuts it here. */
 export const MAX_AGENT_SESSION_DEATH_DETAIL_CHARS = MAX_ID_LENGTH
@@ -170,13 +164,10 @@ export function isAgentSessionId(value: unknown): value is string {
 }
 
 /** NUL cannot occur in a host id, distro name, or workspace id, so no component can forge a join. */
-const SCOPE_KEY_SEPARATOR = '\u0000'
 
 /** Separate native/WSL/SSH workspace copies so one host cannot adjudicate another's lease. */
 export function agentSessionScopeKey(location: AgentSessionExecutionLocation): string {
-  return [location.executionHostId, location.wslDistro ?? '', location.workspaceId].join(
-    SCOPE_KEY_SEPARATOR
-  )
+  return [location.executionHostId, location.wslDistro ?? '', location.workspaceId].join('\u0000')
 }
 
 export function agentSessionExecutionLocationsEqual(
@@ -276,16 +267,22 @@ function isAgentSessionDeathEvidence(value: unknown): value is AgentSessionDeath
   )
 }
 
-function isPersistedAgentSessionLease(value: unknown): value is PersistedAgentSessionLease {
-  if (typeof value !== 'object' || value === null) {
+function isStoredRecordObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isPersistedAgentSessionObservationLease(
+  lease: unknown
+): lease is PersistedAgentSessionObservationLease {
+  if (!isStoredRecordObject(lease)) {
     return false
   }
-  const lease = value as Partial<AgentSessionLease>
   return (
     isAgentSessionId(lease.sessionId) &&
     isPersistedAgentSessionRuntimeKind(lease.runtimeKind) &&
+    typeof lease.runtimeFence === 'number' &&
     Number.isSafeInteger(lease.runtimeFence) &&
-    (lease.runtimeFence as number) >= 0 &&
+    lease.runtimeFence >= 0 &&
     (lease.handoffStage === null || isPersistedAgentSessionHandoffStage(lease.handoffStage)) &&
     (lease.provenHandleLinkId === null || isBoundedString(lease.provenHandleLinkId, 128)) &&
     (lease.ownerProcess === null || isAgentSessionProcessIdentity(lease.ownerProcess)) &&
@@ -306,58 +303,71 @@ function isPersistedAgentSessionLease(value: unknown): value is PersistedAgentSe
 }
 
 /** Stored identity is independent of registrations; availability is checked only at start. */
-export function isPersistedAgentSessionRecord(
-  value: unknown
-): value is PersistedAgentSessionRecord {
-  if (typeof value !== 'object' || value === null) {
+export function isPersistedAgentSessionObservationRecord(
+  record: unknown
+): record is PersistedAgentSessionObservationRecord {
+  if (!isStoredRecordObject(record)) {
     return false
   }
-  const record = value as Partial<AgentSessionRecord>
-  const fieldsValid =
-    record.schemaVersion === AGENT_SESSION_RECORD_SCHEMA_VERSION &&
-    isAgentSessionId(record.sessionId) &&
-    isAgentSessionExecutionLocation(record.location) &&
-    isStructuredAgentId(record.provider) &&
-    (record.sideChat === undefined ||
-      AgentSessionSideChatSchema.safeParse(record.sideChat).success) &&
-    isAgentSessionAccountHome(record.accountHome) &&
-    (record.launchDirectory === undefined ||
-      isBoundedString(record.launchDirectory, MAX_PATH_LENGTH)) &&
-    (record.options === undefined || isAgentSessionOptions(record.options)) &&
-    (record.permissionMode === undefined ||
-      isBoundedString(record.permissionMode, MAX_ID_LENGTH)) &&
-    (record.rewind === undefined || isAgentSessionRewindRecord(record.rewind)) &&
-    (record.providerContextBoundary === undefined ||
-      isAgentSessionProviderContextBoundary(record.providerContextBoundary)) &&
-    (record.conversationCommand === undefined ||
-      isAgentSessionConversationCommandRecord(record.conversationCommand)) &&
-    (record.conversationName === undefined ||
-      isAgentSessionConversationName(record.conversationName)) &&
-    (record.conversationNameSource === undefined || record.conversationNameSource === 'user') &&
-    (record.launchArgs === undefined || isAgentSessionLaunchArgs(record.launchArgs)) &&
-    !Object.hasOwn(record, 'launchEnv') &&
-    isPersistedAgentSessionLease(record.lease) &&
-    record.lease.sessionId === record.sessionId &&
-    Number.isSafeInteger(record.createdAt) &&
-    Number.isSafeInteger(record.updatedAt)
-  if (!fieldsValid) {
+  if (
+    !(
+      record.schemaVersion === AGENT_SESSION_RECORD_SCHEMA_VERSION &&
+      isAgentSessionId(record.sessionId) &&
+      isAgentSessionExecutionLocation(record.location) &&
+      isStructuredAgentId(record.provider) &&
+      (record.sideChat === undefined ||
+        AgentSessionSideChatSchema.safeParse(record.sideChat).success) &&
+      isAgentSessionAccountHome(record.accountHome) &&
+      (record.launchDirectory === undefined ||
+        isBoundedString(record.launchDirectory, MAX_PATH_LENGTH)) &&
+      (record.options === undefined || isAgentSessionOptions(record.options)) &&
+      (record.permissionMode === undefined ||
+        isBoundedString(record.permissionMode, MAX_ID_LENGTH)) &&
+      (record.rewind === undefined || isAgentSessionRewindRecord(record.rewind)) &&
+      (record.providerContextBoundary === undefined ||
+        isAgentSessionProviderContextBoundary(record.providerContextBoundary)) &&
+      (record.conversationCommand === undefined ||
+        isAgentSessionConversationCommandRecord(record.conversationCommand)) &&
+      (record.conversationName === undefined ||
+        isAgentSessionConversationName(record.conversationName)) &&
+      (record.conversationNameSource === undefined || record.conversationNameSource === 'user') &&
+      (record.launchArgs === undefined || isAgentSessionLaunchArgs(record.launchArgs)) &&
+      !Object.hasOwn(record, 'launchEnv') &&
+      isPersistedAgentSessionObservationLease(record.lease) &&
+      record.lease.sessionId === record.sessionId &&
+      Number.isSafeInteger(record.createdAt) &&
+      Number.isSafeInteger(record.updatedAt)
+    )
+  ) {
     return false
   }
-  const validated = record as AgentSessionRecord
   // The row holds stored handles; validate the chain they decode to.
-  const chain = decodePersistedAgentSessionProviderHandleChain(validated.providerHandleChain)
+  const chain = decodePersistedAgentSessionProviderHandleChain(record.providerHandleChain)
   const head = chain?.at(-1)
   return (
     chain !== null &&
     // Chain validation already enforces one namespace.
-    (!head || head.handle.agent === validated.provider) &&
-    (validated.providerContextBoundary === undefined ||
-      validated.providerContextBoundary.afterFence <= validated.lease.runtimeFence) &&
-    (validated.lease.claimStatus !== 'live' ||
-      (validated.lease.ownerProcess !== null &&
+    (!head || head.handle.agent === record.provider) &&
+    (record.providerContextBoundary === undefined ||
+      record.providerContextBoundary.afterFence <= record.lease.runtimeFence) &&
+    (record.lease.claimStatus !== 'live' ||
+      (record.lease.ownerProcess !== null &&
         // Null: the owner's process is live and its provider has not answered with a handle yet.
-        (validated.lease.provenHandleLinkId === null ||
-          (head?.linkId === validated.lease.provenHandleLinkId &&
-            head.mintedAtFence === validated.lease.runtimeFence))))
+        (record.lease.provenHandleLinkId === null ||
+          (head?.linkId === record.lease.provenHandleLinkId &&
+            head.mintedAtFence === record.lease.runtimeFence))))
+  )
+}
+
+/** Writable records require the complete observation and a safe next-grant floor. */
+export function isPersistedAgentSessionRecord(
+  value: unknown
+): value is PersistedAgentSessionRecord {
+  if (!isPersistedAgentSessionObservationRecord(value)) {
+    return false
+  }
+  const floor = value.lease.minimumNextFence
+  return (
+    floor === undefined || (typeof floor === 'number' && Number.isSafeInteger(floor) && floor >= 0)
   )
 }

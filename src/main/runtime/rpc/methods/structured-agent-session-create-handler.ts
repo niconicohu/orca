@@ -93,6 +93,7 @@ export async function handleStructuredAgentSessionCreate(
         ...(params.resumeFrom ? { resumeFrom: params.resumeFrom } : {}),
         ...(params.sideChatOf ? { sideChatOf: params.sideChatOf } : {}),
         ...(params.tabId ? { tabId: params.tabId } : {}),
+        ...(params.optionsMode ? { optionsMode: params.optionsMode } : {}),
         ...(params.options ? { options: params.options } : {}),
         ...(params.firstMessage ? { firstMessage: params.firstMessage } : {}),
         atRest: Boolean(

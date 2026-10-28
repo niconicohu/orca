@@ -3,10 +3,7 @@ import { providerDiagnostic, withProviderDiagnostic } from '../../shared/agent-s
 import { throwIfSignalAborted } from '../../shared/abort-signal-reason'
 import { isCodexAppServerRequestError } from './app-server/codex-app-server-request-error'
 import type { CodexAppServerConnection } from './app-server/codex-app-server-connection-types'
-import {
-  CODEX_SIDE_CHAT_PERMISSION_POLICY,
-  type CodexStructuredPermissionPolicy
-} from './codex-structured-permission-policy'
+import type { CodexStructuredPermissionPolicy } from '../../shared/codex-permission-policy'
 import { readCodexThreadId } from './codex-structured-thread-facts'
 import { readCodexSandboxPolicy, type CodexSandboxPolicy } from './codex-structured-sandbox-policy'
 
@@ -69,7 +66,6 @@ export async function openCodexThread(
   const threadSettings = {
     cwd: launch.cwd,
     ...launch.permissionPolicy,
-    ...(launch.sideChat ? CODEX_SIDE_CHAT_PERMISSION_POLICY : {}),
     ...(Object.keys(config).length > 0 ? { config } : {})
   }
   const startThread = (): Promise<unknown> => {
