@@ -17404,7 +17404,8 @@
     "native-chat": {
       "sideChat": {
         "new": "新建旁聊",
-        "badge": "btw"
+        "badge": "btw",
+        "failed": "无法打开旁支对话。"
       },
       "install": {
         "checking": "正在检查 {{agent}} 是否已在此主机上就绪…"

@@ -67,3 +67,31 @@ it('accepts an empty side chat without a prompt-delivery receipt', async () => {
   mocks.begin.mockReturnValue({ settlement: Promise.resolve({ kind: 'structured' }) })
   await expect(openNativeChatSideChat(source)).resolves.toBe(true)
 })
+
+it('joins duplicate menu opens while pending, then permits another side chat after settlement', async () => {
+  const settlement = Promise.withResolvers<{ kind: 'structured' }>()
+  mocks.begin.mockReturnValue({ settlement: settlement.promise })
+  const first = openNativeChatSideChat(source)
+  const second = openNativeChatSideChat(source)
+  try {
+    await vi.waitFor(() => expect(mocks.begin).toHaveBeenCalledOnce())
+  } finally {
+    settlement.resolve({ kind: 'structured' })
+  }
+  await expect(Promise.all([first, second])).resolves.toEqual([true, true])
+  await expect(openNativeChatSideChat(source)).resolves.toBe(true)
+  expect(mocks.begin).toHaveBeenCalledTimes(2)
+})
+
+it('keeps distinct side questions independent while both launches are pending', async () => {
+  const settlement = Promise.withResolvers<{ kind: 'structured' }>()
+  mocks.begin.mockReturnValue({ settlement: settlement.promise })
+  const first = openNativeChatSideChat(source, 'Question one')
+  const second = openNativeChatSideChat(source, 'Question two')
+  try {
+    await vi.waitFor(() => expect(mocks.begin).toHaveBeenCalledTimes(2))
+  } finally {
+    settlement.resolve({ kind: 'structured' })
+  }
+  await expect(Promise.all([first, second])).resolves.toEqual([true, true])
+})

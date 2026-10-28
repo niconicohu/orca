@@ -17405,7 +17405,8 @@
     "native-chat": {
       "sideChat": {
         "new": "Nuevo chat paralelo",
-        "badge": "btw"
+        "badge": "btw",
+        "failed": "No se pudo abrir una conversación paralela."
       },
       "imagePreview": {
         "fileActions": "Acciones de archivo",
