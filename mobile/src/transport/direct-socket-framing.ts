@@ -28,6 +28,7 @@ export type DirectSocketFraming = {
   // false = not ready yet; throws when the socket write fails.
   sendText: (plaintext: string) => boolean
   dispose: () => void
+  readTransportDetails?: () => string
 }
 
 export function createDirectSocketFraming(args: {
@@ -76,6 +77,7 @@ function createV2Framing(args: Parameters<typeof createDirectSocketFraming>[0]) 
     },
     handleInbound: (raw: unknown) => void channel.handleMessage(raw),
     sendText: (plaintext: string) => channel.sendText(plaintext),
+    readTransportDetails: () => channel.readTransportDetails(),
     dispose: () => channel.dispose()
   }
 }

@@ -24,6 +24,7 @@ import {
   resetE2EEV2HostLatchForTests
 } from './e2ee-v2-host-latch'
 import { connect } from './rpc-client'
+import type { ConnectionLogEntry } from './types'
 
 const desktopKeys = nacl.box.keyPair()
 const desktopPublicKeyB64 = Buffer.from(desktopKeys.publicKey).toString('base64')
@@ -136,6 +137,98 @@ describe('direct connections use E2EE v2 framing', () => {
   afterEach(() => {
     vi.useRealTimers()
     globalThis.WebSocket = originalWebSocket
+  })
+
+  it('distinguishes received but rejected frames from a silent link when health probes expire', async () => {
+    const entries: ConnectionLogEntry[] = []
+    const client = connect('ws://desktop.invalid', 'device-token', desktopPublicKeyB64, {
+      onLog: (entry) => entries.push(entry)
+    })
+    const socket = sockets[0]
+    if (!socket) {
+      throw new Error('Expected the physical socket')
+    }
+    try {
+      socket.open()
+      await completeHostV2Handshake(socket)
+      await vi.advanceTimersByTimeAsync(40_000)
+      socket.receive('invalid-frame')
+      await vi.advanceTimersByTimeAsync(4_000)
+
+      const timeout = entries.find((entry) => entry.code === 'liveness-timeout')
+      expect(timeout?.detail).toContain('3/3 probes missed')
+      expect(timeout?.detail).toContain('last authenticated activity 44000ms ago')
+      expect(timeout?.detail).toContain('rawIdleMs=4000')
+      expect(timeout?.detail).toContain('rejectedFrames=1')
+      expect(timeout?.detail).toContain('decodePending=0')
+      expect(timeout?.detail).not.toContain('device-token')
+      expect(client.getState()).toBe('reconnecting')
+    } finally {
+      client.close()
+    }
+  })
+
+  it('reports a delayed binary conversion blocking later valid text without blaming an idle wire', async () => {
+    const entries: ConnectionLogEntry[] = []
+    const client = connect('ws://desktop.invalid', 'device-token', desktopPublicKeyB64, {
+      onLog: (entry) => entries.push(entry)
+    })
+    const socket = sockets[0]
+    if (!socket) {
+      throw new Error('Expected the physical socket')
+    }
+    try {
+      socket.open()
+      const host = await completeHostV2Handshake(socket)
+      const binary = host.sealBinary(new Uint8Array([7]))
+      let release: (bytes: ArrayBuffer) => void = () => {}
+      const delayed = new Promise<ArrayBuffer>((resolve) => {
+        release = resolve
+      })
+      await vi.advanceTimersByTimeAsync(10_000)
+      socket.receive({ arrayBuffer: () => delayed })
+      await vi.advanceTimersByTimeAsync(30_000)
+      socket.receive(host.sealText(JSON.stringify({ id: 'status', ok: true, result: {} })))
+      await vi.advanceTimersByTimeAsync(4_000)
+
+      const timeout = entries.find((entry) => entry.code === 'liveness-timeout')
+      expect(timeout?.detail).toContain('rawIdleMs=4000')
+      expect(timeout?.detail).toContain('decodePending=2')
+      expect(timeout?.detail).toContain('decodeBusyMs=34000')
+      expect(timeout?.detail).toContain('rejectedFrames=0')
+      release(Uint8Array.from(binary).buffer)
+      await flush()
+      expect(client.getState()).toBe('reconnecting')
+    } finally {
+      client.close()
+    }
+  })
+
+  it('keeps the session alive when delayed authenticated replies arrive within probe windows', async () => {
+    const entries: ConnectionLogEntry[] = []
+    const client = connect('ws://desktop.invalid', 'device-token', desktopPublicKeyB64, {
+      onLog: (entry) => entries.push(entry)
+    })
+    const socket = sockets[0]
+    if (!socket) {
+      throw new Error('Expected the physical socket')
+    }
+    try {
+      socket.open()
+      const host = await completeHostV2Handshake(socket)
+      for (let cycle = 0; cycle < 3; cycle++) {
+        await vi.advanceTimersByTimeAsync(24_000)
+        socket.receive(
+          host.sealText(JSON.stringify({ id: 'delayed-status', ok: true, result: {} }))
+        )
+        await flush()
+      }
+      expect(client.getState()).toBe('connected')
+      expect(entries.some((entry) => entry.code === 'liveness-timeout')).toBe(false)
+      expect(socket.close).not.toHaveBeenCalled()
+    } finally {
+      client.close()
+    }
   })
 
   it('sends a direct v2 hello, authenticates, and exchanges sealed RPC frames', async () => {

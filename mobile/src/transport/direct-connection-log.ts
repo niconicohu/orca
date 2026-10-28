@@ -35,11 +35,11 @@ export class DirectConnectionLog {
     })
   }
 
-  livenessTimeout = (evidence: LivenessTimeoutEvidence): void => {
+  livenessTimeout = (evidence: LivenessTimeoutEvidence, transportDetails?: string): void => {
     this.emit(
       'error',
       'Connection health check failed',
-      `${evidence.reason}; ${evidence.missedProbes}/${evidence.missedProbeLimit} probes missed; last authenticated activity ${evidence.lastInboundAgeMs}ms ago`,
+      `${evidence.reason}; ${evidence.missedProbes}/${evidence.missedProbeLimit} probes missed; last authenticated activity ${evidence.lastInboundAgeMs}ms ago${transportDetails ? `; ${transportDetails}` : ''}`,
       { code: 'liveness-timeout' }
     )
   }

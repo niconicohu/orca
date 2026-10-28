@@ -77,7 +77,8 @@ export class DirectRpcClient implements RpcClient {
           this.socketClose.forceClose(this.livenessSession)
         }
       },
-      onTimeout: this.connectionLog.livenessTimeout
+      onTimeout: (evidence) =>
+        this.connectionLog.livenessTimeout(evidence, this.livenessSession?.readTransportDetails())
     })
     this.socketFactory = new RpcClientSocketFactory({
       endpoint,

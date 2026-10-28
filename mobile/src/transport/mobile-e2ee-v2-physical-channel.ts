@@ -28,6 +28,10 @@ export class MobileE2EEV2PhysicalChannel {
   private state: ChannelState = 'awaiting-ready'
   private generation = 0
   private inboundChain: Promise<void> = Promise.resolve()
+  private receivedFrames = 0
+  private settledFrames = 0
+  private rejectedFrames = 0
+  private inboundBusySince: number | null = null
   private readonly outboundQueue: WsOutboundBackpressureQueue<OutboundItem>
 
   constructor(
@@ -69,6 +73,10 @@ export class MobileE2EEV2PhysicalChannel {
 
   handleMessage(raw: unknown): Promise<void> {
     const generation = this.generation
+    if (this.receivedFrames === this.settledFrames) {
+      this.inboundBusySince = Date.now()
+    }
+    this.receivedFrames += 1
     this.inboundChain = this.inboundChain
       .then(() => this.processMessage(raw, generation))
       .catch((error: unknown) => {
@@ -76,7 +84,18 @@ export class MobileE2EEV2PhysicalChannel {
           this.args.onError(error instanceof Error ? error : new Error(String(error)))
         }
       })
+      .finally(() => {
+        this.settledFrames += 1
+        if (this.settledFrames === this.receivedFrames) {
+          this.inboundBusySince = null
+        }
+      })
     return this.inboundChain
+  }
+
+  readTransportDetails(): string {
+    const outbound = this.outboundQueue.evidence()
+    return `decodePending=${this.receivedFrames - this.settledFrames}; decodeBusyMs=${this.inboundBusySince === null ? 0 : Date.now() - this.inboundBusySince}; rejectedFrames=${this.rejectedFrames}; queuedFrames=${outbound.queuedFrames}; queuedBytes=${outbound.queuedBytes}`
   }
 
   sendText(plaintext: string): boolean {
@@ -105,7 +124,11 @@ export class MobileE2EEV2PhysicalChannel {
       typeof raw === 'string'
         ? this.args.session.openText(raw)
         : await this.openBinary(raw, generation)
-    if (generation !== this.generation || plaintext === null) {
+    if (generation !== this.generation) {
+      return
+    }
+    if (plaintext === null) {
+      this.rejectedFrames += 1
       return
     }
     if (this.state === 'awaiting-authenticated') {

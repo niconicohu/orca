@@ -43,6 +43,8 @@ export class RpcClientSocketSession {
   private readyAccepted = false
   private authenticated = false
   private lastInboundAt: number | null = null
+  private receivedFrames = 0
+  private largestTextFrameCharacters = 0
   private connectTimer: ReturnType<typeof setTimeout> | null = null
   private handshakeTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -104,6 +106,12 @@ export class RpcClientSocketSession {
     this.framing = null
   }
 
+  readTransportDetails(): string {
+    const idleMs = this.lastInboundAt === null ? 'none' : Date.now() - this.lastInboundAt
+    const buffered = this.socket.bufferedAmount
+    return `rawIdleMs=${idleMs}; rawFrames=${this.receivedFrames}; largestTextChars=${this.largestTextFrameCharacters}; socketState=${this.socket.readyState}; bufferedBytes=${Number.isFinite(buffered) ? buffered : 'unknown'}${this.framing?.readTransportDetails ? `; ${this.framing.readTransportDetails()}` : ''}`
+  }
+
   private attachHandlers(): void {
     this.socket.onopen = () => {
       if (this.isStale('open')) {
@@ -121,6 +129,13 @@ export class RpcClientSocketSession {
       }
       const receivedAt = Date.now()
       this.lastInboundAt = receivedAt
+      this.receivedFrames += 1
+      if (typeof event.data === 'string') {
+        this.largestTextFrameCharacters = Math.max(
+          this.largestTextFrameCharacters,
+          event.data.length
+        )
+      }
       this.options.onAnyInbound(receivedAt)
       this.framing?.handleInbound(event.data)
     }
