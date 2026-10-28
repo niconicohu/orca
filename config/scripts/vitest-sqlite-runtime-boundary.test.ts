@@ -19,7 +19,6 @@ it.each([
 })
 
 it.each([
-  'tests/e2e/helpers/persisted-profile-state.unit.test.ts',
   'src/main/runtime/editor-view-layout-apply.test.ts',
   'src/main/runtime/restored-editor-move-restart.test.ts',
   'src/main/runtime/workspaces/persisted-surfaces/sweep-terminal-placement.test.ts'

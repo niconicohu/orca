@@ -11,9 +11,6 @@ const mocks = vi.hoisted(() => ({
   apply: vi.fn(async () => []),
   wslHost: vi.fn(() => false)
 }))
-vi.mock('../claude/agent-view-service', () => ({
-  getClaudeAgentViewService: () => ({ reconcile: async () => {} })
-}))
 vi.mock('../agent-hooks/managed-agent-hook-controls', () => ({
   applyAgentStatusHooksEnabled: mocks.apply
 }))
