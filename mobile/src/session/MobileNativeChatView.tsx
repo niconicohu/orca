@@ -63,6 +63,10 @@ import { MobileNativeChatRowList } from './native-chat/transcript/MobileNativeCh
 import { useMobileNativeChatRowRenderer } from './native-chat/transcript/use-mobile-native-chat-row-renderer'
 import type { MobileNativeChatStatus } from './use-mobile-native-chat-session'
 import type { OlderPagePhase } from './use-mobile-older-page-loader'
+import {
+  MobileNativeChatThreadGoalBanner,
+  type MobileNativeChatThreadGoal
+} from './MobileNativeChatThreadGoalBanner'
 
 export type MobileNativeChatInputLockReason = 'disconnected' | 'waiting'
 
@@ -81,6 +85,7 @@ type Props = ComposerTrayProps & {
   awaitingInput?: NativeChatAwaitingInput | null
   structuredActivityUi?: boolean
   turnIndicator?: NativeChatLiveTurnIndicator | null
+  threadGoal?: MobileNativeChatThreadGoal | null
   workingStartedAt?: number | null
   settledTurns?: NativeChatSettledTurns | null
   turnJournal?: NativeChatTurnJournal | null
@@ -155,6 +160,7 @@ export function MobileNativeChatView({
   awaitingInput = null,
   structuredActivityUi = false,
   turnIndicator = null,
+  threadGoal = null,
   workingStartedAt,
   settledTurns,
   turnJournal = null,
@@ -389,6 +395,7 @@ export function MobileNativeChatView({
       ) : null}
       {}
       {trayContent}
+      {threadGoal ? <MobileNativeChatThreadGoalBanner key={sendSurfaceId} {...threadGoal} /> : null}
       <MobileNativeChatDraftComposer
         draftScopeKey={composerScopeKey}
         structured={structuredActivityUi ? structuredComposer : null}
@@ -399,15 +406,8 @@ export function MobileNativeChatView({
         {...{ getSendCompletionGeneration, getComposerEditGeneration, inputRef }}
         agent={agent}
         sessionOptions={sessionOptions}
-        onAttachImage={onAttachImage}
-        attachments={attachments}
-        onRemoveAttachment={onRemoveAttachment}
-        isAttaching={isAttaching}
-        onMicPress={onMicPress}
-        micActive={micActive}
-        dictationMode={dictationMode}
-        onMicPressIn={onMicPressIn}
-        onMicPressOut={onMicPressOut}
+        {...{ onAttachImage, attachments, onRemoveAttachment, isAttaching }}
+        {...{ onMicPress, micActive, dictationMode, onMicPressIn, onMicPressOut }}
         disabled={lockReason !== null}
         sendDisabled={expandedPromptOwnsSend}
         placeholder={composerPlaceholder}

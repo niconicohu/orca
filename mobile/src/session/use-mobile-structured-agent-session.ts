@@ -96,6 +96,7 @@ export function useMobileStructuredAgentSession(
     agent,
     client,
     sessionId,
+    sessionKey,
     enabled,
     fence: state.fence,
     mutate,
@@ -147,8 +148,9 @@ export function useMobileStructuredAgentSession(
     [transcriptItems, sends.optimistic, state.submissions]
   )
   const turnTiming = useMobileStructuredAgentTurnTiming(
-    { ...state, items: transcriptItems },
-    turnId
+    { ...state, threadGoalReport: options.threadGoalReport, connected },
+    turnId,
+    transcriptItems
   )
   const isWorking = structuredAgentSessionHostSaysWorking(state.working, () =>
     isStructuredAgentSessionMainAgentWorking(turnId, state.submissions, state.fence)
@@ -275,6 +277,7 @@ export function useMobileStructuredAgentSession(
     imagePreviewsByMessageId: sends.imagePreviewsByMessageId,
     session: {
       messages,
+      threadGoal: turnTiming.threadGoal,
       status,
       transcriptLoading: status === 'loading',
       error: state.error,
