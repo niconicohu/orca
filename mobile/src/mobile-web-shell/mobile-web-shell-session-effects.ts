@@ -1,6 +1,5 @@
 import { fetchMobileWebBundle } from '../transport/mobile-web-bundle-fetch'
-import { mobileWebBundleManifestRead } from '../transport/mobile-web-bundle-operations'
-import { runRpcOperation } from '../transport/rpc-operation'
+import { readMobileWebBundleManifest } from '../transport/mobile-web-bundle-manifest-session'
 import type { RpcClient } from '../transport/rpc-client'
 import type { GenerationStore } from './generation-store'
 import type { MobileWebShellRuntime } from './mobile-web-shell-runtime'
@@ -59,8 +58,7 @@ export async function readManifest(
     return
   }
   try {
-    const opened = await runRpcOperation(client, mobileWebBundleManifestRead, null)
-    const manifest = opened.manifest
+    const manifest = await readMobileWebBundleManifest(client)
     send({
       type: 'manifest-read',
       flow,

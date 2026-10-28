@@ -5,6 +5,9 @@ import { MOBILE_WEB_BUNDLE_CAPABILITY } from '../../../src/shared/mobile-web-bun
 import type { MobileWebBundleManifestRead } from '../transport/mobile-web-bundle-reply-schemas'
 import type { GenerationStore } from './generation-store'
 import type { MobileWebShellSessionState } from './mobile-web-shell-session-contract'
+import { createFakeRpcClient } from './bridge-host-test-fakes'
+
+let client = createFakeRpcClient()
 
 const doubles = vi.hoisted(
   (): {
@@ -51,7 +54,7 @@ vi.mock('../components/host-protocol-gates-context', () => ({
   useHostProtocolGates: () => doubles.gates
 }))
 vi.mock('../transport/host-client-hooks', () => ({
-  useHostClient: () => ({ client: {}, state: 'connected' })
+  useHostClient: () => ({ client, state: 'connected' })
 }))
 vi.mock('../transport/rpc-operation', () => ({
   defineRpcOperation: (definition: unknown) => definition,
@@ -104,6 +107,7 @@ async function settledKinds(
   routePathname = '/h/host-1/session/wt-1'
 ) {
   doubles.routes = routes(declares)
+  client = createFakeRpcClient()
   doubles.manifestReads = 0
   doubles.gates.hostCapabilities = [MOBILE_WEB_BUNDLE_CAPABILITY]
   const seen: MobileWebShellSessionState[] = []
@@ -146,14 +150,14 @@ describe('a detail session across a layout-class change', () => {
   it('restarts an open page once per flip under a declaring bundle', async () => {
     expect(await settledKinds(true, [false, true, false])).toEqual({
       kinds: ['ready session-1', 'ready session-2', 'ready session-3'],
-      manifestReads: 3
+      manifestReads: 1
     })
   })
 
   it('walls on a wide layout under a page without the declaration, and serves again after', async () => {
     expect(await settledKinds(false, [false, true, false])).toEqual({
       kinds: ['ready session-1', 'wall', 'ready session-2'],
-      manifestReads: 3
+      manifestReads: 1
     })
   })
 

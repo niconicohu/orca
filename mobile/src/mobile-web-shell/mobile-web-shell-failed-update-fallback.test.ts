@@ -2,6 +2,8 @@ import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MobileWebBundleManifestRead } from '../transport/mobile-web-bundle-reply-schemas'
+import type { RpcClient } from '../transport/rpc-client'
+import { createFakeRpcClient } from './bridge-host-test-fakes'
 import type {
   MobileWebShellSessionState,
   MobileWebShellUpdateNotice
@@ -9,7 +11,7 @@ import type {
 
 // Exercise the real hook/store over in-memory disk; stub network and native modules.
 type Doubles = {
-  connection: { client: object | null; state: string }
+  connection: { client: RpcClient | null; state: string }
   gates: {
     statusPending: boolean
     statusReadable: boolean
@@ -21,7 +23,7 @@ type Doubles = {
 }
 
 const doubles = vi.hoisted((): Doubles => ({
-  connection: { client: {}, state: 'connected' },
+  connection: { client: null, state: 'connected' },
   gates: {
     statusPending: false,
     statusReadable: true,
@@ -208,7 +210,7 @@ function cachedBuildIds(fileSystem: FakeGenerationFileSystem): readonly string[]
 
 describe('an update the shell refuses while the host is reachable', () => {
   beforeEach(() => {
-    doubles.connection = { client: {}, state: 'connected' }
+    doubles.connection = { client: createFakeRpcClient(), state: 'connected' }
     doubles.gates.hostCapabilities = [MOBILE_WEB_BUNDLE_CAPABILITY]
     doubles.manifest = NEWER_MANIFEST
     doubles.fetch = refuseTheAssets
@@ -339,6 +341,7 @@ describe('an update the shell refuses while the host is reachable', () => {
     expect(refused.state()).toMatchObject({ kind: 'ready', buildId: GOOD_BUILD_ID })
     await refused.unmount()
 
+    doubles.connection = { client: createFakeRpcClient(), state: 'connected' }
     doubles.fetch = () => Promise.resolve(fetchResultFor(NEWER_MANIFEST))
     const updated = await mountRoute(fileSystem)
 

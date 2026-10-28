@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { MobileWebShellFailureReason } from '../../modules/orca-mobile-web-shell/src/load-state'
 import { useHostProtocolGates } from '../components/host-protocol-gates-context'
 import { useHostClient } from '../transport/host-client-hooks'
+import { forgetMobileWebBundleManifest } from '../transport/mobile-web-bundle-manifest-session'
 import {
   createDownloadProgressFeed,
   downloadFraction,
@@ -272,9 +273,12 @@ export function useMobileWebShellSession(args: {
 
   const retry = useCallback(() => {
     invalidate()
+    if (client !== null) {
+      forgetMobileWebBundleManifest(client)
+    }
     startedAtRef.current = runtime.now()
     dispatch(epochRef.current, { type: 'retry-pressed' })
-  }, [dispatch, invalidate, runtime])
+  }, [client, dispatch, invalidate, runtime])
 
   const reportShellFailure = useCallback(
     (reason: MobileWebShellFailureReason) => {

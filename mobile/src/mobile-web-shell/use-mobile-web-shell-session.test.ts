@@ -11,12 +11,14 @@ import type { ActiveGeneration, GenerationStore, StagedGeneration } from './gene
 import type { DownloadProgressFeed } from './download-progress-feed'
 import type { MobileWebShellSessionState } from './mobile-web-shell-session-contract'
 import { markRpcDeliveryUnknown } from '../transport/rpc-delivery-ambiguity'
+import { createFakeRpcClient } from './bridge-host-test-fakes'
+import type { RpcClient } from '../transport/rpc-client'
 
 // Test effect abandonment, fetch aborts and retry wiring around the table-tested reducer; cancellation must free read slots and prevent writes for retired screens.
 type Settle<T> = (value: T) => void
 
 type Doubles = {
-  connection: { client: object | null; state: string }
+  connection: { client: RpcClient | null; state: string }
   gates: {
     statusPending: boolean
     statusReadable: boolean
@@ -26,6 +28,7 @@ type Doubles = {
   manifestReads: number
   manifestClients: unknown[]
   manifestRejection: unknown
+  manifestBarrier: (() => Promise<void>) | null
   fetches: {
     signal: AbortSignal
     onProgress: (progress: MobileWebBundleFetchProgress) => void
@@ -49,7 +52,7 @@ const doubles = vi.hoisted((): Doubles => {
     routes: [{ pathname: '/h/[hostId]', grants: ['navigate'] }]
   }
   return {
-    connection: { client: {}, state: 'connected' },
+    connection: { client: null, state: 'connected' },
     gates: {
       statusPending: false,
       statusReadable: true,
@@ -59,6 +62,7 @@ const doubles = vi.hoisted((): Doubles => {
     manifestReads: 0,
     manifestClients: [],
     manifestRejection: null,
+    manifestBarrier: null,
     fetches: [],
     manifest
   }
@@ -81,6 +85,9 @@ vi.mock('../transport/rpc-operation', () => ({
   runRpcOperation: async (client: unknown) => {
     doubles.manifestReads += 1
     doubles.manifestClients.push(client)
+    if (doubles.manifestBarrier !== null) {
+      await doubles.manifestBarrier()
+    }
     if (doubles.manifestRejection !== null) {
       throw doubles.manifestRejection
     }
@@ -314,9 +321,42 @@ describe('the hybrid shell runner', () => {
     doubles.manifestReads = 0
     doubles.manifestClients.length = 0
     doubles.manifestRejection = null
+    doubles.manifestBarrier = null
     doubles.fetches.length = 0
-    doubles.connection = { client: {}, state: 'connected' }
+    doubles.connection = { client: createFakeRpcClient(), state: 'connected' }
     doubles.gates.hostCapabilities = [MOBILE_WEB_BUNDLE_CAPABILITY]
+  })
+
+  it('does not repeat the slow manifest round trip when another cached page opens on the same connection', async () => {
+    vi.useFakeTimers()
+    doubles.connection = { client: createFakeRpcClient(), state: 'connected' }
+    const arrivals: (() => void)[] = []
+    doubles.manifestBarrier = () =>
+      new Promise<void>((resolve) => {
+        arrivals.push(resolve)
+      })
+    try {
+      const firstCache = createFakeStore()
+      const first = await mount(firstCache.store)
+      firstCache.settleCacheRead(activeGeneration())
+      await flush()
+      expect(arrivals).toHaveLength(1)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5_000)
+        arrivals.shift()?.()
+      })
+      expect(first.states().at(-1)?.kind).toBe('ready')
+
+      const nextCache = createFakeStore()
+      const next = await mount(nextCache.store)
+      nextCache.settleCacheRead(activeGeneration())
+      await flush()
+
+      expect(next.states().at(-1)?.kind).toBe('ready')
+      expect(doubles.manifestReads).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('abandons the cache read of a session that has been unmounted', async () => {
@@ -411,7 +451,7 @@ describe('the hybrid shell runner', () => {
     await flush()
     expect(doubles.manifestClients).toHaveLength(1)
     // Keep reachability unchanged while replacing the client; only the next flow reveals which client the runner retained.
-    const reconnected = {}
+    const reconnected = createFakeRpcClient()
     doubles.connection = { client: reconnected, state: 'connected' }
     await act(async () => {
       mounted.rerender()
@@ -482,8 +522,9 @@ describe('the wait for the page to speak', () => {
     doubles.manifestReads = 0
     doubles.manifestClients.length = 0
     doubles.manifestRejection = null
+    doubles.manifestBarrier = null
     doubles.fetches.length = 0
-    doubles.connection = { client: {}, state: 'connected' }
+    doubles.connection = { client: createFakeRpcClient(), state: 'connected' }
     doubles.gates.hostCapabilities = [MOBILE_WEB_BUNDLE_CAPABILITY]
   })
 

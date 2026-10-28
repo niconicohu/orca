@@ -3,10 +3,12 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MobileWebBundleManifestRead } from '../transport/mobile-web-bundle-reply-schemas'
 import type { MobileWebShellSessionState } from './mobile-web-shell-session-contract'
+import type { RpcClient } from '../transport/rpc-client'
+import { createFakeRpcClient } from './bridge-host-test-fakes'
 
 // Grant-only edits keep the build id: use fresh grants online but preserve the downloaded manifest for offline entry. Test cold mounts sharing only the real store’s disk.
 type Doubles = {
-  connection: { client: object | null; state: string }
+  connection: { client: RpcClient | null; state: string }
   gates: {
     statusPending: boolean
     statusReadable: boolean
@@ -17,7 +19,7 @@ type Doubles = {
 }
 
 const doubles = vi.hoisted((): Doubles => ({
-  connection: { client: {}, state: 'connected' },
+  connection: { client: null, state: 'connected' },
   gates: {
     statusPending: false,
     statusReadable: true,
@@ -169,7 +171,7 @@ function goOffline(): void {
 
 describe('an offline cold start after a grant-only manifest edit', () => {
   beforeEach(() => {
-    doubles.connection = { client: {}, state: 'connected' }
+    doubles.connection = { client: createFakeRpcClient(), state: 'connected' }
     doubles.gates.hostCapabilities = [MOBILE_WEB_BUNDLE_CAPABILITY]
     doubles.manifest = null
   })
