@@ -281,6 +281,7 @@ describe('a delete that fails after Git dropped the registration', () => {
 
   it('does not run the recorded removal once Git registers a checkout at the path again', async () => {
     await failRemoval()
+    const [record] = await readWorktreeRemovalRecords(join(directory, 'profile'))
     vi.mocked(listWorktreesStrict).mockResolvedValue([
       mainWorktree,
       { ...leftoverRow(), removalError: undefined }
@@ -296,7 +297,9 @@ describe('a delete that fails after Git dropped the registration', () => {
     await expect(retried).rejects.toThrow(message)
     await _settlePendingWorktreeRemovalsForTests()
     expect(run).not.toHaveBeenCalled()
-    expect(await readWorktreeRemovalRecords(join(directory, 'profile'))).toEqual([])
+    expect(await readWorktreeRemovalRecords(join(directory, 'profile'))).toEqual([
+      { ...record, failure: { message, failedAt: expect.any(Number) } }
+    ])
   })
 
   it('is not retried for another host', async () => {

@@ -1,7 +1,6 @@
 import { deleteBranchOfUnregisteredWorktree } from './git/worktree-removal'
 import {
   isRecordedCheckout,
-  WorktreeCheckoutReplacedError,
   registeredRemovalCheckout,
   isUnregisteredRemovalLeftover
 } from './worktree-removal-leftover'
@@ -14,9 +13,6 @@ export async function failureLeftByGit(
   error: unknown,
   cleanupPushTargetRemote: (() => Promise<void>) | undefined
 ): Promise<WorktreeRemovalFailure | undefined> {
-  if (error instanceof WorktreeCheckoutReplacedError) {
-    return undefined
-  }
   if (!(await worktreeCheckoutExists(record.worktreePath))) {
     return undefined
   }
