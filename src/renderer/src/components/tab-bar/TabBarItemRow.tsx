@@ -79,6 +79,7 @@ function TabBarItemRow({
     tabType: item.type,
     label: getTabDragLabel(item, generatedTabTitlesEnabled, useAppStore.getState()),
     iconPath: item.type === 'editor' ? item.data.filePath : undefined,
+    sideChat: item.type === 'agent-session' && !!item.data.sideChatOf,
     color: item.type === 'terminal' ? (item.data.color ?? null) : null
   }
   const shared = {
@@ -119,7 +120,11 @@ function TabBarItemRow({
     )
   }
   if (item.type === 'agent-session') {
-    const nativeChat = { sessionId: item.data.entityId, agent: item.data.agentSessionAgent }
+    const nativeChat = {
+      sessionId: item.data.entityId,
+      agent: item.data.agentSessionAgent,
+      ...(item.data.sideChatOf ? { sideChat: true } : {})
+    }
     return (
       <SortableTab
         {...sortableTabProps}

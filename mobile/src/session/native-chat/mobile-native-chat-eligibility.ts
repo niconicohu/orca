@@ -23,6 +23,8 @@ export type MobileNativeChatIdentity = {
 }
 
 export type MobileNativeChatTab = {
+  sideChatOf?: string
+  sideChatSupported?: boolean
   type: string
   launchAgent?: string | null
   agentStatus?: AgentStatusEntry | null

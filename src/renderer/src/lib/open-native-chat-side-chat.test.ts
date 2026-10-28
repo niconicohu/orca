@@ -1,0 +1,69 @@
+// @vitest-environment happy-dom
+import { beforeEach, expect, it, vi } from 'vitest'
+import { openNativeChatSideChat } from './open-native-chat-side-chat'
+
+const mocks = vi.hoisted(() => ({ begin: vi.fn(), support: vi.fn() }))
+
+vi.mock('@/store', () => ({
+  useAppStore: {
+    getState: () => ({
+      unifiedTabsByWorktree: {
+        workspace: [
+          {
+            id: 'parent-tab',
+            contentType: 'agent-session',
+            entityId: 'parent',
+            agentSessionAgent: 'codex'
+          }
+        ]
+      }
+    })
+  }
+}))
+vi.mock('@/runtime/structured-agent-session-owner', () => ({
+  structuredAgentSessionOwnerForTab: () => 'local',
+  structuredAgentSessionTargetForHost: () => ({ kind: 'local' })
+}))
+vi.mock('@/runtime/structured-agent-session-client', () => ({
+  supportsStructuredAgentSessionSideChat: mocks.support
+}))
+vi.mock('./agent-session-launch-plan', () => ({
+  adoptAgentSessionLaunchVerdict: (plan: unknown) => plan
+}))
+vi.mock('./agent-session/structured-agent-session-provisional-tab', () => ({
+  beginStructuredAgentSessionProvisionalLaunch: mocks.begin
+}))
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mocks.support.mockResolvedValue(true)
+})
+
+const source = { tabId: 'parent-tab', worktreeId: 'workspace', sessionId: 'parent' }
+
+it.each([true, false])(
+  'waits for first-question delivery and returns its outcome: %s',
+  async (delivered) => {
+    const delivery = Promise.withResolvers<{ delivered: boolean }>()
+    mocks.begin.mockReturnValue({
+      settlement: Promise.resolve({ kind: 'structured', promptDeliveryResult: delivery.promise })
+    })
+    let settled = false
+    const opening = openNativeChatSideChat(source, 'Question').then((result) => {
+      settled = true
+      return result
+    })
+    try {
+      await vi.waitFor(() => expect(mocks.begin).toHaveBeenCalledOnce())
+      expect(settled).toBe(false)
+    } finally {
+      delivery.resolve({ delivered })
+    }
+    await expect(opening).resolves.toBe(delivered)
+  }
+)
+
+it('accepts an empty side chat without a prompt-delivery receipt', async () => {
+  mocks.begin.mockReturnValue({ settlement: Promise.resolve({ kind: 'structured' }) })
+  await expect(openNativeChatSideChat(source)).resolves.toBe(true)
+})

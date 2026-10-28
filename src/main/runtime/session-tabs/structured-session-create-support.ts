@@ -26,6 +26,7 @@ import { structuredLaunchSeedOptions } from '../../../shared/native-chat/input/n
 import { hasPersistedStructuredAgentSessionStore as hasPersistedStructuredAgentSessionStoreOnDisk } from '../structured-agent-session-runtime'
 import { ensureStructuredAgentSessionHostUnlessRefused } from '../structured-agent-session-host-refusal'
 import { getProfileUserDataPath } from '../../orca-profiles/profile-storage-paths'
+import { structuredSideChatCreateIntent } from '../../native-chat/structured-side-chat-source'
 import { parseWslUncPath } from '../../../shared/wsl-paths'
 import {
   isFloatingWorkspaceId,
@@ -209,6 +210,9 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
     const location = await this.resolveStructuredAgentSessionLocation(input.worktree)
     const definition = this.requireRegisteredStructuredAgent(input.agent)
     const host = getStructuredAgentSessionHost()
+    if (input.sideChatOf) {
+      return structuredSideChatCreateIntent({ ...input, host, location })
+    }
     const committedReplay = resolveCommittedStructuredAgentSessionAdoptionIntent({
       host,
       ...input,

@@ -39,7 +39,8 @@ function harness(
         invokeAction: async () => true,
         setOption: async () => true,
         conversationCommands: ['clear', 'compact'],
-        runConversationCommand: async () => ({ accepted: true, error: null })
+        runConversationCommand: async () => ({ accepted: true, error: null }),
+        openSideChat: structuredTransport.openSideChat
       }),
     optionsSurface: {
       getSnapshot: () => [],
@@ -205,6 +206,28 @@ describe('a send held by its host', () => {
     await send('/model', [])
     expect(structuredTransport.onError).toHaveBeenCalled()
   })
+})
+
+it('holds a side-chat question behind the ordinary host permission gate, preserving its draft', async () => {
+  clearNativeChatComposerDraftsForTests()
+  const { send, structuredTransport, setDraft } = harness('codex')
+  const openSideChat = vi.fn(async () => true)
+  structuredTransport.openSideChat = openSideChat
+  structuredTransport.sendBlockedReason = 'Update Orca on this host to use Ask for approval.'
+  updateNativeChatComposerDraft('tab-1:pane', { text: '/btw inspect this' }, 'immediate')
+  const before = readNativeChatComposerDraft('tab-1:pane')
+  await send('/btw inspect this', [])
+  expect(openSideChat).not.toHaveBeenCalled()
+  expect(structuredTransport.send).not.toHaveBeenCalled()
+  expect(setDraft).not.toHaveBeenCalled()
+  expect(readNativeChatComposerDraft('tab-1:pane')).toBe(before)
+
+  await send('/btw', [])
+  expect(openSideChat).toHaveBeenCalledExactlyOnceWith('')
+  structuredTransport.sendBlockedReason = undefined
+  await send('/btw inspect this', [])
+  expect(openSideChat).toHaveBeenLastCalledWith('inspect this')
+  expect(openSideChat).toHaveBeenCalledTimes(2)
 })
 
 describe("says a failed send in Orca's words, with the error it hit apart", () => {

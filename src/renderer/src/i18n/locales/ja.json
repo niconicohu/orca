@@ -17437,6 +17437,10 @@
       }
     },
     "native-chat": {
+      "sideChat": {
+        "new": "新しいサイドチャット",
+        "badge": "btw"
+      },
       "install": {
         "checking": "このホストで {{agent}} の準備ができているか確認しています…"
       },

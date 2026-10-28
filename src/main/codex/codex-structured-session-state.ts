@@ -46,6 +46,8 @@ export type CodexStructuredLaunch = {
   cwd: string
   codexHome: string | null
   resumeThreadId: string | null
+  forkThreadId?: string
+  sideChat?: boolean
   /** Replace an unsaved thread created by this session; never supersede a proven resume. */
   supersedeIfUnsaved?: boolean
   permissionPolicy?: CodexStructuredPermissionPolicy
@@ -134,6 +136,7 @@ export type CodexStructuredSessionAdapterDeps = {
 }
 
 export type CodexSession = {
+  sideChat?: boolean
   events?: StructuredAgentSessionEventSink
   account?: AgentSessionAccountKind
   connection: CodexAppServerConnection

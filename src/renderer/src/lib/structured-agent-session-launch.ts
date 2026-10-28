@@ -134,8 +134,7 @@ function resetStructuredLaunchCallers(state: StructuredLaunchState): void {
 }
 
 function restartStructuredLaunchState(state: StructuredLaunchState): void {
-  const wasVisibilityUnknown = state.visibilityUnknown
-  if (!wasVisibilityUnknown) {
+  if (!state.visibilityUnknown) {
     const surfaceAddress = state.intent.surfaceAddress
     state.intent = retryStructuredAgentSessionLaunchIntent(state.intent)
     state.intent.surfaceAddress = surfaceAddress
@@ -151,7 +150,7 @@ function restartStructuredLaunchState(state: StructuredLaunchState): void {
   state.onHostSeed = (seedOptions) => adoptPairedHostSeed(state, seedOptions)
   state.promise = publishWithHeldOptions(
     state,
-    wasVisibilityUnknown ? reconcileUnknownLaunch(state) : launchAndReconcile(state)
+    state.visibilityUnknown ? reconcileUnknownLaunch(state) : launchAndReconcile(state)
   )
   trackLaunchSettlement(state, state.promise)
   trackStructuredLaunchConfirmationDeadline(state, state.promise)
@@ -216,7 +215,8 @@ function structuredAgentLaunchState(
     options.executionHostId,
     options.resumeFrom,
     options.hostSeedOptions,
-    options.activate
+    options.activate,
+    ...(options.sideChatOf ? [options.sideChatOf] : [])
   )
   intent.explicitLaunchOptions = options.launchOptions ? { ...options.launchOptions } : undefined
   intent.beforeCreate = options.beforeCreate

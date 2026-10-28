@@ -246,3 +246,20 @@ describe('mobile structured conversation commands', () => {
     expect(sendRequest).not.toHaveBeenCalled()
   })
 })
+
+it('leaves native /btw to the agent unless the host side-chat callback is available', async () => {
+  const { input, sendRequest } = setup()
+  input.text = '/btw Native question'
+  expect(await dispatchMobileStructuredCommand(input)).toBeNull()
+  expect(sendRequest).not.toHaveBeenCalled()
+  expect(input.onError).not.toHaveBeenCalled()
+  const openSideChat = vi.fn(async () => true)
+  expect(
+    await dispatchMobileStructuredCommand({
+      ...input,
+      controller: { ...input.controller, openSideChat }
+    })
+  ).toBe('accepted')
+  expect(openSideChat).toHaveBeenCalledExactlyOnceWith('Native question')
+  expect(sendRequest).not.toHaveBeenCalled()
+})

@@ -22,6 +22,7 @@ import { mobileNativeChatScopeKey } from './native-chat/mobile-native-chat-scope
 import { isMobileNativeChatAgentConfirmed } from './native-chat/mobile-native-chat-eligibility'
 import { useMobileSendCompletionGeneration } from './use-mobile-send-completion-generation'
 import type { MobileSessionFeedbackCapabilitiesModel } from './use-mobile-session-feedback-capabilities'
+import { useMobileSideChat } from './mobile-native-chat-side-chat'
 
 export function useMobileSessionNativeChatDictation(
   scope: MobileSessionFeedbackCapabilitiesModel,
@@ -59,6 +60,7 @@ export function useMobileSessionNativeChatDictation(
     showToast
   })
   const nativeChatTranscriptIsLocalReadable = useMobileNativeChatReadability(client, worktreeId)
+  const { handleOpenSideChat, openCurrentSideChat } = useMobileSideChat(scope)
   const {
     ready: nativeChatInputLeaseReady,
     readyRef: nativeChatInputLeaseReadyRef,
@@ -70,6 +72,11 @@ export function useMobileSessionNativeChatDictation(
     connected: connState === 'connected'
   })
   const nativeChatController = useMobileNativeChatController({
+    ...(activeSessionTab?.type === 'agent-session' &&
+    activeSessionTab.sideChatSupported &&
+    agentSessionHostSupport?.sideChat
+      ? { openSideChat: openCurrentSideChat }
+      : {}),
     client,
     hostId,
     worktreeId,
@@ -253,6 +260,7 @@ export function useMobileSessionNativeChatDictation(
     diffCommentsRef.current = diffComments
   }, [diffComments])
   return {
+    handleOpenSideChat,
     nativeChatScopeKey,
     nativeChatSendError,
     nativeChatTranscriptIsLocalReadable,

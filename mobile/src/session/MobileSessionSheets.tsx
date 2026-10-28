@@ -1,3 +1,4 @@
+import { getMobileSideChatActions } from './mobile-native-chat-side-chat-actions'
 import { Platform } from 'react-native'
 import { getRepoIdFromWorktreeId } from '../../../src/shared/worktree/id'
 import { useClipboardWriter } from '../platform/clipboard'
@@ -277,6 +278,11 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
         visible={agentSessionActionTarget != null}
         title={agentSessionActionTarget?.title || 'Chat'}
         actions={[
+          ...getMobileSideChatActions({
+            controller,
+            tab: agentSessionActionTarget,
+            onDismiss: () => setAgentSessionActionTarget(null)
+          }),
           ...getMobileNativeChatCliForkActions({
             controller,
             tab: agentSessionActionTarget,

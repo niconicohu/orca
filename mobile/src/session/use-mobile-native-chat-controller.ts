@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, type MutableRefObject } from 'react'
 import type { RpcClient } from '../transport/rpc-client'
 import type { ConnectionState } from '../transport/types'
-import type { MobileNativeChatTab } from './native-chat/mobile-native-chat-eligibility'
 import type { StructuredAgentSessionHostSupport } from './mobile-structured-agent-session-host-support'
 import { useMobileNativeChatAskDismiss } from './native-chat/input/use-mobile-native-chat-ask-dismiss'
 import { useMobileNativeChatDrafts } from './native-chat/composer/use-mobile-native-chat-drafts'
@@ -18,10 +17,12 @@ import { useMobileBridgeChatPromptWrites } from './use-mobile-bridge-chat-prompt
 import { useMobileNativeChatActiveResolution } from './use-mobile-native-chat-active-resolution'
 import { useMobileNativeChatPromptCards } from './native-chat/input/use-mobile-native-chat-prompt-cards'
 import { mobileNativeChatScopeKey } from './native-chat/mobile-native-chat-scope-key'
+import type { MobileNativeChatTab } from './native-chat/mobile-native-chat-eligibility'
 
 export type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
 
 export function useMobileNativeChatController(args: {
+  openSideChat?: (question: string) => Promise<boolean>
   client: RpcClient | null
   hostId: string
   worktreeId: string
@@ -197,6 +198,7 @@ export function useMobileNativeChatController(args: {
   })
 
   const structuredNativeChatSend = useMobileStructuredNativeChatSendBridge({
+    sideChat: args.openSideChat !== undefined,
     agent: activeChatResolution?.agent,
     sessionCommands: nativeChatLane.sessionCommands.commands,
     sendStructured: structuredNativeChat.sendWithOutcome,
@@ -250,6 +252,7 @@ export function useMobileNativeChatController(args: {
   })
 
   return {
+    openSideChat: args.openSideChat,
     reportQueuedEditError: onSendError,
     chatComposerScopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),
     sessionViewReady,

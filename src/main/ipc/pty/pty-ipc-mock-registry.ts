@@ -105,6 +105,11 @@ export const childProcessModuleMock = (original: Record<string, unknown>) => ({
   execFile: loginPreflightExecFileMock
 })
 
+export const loginShellEnvironmentModuleMock = (original: Record<string, unknown>) => ({
+  ...original,
+  resolveLoginShellEnvironment: vi.fn(async () => ({}))
+})
+
 export const openCodeHookServiceModuleMock = () => ({
   OpenCodeHookService: class {
     buildPtyEnv = vi.fn(() => ({}))

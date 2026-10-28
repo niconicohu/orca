@@ -70,7 +70,7 @@ export function useMobileStructuredSendWithOutcome(args: {
   sendsOut: MobileStructuredSendsOut
   controller: Pick<
     StructuredAgentSessionComposerOptions,
-    'snapshot' | 'setOption' | 'invokeAction' | 'conversationCommands'
+    'snapshot' | 'setOption' | 'invokeAction' | 'conversationCommands' | 'openSideChat'
   >
   sessionCommands?: readonly AgentSessionSlashCommand[]
   onSendError: MobileNativeChatSendErrorReporter

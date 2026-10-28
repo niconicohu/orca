@@ -50,6 +50,7 @@ export type AgentSessionLaunchRequest = AgentLaunchRouteArgs & {
 
 /** Carry the decided route and delivery fields in memory so post-create launches and same-session retries reuse them without re-resolving. */
 export type AgentSessionLaunchVerdict = {
+  sideChatOf?: string
   route: AgentLaunchRoute
   requestedSurface?: AgentLaunchSurface
   requestId: AgentLaunchRequestId
@@ -96,6 +97,7 @@ function structuredLaunchOptions(verdict: AgentSessionLaunchVerdict): Structured
     ...(verdict.prompt !== undefined ? { prompt: verdict.prompt } : {}),
     ...(verdict.promptDelivery ? { promptDelivery: verdict.promptDelivery } : {}),
     ...(verdict.resumeFrom ? { resumeFrom: verdict.resumeFrom } : {}),
+    ...(verdict.sideChatOf ? { sideChatOf: verdict.sideChatOf } : {}),
     ...(verdict.onPromptDelivered ? { onPromptDelivered: verdict.onPromptDelivered } : {}),
     ...(verdict.promptKeptByCaller ? { promptKeptByCaller: true as const } : {}),
     ...(verdict.executionHostId ? { executionHostId: verdict.executionHostId } : {}),

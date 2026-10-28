@@ -18041,6 +18041,10 @@
       "useKnownId": "Usar o ID de usuário conhecido \"{{value0}}\""
     },
     "native-chat": {
+      "sideChat": {
+        "new": "Nova conversa paralela",
+        "badge": "btw"
+      },
       "taskList": {
         "title": "Tarefas",
         "completed": "Concluída",

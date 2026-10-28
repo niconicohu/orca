@@ -6,6 +6,60 @@ import {
   structuredSlashCommands
 } from './structured-agent-session-composer'
 
+describe('side chat commands', () => {
+  it.each(['codex', 'claude', 'opencode', 'pi'] as const)(
+    'uses declared support rather than %s agent names',
+    async (agent) => {
+      const openSideChat = vi.fn(async () => true)
+      const controller = {
+        agent,
+        snapshot: [],
+        invokeAction: async () => false,
+        setOption: async () => false
+      }
+      expect(
+        structuredSessionSlashCommands(agent, [], undefined).some(({ name }) => name === 'btw')
+      ).toBe(false)
+      expect(
+        structuredSessionSlashCommands(agent, [], undefined, true).some(
+          ({ name }) => name === 'btw'
+        )
+      ).toBe(true)
+      expect(
+        await dispatchStructuredAgentSessionComposerCommand(
+          '/btw Why this approach?\nAnd this tradeoff?',
+          {
+            ...controller,
+            openSideChat
+          }
+        )
+      ).toEqual({
+        handled: true,
+        accepted: true,
+        error: null
+      })
+      expect(openSideChat).toHaveBeenCalledWith('Why this approach?\nAnd this tradeoff?')
+      await dispatchStructuredAgentSessionComposerCommand('/btw', { ...controller, openSideChat })
+      expect(openSideChat).toHaveBeenLastCalledWith('')
+      expect(openSideChat).toHaveBeenCalledTimes(2)
+      expect(isStructuredAgentSessionComposerCommand('/btw question', agent)).toBe(false)
+      expect(isStructuredAgentSessionComposerCommand('/btw question', agent, undefined, true)).toBe(
+        true
+      )
+      expect(
+        structuredSessionSlashCommands(
+          agent,
+          [],
+          [{ name: 'btw', kind: 'command', description: 'Native side question' }]
+        ).filter(({ name }) => name === 'btw')
+      ).toEqual([{ name: 'btw', description: 'Native side question' }])
+      expect(
+        await dispatchStructuredAgentSessionComposerCommand('/btw question', controller)
+      ).toEqual({ handled: false, accepted: false, error: null })
+    }
+  )
+})
+
 describe('structuredSessionSlashCommands', () => {
   const names = (commands: readonly { name: string }[]) => commands.map(({ name }) => name)
 

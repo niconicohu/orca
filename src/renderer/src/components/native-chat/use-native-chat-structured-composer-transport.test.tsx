@@ -31,7 +31,7 @@ function composerAcceptsImages(reported: boolean | undefined): boolean | undefin
   >
   const { result } = renderHook(() =>
     useNativeChatStructuredComposerTransport({
-      props: { agent: 'grok', sessionId: 'session-1', target: { kind: 'local' } },
+      props: { agent: 'grok', sessionId: 'session-1', tabId: 'tab-1', target: { kind: 'local' } },
       controller,
       sendThroughLaunch: () => false,
       starting: false,

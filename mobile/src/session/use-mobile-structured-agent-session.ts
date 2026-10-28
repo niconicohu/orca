@@ -27,7 +27,6 @@ import type {
   MobileStructuredAgentSessionArgs,
   StructuredMobileSession
 } from './mobile-structured-agent-session-contract'
-import type { MobileNativeChatVisualSource } from './native-chat/visual/mobile-native-chat-visual-read'
 import { useMobileStructuredAgentState } from './use-mobile-structured-agent-state'
 import { useMobileStructuredStopPress } from './use-mobile-structured-stop-press'
 import { useMobileStructuredSessionHostStopping } from './use-mobile-structured-session-host-stopping'
@@ -60,7 +59,8 @@ export function useMobileStructuredAgentSession(
     enabled,
     onActionResolved,
     onSendError,
-    hostSupport
+    hostSupport,
+    openSideChat
   } = args
   // Gate queueing by capability while accepting published cards from every host.
   const queueCapable = hostSupport?.queuedMessages === true
@@ -87,8 +87,7 @@ export function useMobileStructuredAgentSession(
   })
 
   const optionStamp = useMobileStructuredSessionOptionStamp({
-    client,
-    sessionId,
+    ...stateArgs,
     enabled: enabled && connected && hostSupport?.statusFeed === true
   })
   const turnId = runningStructuredAgentSessionTurnId(state)
@@ -104,16 +103,15 @@ export function useMobileStructuredAgentSession(
     turnId,
     hostSupport
   })
-  const { conversationCommands, invokeStructuredOption, optionSnapshot, setStructuredOption } =
-    options
+  const {
+    conversationCommands,
+    invokeStructuredOption: invokeAction,
+    optionSnapshot: snapshot,
+    setStructuredOption: setOption
+  } = options
   const sendController = useMemo(
-    () => ({
-      snapshot: optionSnapshot,
-      setOption: setStructuredOption,
-      invokeAction: invokeStructuredOption,
-      conversationCommands
-    }),
-    [conversationCommands, invokeStructuredOption, optionSnapshot, setStructuredOption]
+    () => ({ snapshot, setOption, invokeAction, conversationCommands, openSideChat }),
+    [snapshot, setOption, invokeAction, conversationCommands, openSideChat]
   )
 
   const { respondPermission, respondQuestion } = useMobileStructuredPromptResponses({
@@ -164,8 +162,7 @@ export function useMobileStructuredAgentSession(
     mutate
   })
   const hostStopping = useMobileStructuredSessionHostStopping({
-    client,
-    sessionId,
+    ...stateArgs,
     enabled: enabled && connected && hostSupport?.statusFeed === true
   })
   const stopPress = useMobileStructuredStopPress(sessionKey)
@@ -266,7 +263,7 @@ export function useMobileStructuredAgentSession(
     ]
   )
 
-  const visualSource = useMemo<MobileNativeChatVisualSource | null>(
+  const visualSource = useMemo(
     () => (client && sessionId ? { client, sessionId } : null),
     [client, sessionId]
   )
