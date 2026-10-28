@@ -18043,7 +18043,8 @@
     "native-chat": {
       "sideChat": {
         "new": "Nova conversa paralela",
-        "badge": "btw"
+        "badge": "btw",
+        "failed": "Não foi possível abrir uma conversa paralela."
       },
       "taskList": {
         "title": "Tarefas",

@@ -137,3 +137,31 @@ it('keeps an uncertain child selectable instead of discarding its original sessi
   })
   expect(onError).toHaveBeenCalledOnce()
 })
+
+it.each([false, true])(
+  'releases a rejected creation without clearing a newer tab pick: %s',
+  async (newerPick) => {
+    const nav = navigation()
+    const onError = vi.fn()
+    vi.mocked(createMobileStructuredAgentSession).mockImplementationOnce(async () => {
+      if (newerPick) {
+        nav.pendingSelectionRef.current = { kind: 'tab', tabId: 'user-picked' }
+      }
+      throw new Error('Could not allocate the operation id')
+    })
+    await expect(
+      openMobileSideChat({
+        client: createFakeRpcClient(),
+        worktreeId: 'folder',
+        sessionId: 'codex_parent_123',
+        agent: 'codex',
+        navigation: nav,
+        onError
+      })
+    ).resolves.toBe(false)
+    expect(nav.pendingSelectionRef.current).toEqual(
+      newerPick ? { kind: 'tab', tabId: 'user-picked' } : null
+    )
+    expect(onError).toHaveBeenCalledExactlyOnceWith('Could not open a side chat.')
+  }
+)

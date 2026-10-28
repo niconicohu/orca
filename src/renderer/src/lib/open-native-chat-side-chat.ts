@@ -8,24 +8,66 @@ import {
 } from '@/runtime/structured-agent-session-owner'
 import { supportsStructuredAgentSessionSideChat } from '@/runtime/structured-agent-session-client'
 import { isTuiAgent } from '../../../shared/tui-agent-config'
+import {
+  captureWebSessionIntentOwner,
+  matchesWebSessionIntentOwner
+} from '@/runtime/web-runtime-session-environment'
 
-export async function openNativeChatSideChat(
-  source: {
-    tabId: string
-    worktreeId: string
-    sessionId: string
-  },
-  question = ''
+type SideChatSource = { tabId: string; worktreeId: string; sessionId: string }
+const pending = new Map<string, Promise<boolean>>()
+
+function readSideChatSource(source: SideChatSource) {
+  return useAppStore
+    .getState()
+    .unifiedTabsByWorktree[source.worktreeId]?.find(
+      (tab) =>
+        tab.id === source.tabId &&
+        tab.contentType === 'agent-session' &&
+        tab.entityId === source.sessionId
+    )
+}
+
+/** Coalesce identical pending opens; later actions can still create independent side chats. */
+export function openNativeChatSideChat(source: SideChatSource, question = ''): Promise<boolean> {
+  const tab = readSideChatSource(source)
+  const host = tab && structuredAgentSessionOwnerForTab(useAppStore.getState(), tab)
+  const target = structuredAgentSessionTargetForHost(host)
+  if (!host || !target) {
+    return Promise.resolve(false)
+  }
+  const owner =
+    target.kind === 'environment' ? captureWebSessionIntentOwner(target.environmentId) : null
+  const key = JSON.stringify([
+    host,
+    owner?.pairingRevision,
+    source.worktreeId,
+    source.tabId,
+    source.sessionId,
+    question
+  ])
+  const existing = pending.get(key)
+  if (existing) {
+    return existing
+  }
+  const opening: Promise<boolean> = launchNativeChatSideChat(
+    source,
+    question,
+    () => !owner || matchesWebSessionIntentOwner(owner)
+  ).finally(() => {
+    if (pending.get(key) === opening) {
+      pending.delete(key)
+    }
+  })
+  pending.set(key, opening)
+  return opening
+}
+
+async function launchNativeChatSideChat(
+  source: SideChatSource,
+  question: string,
+  isCurrentOwner: () => boolean
 ): Promise<boolean> {
-  const readSource = () =>
-    useAppStore
-      .getState()
-      .unifiedTabsByWorktree[source.worktreeId]?.find(
-        (tab) =>
-          tab.id === source.tabId &&
-          tab.contentType === 'agent-session' &&
-          tab.entityId === source.sessionId
-      )
+  const readSource = () => readSideChatSource(source)
   const tab = readSource()
   const agent = tab?.agentSessionAgent
   if (!tab || !agent || !isTuiAgent(agent)) {
@@ -39,6 +81,7 @@ export async function openNativeChatSideChat(
   const isCurrent = () => {
     const current = readSource()
     return (
+      isCurrentOwner() &&
       !!current &&
       current.agentSessionAgent === agent &&
       structuredAgentSessionOwnerForTab(useAppStore.getState(), current) === host

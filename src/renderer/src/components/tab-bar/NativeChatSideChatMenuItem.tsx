@@ -6,6 +6,7 @@ import { useNativeChatSideChat } from '../native-chat/use-native-chat-side-chat'
 import type { NativeChatTabSession } from './tab-session-history-switch'
 import { translate } from '@/i18n/i18n'
 import { useMemo } from 'react'
+import { toast } from 'sonner'
 import {
   structuredAgentSessionOwnerForTab,
   structuredAgentSessionTargetForHost
@@ -45,11 +46,19 @@ function SideChatItem({
     tabId: tab.id,
     worktreeId: tab.worktreeId
   })
+  const reportFailure = () =>
+    toast.error(translate('components.native-chat.sideChat.failed', 'Could not open a side chat.'))
   return open ? (
     <DropdownMenuItem
       onSelect={() => {
         onComplete?.()
         void open('')
+          .then((accepted) => {
+            if (!accepted) {
+              reportFailure()
+            }
+          })
+          .catch(reportFailure)
       }}
     >
       <CornerDownRight />

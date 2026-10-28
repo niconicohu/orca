@@ -17434,7 +17434,8 @@
     "native-chat": {
       "sideChat": {
         "new": "새 사이드 채팅",
-        "badge": "btw"
+        "badge": "btw",
+        "failed": "사이드 채팅을 열 수 없습니다."
       },
       "install": {
         "checking": "이 호스트에서 {{agent}}이(가) 준비되었는지 확인하는 중…"

@@ -17434,7 +17434,8 @@
     "native-chat": {
       "sideChat": {
         "new": "新しいサイドチャット",
-        "badge": "btw"
+        "badge": "btw",
+        "failed": "サイドチャットを開けませんでした。"
       },
       "install": {
         "checking": "このホストで {{agent}} の準備ができているか確認しています…"

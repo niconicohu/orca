@@ -17752,7 +17752,8 @@
     "native-chat": {
       "sideChat": {
         "new": "New side chat",
-        "badge": "btw"
+        "badge": "btw",
+        "failed": "Could not open a side chat."
       },
       "install": {
         "checking": "Checking whether {{agent}} is ready on this host…"

@@ -23,16 +23,26 @@ export async function openMobileSideChat(input: {
     'pendingSelectionRef' | 'sessionTabsRef' | 'switchSessionTabRef'
   >
 }): Promise<boolean> {
-  const lock = structuredSessionOperationId()
   const { pendingSelectionRef, sessionTabsRef, switchSessionTabRef } = input.navigation
-  pendingSelectionRef.current = launchedSelection(lock, {}, null)
-  const result = await createMobileStructuredAgentSession(
-    input.client,
-    input.worktreeId,
-    input.agent,
-    input.sessionId,
-    input.question
-  )
+  let lock: string | undefined
+  let result: Awaited<ReturnType<typeof createMobileStructuredAgentSession>>
+  try {
+    lock = structuredSessionOperationId()
+    pendingSelectionRef.current = launchedSelection(lock, {}, null)
+    result = await createMobileStructuredAgentSession(
+      input.client,
+      input.worktreeId,
+      input.agent,
+      input.sessionId,
+      input.question
+    )
+  } catch {
+    if (lock !== undefined) {
+      pendingSelectionRef.current = withoutUnansweredLaunch(pendingSelectionRef.current, lock)
+    }
+    input.onError('Could not open a side chat.')
+    return false
+  }
   const sessionId = 'sessionId' in result ? result.sessionId : undefined
   if (sessionId) {
     pendingSelectionRef.current = withLaunchReply(pendingSelectionRef.current, lock, { sessionId })
