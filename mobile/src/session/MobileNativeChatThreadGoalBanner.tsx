@@ -12,12 +12,15 @@ import {
 import { formatNativeChatDuration } from '../../../src/shared/native-chat-turn-status'
 import { useNow } from '../hooks/use-now'
 import { colors, radii, spacing, typography } from '../theme/mobile-theme'
+import { themedStyleSheet } from '../theme/themed-styles'
+import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 
 export function MobileNativeChatThreadGoalBanner({
   goal,
   runningTurn,
   hostClockOffsetMs
 }: AgentSessionThreadGoalView): React.JSX.Element | null {
+  useMobileColorScheme()
   const [expanded, setExpanded] = useState(false)
   const now = useNow(1_000, goal.status === 'active' && runningTurn !== null)
   const key = nativeChatThreadGoalStatusKey(goal.status, runningTurn !== null)
@@ -54,7 +57,7 @@ export function MobileNativeChatThreadGoalBanner({
   )
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyleSheet(() => ({
   strip: {
     marginHorizontal: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
@@ -72,4 +75,4 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums']
   },
   pressed: { opacity: 0.7 }
-})
+}))
