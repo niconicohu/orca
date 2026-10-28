@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ChevronDown, ChevronUp, Goal } from 'lucide-react-native'
-import type { AgentJournalThreadGoal } from '../../../src/shared/agent-session-journal-types'
-import { agentSessionThreadGoalElapsedSeconds } from '../../../src/shared/agent-session-thread-goal'
+import {
+  agentSessionThreadGoalElapsedSeconds,
+  type AgentSessionThreadGoalView
+} from '../../../src/shared/agent-session-thread-goal'
 import {
   NATIVE_CHAT_THREAD_GOAL_COPY as copy,
   nativeChatThreadGoalStatusKey
@@ -11,17 +13,11 @@ import { formatNativeChatDuration } from '../../../src/shared/native-chat-turn-s
 import { useNow } from '../hooks/use-now'
 import { colors, radii, spacing, typography } from '../theme/mobile-theme'
 
-export type MobileNativeChatThreadGoal = {
-  goal: AgentJournalThreadGoal
-  runningTurn: { startedAt: number | null } | null
-  hostClockOffsetMs: number
-}
-
 export function MobileNativeChatThreadGoalBanner({
   goal,
   runningTurn,
   hostClockOffsetMs
-}: MobileNativeChatThreadGoal): React.JSX.Element | null {
+}: AgentSessionThreadGoalView): React.JSX.Element | null {
   const [expanded, setExpanded] = useState(false)
   const now = useNow(1_000, goal.status === 'active' && runningTurn !== null)
   const key = nativeChatThreadGoalStatusKey(goal.status, runningTurn !== null)

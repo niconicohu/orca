@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { MobileNativeChatOverlay } from './MobileNativeChatOverlay'
 import type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
-import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
+import type { AgentSessionThreadGoalView } from '../../../src/shared/agent-session-thread-goal'
 import type { MobileImageSource } from '../platform/media-picker-contract'
 import { findByHostType } from '../test-support/react-test-renderer-host-nodes'
 
@@ -38,7 +38,7 @@ type Tick = {
   activeTabId?: string | null
   setTabView?: (tabId: string, view: 'terminal') => void
   attachImage?: (source: MobileImageSource) => Promise<void>
-  threadGoal?: MobileNativeChatThreadGoal | null
+  threadGoal?: AgentSessionThreadGoalView | null
 }
 
 function overlayElement(tick: Tick): ReturnType<typeof createElement> {
@@ -121,7 +121,7 @@ describe('MobileNativeChatOverlay goal propagation', () => {
   }
 
   it('passes the structured goal through the overlay and removes it when cleared', async () => {
-    const threadGoal: MobileNativeChatThreadGoal = {
+    const threadGoal: AgentSessionThreadGoalView = {
       goal: {
         objective: 'Finish the mobile work',
         status: 'paused',

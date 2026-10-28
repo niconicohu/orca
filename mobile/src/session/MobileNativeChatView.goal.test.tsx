@@ -7,7 +7,7 @@ import {
   update,
   hostType
 } from './MobileNativeChatView.harness.test-fixture'
-import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
+import type { AgentSessionThreadGoalView } from '../../../src/shared/agent-session-thread-goal'
 
 vi.mock('../hooks/use-now', () => ({ useNow: () => 200_000 }))
 vi.mock('react-native', async () => {
@@ -54,7 +54,7 @@ vi.mock('./native-chat/composer/MobileNativeChatComposer', async () => {
 
 describe('mobile goal banner', () => {
   installChatViewHooks()
-  const threadGoal: MobileNativeChatThreadGoal = {
+  const threadGoal: AgentSessionThreadGoalView = {
     goal: {
       objective: 'Keep the full objective visible on the phone',
       status: 'active',

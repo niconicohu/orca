@@ -64,10 +64,8 @@ import { MobileNativeChatRowList } from './native-chat/transcript/MobileNativeCh
 import { useMobileNativeChatRowRenderer } from './native-chat/transcript/use-mobile-native-chat-row-renderer'
 import type { MobileNativeChatStatus } from './use-mobile-native-chat-session'
 import type { OlderPagePhase } from './use-mobile-older-page-loader'
-import {
-  MobileNativeChatThreadGoalBanner,
-  type MobileNativeChatThreadGoal
-} from './MobileNativeChatThreadGoalBanner'
+import { MobileNativeChatThreadGoalBanner } from './MobileNativeChatThreadGoalBanner'
+import type { AgentSessionThreadGoalView } from '../../../src/shared/agent-session-thread-goal'
 
 export type MobileNativeChatInputLockReason = 'disconnected' | 'waiting'
 
@@ -87,7 +85,7 @@ type Props = ComposerTrayProps & {
   awaitingInput?: NativeChatAwaitingInput | null
   structuredActivityUi?: boolean
   turnIndicator?: NativeChatLiveTurnIndicator | null
-  threadGoal?: MobileNativeChatThreadGoal | null
+  threadGoal?: AgentSessionThreadGoalView | null
   workingStartedAt?: number | null
   settledTurns?: NativeChatSettledTurns | null
   turnJournal?: NativeChatTurnJournal | null

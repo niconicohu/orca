@@ -8,9 +8,9 @@ import type { AgentSessionLatestTurn } from '../../../src/shared/agent-session-w
 import type { AgentSessionOptionsResult } from '../../../src/shared/agent-session-options-result'
 import {
   agentSessionThreadGoalFromReport,
-  isAgentSessionThreadGoalOpen
+  isAgentSessionThreadGoalOpen,
+  type AgentSessionThreadGoalView
 } from '../../../src/shared/agent-session-thread-goal'
-import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
 import type { NativeChatTurnJournal } from '../../../src/shared/native-chat-turn-membership'
 import type { StructuredAgentHostClock } from '../../../src/shared/structured-agent-session-reducer'
 import { selectStructuredAgentTurnBars } from '../../../src/shared/structured-agent-session-turn-timing'
@@ -48,7 +48,7 @@ export function useMobileStructuredAgentTurnTiming(
   settledTurns: NativeChatSettledTurns
   turnJournal: NativeChatTurnJournal
   workingStartedAt: number | null
-  threadGoal: MobileNativeChatThreadGoal | null
+  threadGoal: AgentSessionThreadGoalView | null
 } {
   const { settledTurns, runningTiming } = useMemo(
     () => selectStructuredAgentTurnBars(items, submissions, turnId, latestTurn),

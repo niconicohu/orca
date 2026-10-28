@@ -11,6 +11,12 @@ import {
   type AgentJournalThreadGoalStatus
 } from './agent-session-journal-types'
 
+export type AgentSessionThreadGoalView = {
+  goal: AgentJournalThreadGoal
+  runningTurn: { startedAt: number | null } | null
+  hostClockOffsetMs: number
+}
+
 const GOAL_FRAME_KINDS = new Set([
   'notification:thread/goal/updated',
   'notification:thread/goal/cleared'
