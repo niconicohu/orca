@@ -60,7 +60,8 @@ export function useMobileStructuredAgentSession(
     enabled,
     onActionResolved,
     onSendError,
-    hostSupport
+    hostSupport,
+    openSideChat
   } = args
   // Gate queueing by capability while accepting published cards from every host.
   const queueCapable = hostSupport?.queuedMessages === true
@@ -105,13 +106,22 @@ export function useMobileStructuredAgentSession(
   })
   const { conversationCommands, invokeStructuredOption, optionSnapshot, setStructuredOption } =
     options
-  const sendController = {
-    snapshot: optionSnapshot,
-    setOption: setStructuredOption,
-    invokeAction: invokeStructuredOption,
-    conversationCommands,
-    openSideChat: args.openSideChat
-  }
+  const sendController = useMemo(
+    () => ({
+      snapshot: optionSnapshot,
+      setOption: setStructuredOption,
+      invokeAction: invokeStructuredOption,
+      conversationCommands,
+      openSideChat
+    }),
+    [
+      optionSnapshot,
+      setStructuredOption,
+      invokeStructuredOption,
+      conversationCommands,
+      openSideChat
+    ]
+  )
 
   const { respondPermission, respondQuestion } = useMobileStructuredPromptResponses({
     stateRef,

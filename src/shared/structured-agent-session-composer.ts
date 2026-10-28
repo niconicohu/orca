@@ -188,6 +188,12 @@ export function structuredAgentSessionCommandChangesConversation(text: string): 
   )
 }
 
+/** Opening an empty side chat executes nothing; a question starts its first turn. */
+export function structuredAgentSessionCommandStartsSideChatTurn(text: string): boolean {
+  const command = commandParts(text)
+  return command?.name === 'btw' && command.argument !== ''
+}
+
 /** `/goal` with nothing after it: an entrance to goal mode, not an objective. */
 export function isBareStructuredAgentSessionGoalCommand(text: string): boolean {
   const command = commandParts(text)
