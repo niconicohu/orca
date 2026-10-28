@@ -19045,7 +19045,8 @@
     },
     "native-chat": {
       "sideChat": {
-        "new": "New side chat"
+        "new": "New side chat",
+        "badge": "btw"
       },
       "install": {
         "checking": "Checking whether {{agent}} is ready on this host…"

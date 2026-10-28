@@ -172,15 +172,15 @@ describe('mobile side chat launch', () => {
         'Why this design?'
       )
     ).resolves.toMatchObject({ kind: 'created' })
-    expect(client.sendRequest.mock.calls[1]?.[1]).toEqual(client.sendRequest.mock.calls[2]?.[1])
-    expect(client.sendRequest.mock.calls[1]?.[1]).toMatchObject({
+    expect(client.sendRequest.mock.calls[0]?.[1]).toEqual(client.sendRequest.mock.calls[1]?.[1])
+    expect(client.sendRequest.mock.calls[0]?.[1]).toMatchObject({
       sideChatOf: 'codex_parent_123',
       firstMessage: { body: { blocks: [{ type: 'text', text: 'Why this design?' }] } }
     })
   })
 
   it('keeps an unacknowledged question unknown instead of opening another child', async () => {
-    const client = clientReturning({ ok: true, result: { supported: true } }, acceptedCreate)
+    const client = clientReturning(acceptedCreate)
     await expect(
       createMobileStructuredAgentSession(
         client,
@@ -190,7 +190,7 @@ describe('mobile side chat launch', () => {
         'Question'
       )
     ).resolves.toMatchObject({ kind: 'unknown' })
-    expect(client.sendRequest).toHaveBeenCalledTimes(2)
+    expect(client.sendRequest).toHaveBeenCalledTimes(1)
   })
 })
 

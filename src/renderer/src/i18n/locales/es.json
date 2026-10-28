@@ -18620,7 +18620,8 @@
   "components": {
     "native-chat": {
       "sideChat": {
-        "new": "Nuevo chat paralelo"
+        "new": "Nuevo chat paralelo",
+        "badge": "btw"
       },
       "imagePreview": {
         "fileActions": "Acciones de archivo",
