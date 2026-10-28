@@ -65,6 +65,7 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
         current.agent !== tab.agent ||
         !current.sideChatSupported
       ) {
+        showToast('This chat is not currently available for a side chat.', 3000)
         return false
       }
       return openMobileSideChat({

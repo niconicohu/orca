@@ -2,8 +2,7 @@ import { computeAgentSessionPayloadFingerprint } from '../../../../shared/agent-
 import '../unused-default-rpc-methods.test-fixture'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { structuredAgentSessionCreateParams } from '../../../../shared/structured-agent-session-create'
-import { AGENT_SESSION_CREATE_MESSAGE_RUNTIME_CAPABILITY } from '../../../../shared/agent-session-create-capabilities'
-import { STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY } from '../../../../shared/protocol-version'
+import { MOBILE_RUNTIME_CLIENT_CAPABILITIES } from '../../../../../mobile/src/transport/mobile-runtime-client-capabilities'
 import { codexProviderHandle } from '../../../../shared/agent-session-provider-handle-encoding'
 import { resolveStructuredSideChatSource } from '../../../native-chat/structured-side-chat-source'
 import {
@@ -26,10 +25,7 @@ const CHILD = 'codex_side_child'
 const client = {
   clientId: 'phone',
   clientKind: 'mobile' as const,
-  clientCapabilities: [
-    STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY,
-    AGENT_SESSION_CREATE_MESSAGE_RUNTIME_CAPABILITY
-  ]
+  clientCapabilities: [...MOBILE_RUNTIME_CLIENT_CAPABILITIES]
 }
 
 beforeEach(async () => {
@@ -80,6 +76,7 @@ function create(withQuestion: boolean) {
 }
 
 const runtime = {
+  requireStore: () => ({ getSettings: () => ({ experimentalNativeChat: false }) }),
   resolveStructuredAgentSessionCreateIntent: async (
     input: StructuredAgentSessionCreateIntentInput
   ) => {
@@ -100,6 +97,19 @@ const runtime = {
 
 it('opens an empty side chat with a distinct provider identity and preserves the source', async () => {
   const before = structuredClone(rig.store.getRecord(SOURCE))
+  const support = await call(
+    'agentSession.createSupport',
+    { worktree: 'id:workspace-1', agent: 'codex' },
+    client,
+    runtime
+  )
+  expect(support, JSON.stringify(support)).toMatchObject({
+    ok: false,
+    error: {
+      message: 'structured_agent_session_unsupported',
+      data: { refusal: { code: 'structured_agent_session_unsupported' } }
+    }
+  })
   expect(await call('agentSession.create', create(false), client, runtime)).toMatchObject({
     ok: true,
     result: { ok: true, value: { sessionId: CHILD } }
