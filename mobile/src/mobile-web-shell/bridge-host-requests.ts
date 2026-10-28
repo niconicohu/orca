@@ -6,11 +6,12 @@ import type { BridgeClientMessage } from './bridge/bridge-envelope'
 import { BridgeHostDisposedError } from './bridge-host-errors'
 import { isBridgeNativeMethod } from './bridge/bridge-native-verbs'
 import { substituteBridgePageClientIdentity } from './bridge/bridge-page-client-identity'
+import { bridgeProgressMethod } from './bridge-rpc-progress'
 
 type RequestMessage = Extract<BridgeClientMessage, { type: 'request' }>
 
 // Suppress cancelled requests’ late replies so an id the page abandoned cannot receive an old answer.
-type PendingRequest = { live: boolean }
+type PendingRequest = { live: boolean; method: string; startedAt: number }
 
 export type BridgeHostRequestDeps = {
   client: RpcClient
@@ -31,6 +32,18 @@ export class BridgeHostRequests {
 
   has(id: string): boolean {
     return this.pending.has(id)
+  }
+
+  progress(): string {
+    const waiting = [...this.pending.values()]
+      .sort(
+        (a, b) =>
+          Number(b.method.startsWith('agentSession.')) -
+          Number(a.method.startsWith('agentSession.'))
+      )
+      .slice(0, 6)
+      .map((record) => `${bridgeProgressMethod(record.method)}:${Date.now() - record.startedAt}ms`)
+    return `requests=${this.pending.size}; inFlight=${this.inFlight}; waiting=[${waiting.join('|')}]`
   }
 
   // sendRequest cannot cancel desktop execution; only suppress its now-unwanted reply.
@@ -84,7 +97,7 @@ export class BridgeHostRequests {
       this.deps.sendError(id, this.deps.capExceeded(`over ${BRIDGE_MAX_PENDING_REQUESTS} requests`))
       return
     }
-    const record: PendingRequest = { live: true }
+    const record: PendingRequest = { live: true, method: message.method, startedAt: Date.now() }
     this.pending.set(id, record)
     let answer: Promise<RpcResponse>
     try {

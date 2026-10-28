@@ -4,6 +4,14 @@ import { maskUserText } from './shell-log-path-masking'
 
 // Return null for routine kinds; callers limit other diagnostic keys to one line per host.
 export function bridgeDiagnosticLine(diagnostic: BridgeHostDiagnostic): ShellLifecycleLine | null {
+  if (diagnostic.kind === 'progress') {
+    return {
+      level: 'info',
+      code: 'web-shell-bridge',
+      message: 'Web shell bridge: load progress',
+      detail: diagnostic.detail
+    }
+  }
   // Routine per-stream retirements would crowd out useful diagnostics.
   if (diagnostic.kind === 'terminal-backlog') {
     return null
@@ -31,6 +39,8 @@ export function frameWithoutHostLine(facts: {
 
 function bridgeDiagnosticDetail(diagnostic: BridgeHostDiagnostic): string | undefined {
   switch (diagnostic.kind) {
+    case 'progress':
+      return diagnostic.detail
     case 'refused':
       return diagnostic.refusal
     case 'notify-refused':

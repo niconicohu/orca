@@ -15,6 +15,7 @@ import type { PageStorageForInit } from './page-storage-keys'
 export type BridgeNavigateBackOutcome = 'popped' | 'nothing-to-pop' | 'pop-pending'
 
 export type BridgeHostDiagnostic =
+  | { kind: 'progress'; detail: string }
   | { kind: 'refused'; refusal: BridgeRefusal }
   | { kind: 'post-failed'; error: unknown }
   // Only a leaked view can post after host disposal; log rather than silently hide it.

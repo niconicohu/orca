@@ -17,6 +17,7 @@ import type { BridgeBinaryEvent } from './bridge/bridge-screencast-binary'
 import type { BrowserScreencastFrame } from '../transport/browser-screencast-protocol'
 import type { RpcClient } from '../transport/rpc-client'
 import type { RpcEnvelopeFields } from '../transport/rpc-envelope-fields'
+import { bridgeStreamsProgress } from './bridge-rpc-progress'
 
 export type BridgeEndReason = Extract<BridgeHostMessage, { type: 'end' }>['reason']
 
@@ -27,6 +28,8 @@ export const BRIDGE_MAX_UNACKED_BYTES = 4 * 1024 * 1024
 type UnackedFrame = { seq: number; bytes: number }
 
 type OpenSubscription = {
+  method: string
+  startedAt: number
   unsubscribe: () => void
   seq: number
   unacked: UnackedFrame[]
@@ -77,6 +80,10 @@ export class BridgeHostSubscriptions {
     return this.open.has(id)
   }
 
+  progress(): string {
+    return bridgeStreamsProgress(this.open.values())
+  }
+
   // Request binary only when the page has its listener; otherwise encoding performs a full-image pass for frames it drops. Subscribe throws are returned as page errors.
   start(
     id: string,
@@ -86,6 +93,8 @@ export class BridgeHostSubscriptions {
     envelope?: RpcEnvelopeFields
   ): void {
     const record: OpenSubscription = {
+      method,
+      startedAt: Date.now(),
       unsubscribe: () => undefined,
       seq: 0,
       unacked: [],

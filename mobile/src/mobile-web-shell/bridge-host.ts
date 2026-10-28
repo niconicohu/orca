@@ -22,6 +22,7 @@ import { createBridgeNotifyForwarder } from './bridge-host-notify'
 import { createBridgeHostRoute } from './bridge-host-route'
 import type { BridgeSafeAreaInsets } from './bridge/bridge-safe-area-insets'
 import type { BridgeHostOptions } from './bridge-host-contract'
+import { startBridgeProgressLog } from './bridge-rpc-progress'
 
 export type { BridgeHostDiagnostic, BridgeHostOptions } from './bridge-host-contract'
 
@@ -165,6 +166,13 @@ export function createBridgeHost(options: BridgeHostOptions): BridgeHost {
     report: (diagnostic) => options.onDiagnostic?.(diagnostic)
   })
 
+  const stopProgressLog = options.onDiagnostic
+    ? startBridgeProgressLog(
+        () => `${requests.progress()}; ${subscriptions.progress()}; ${frames.progress()}`,
+        (detail) => options.onDiagnostic?.({ kind: 'progress', detail })
+      )
+    : () => {}
+
   // Check the outbound gates before consuming native Back; returning true for an unsent frame would swallow the key.
   const deliverable = (): boolean => !closed && serving && initSent
 
@@ -192,6 +200,7 @@ export function createBridgeHost(options: BridgeHostOptions): BridgeHost {
     if (closed) {
       return
     }
+    stopProgressLog()
     settleAll(true)
     closed = true
     unsubscribeState()

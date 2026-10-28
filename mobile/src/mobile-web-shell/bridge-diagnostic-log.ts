@@ -16,6 +16,10 @@ export function createBridgeDiagnosticReporter(
 ): (diagnostic: BridgeHostDiagnostic) => void {
   const reported = new Set<string>()
   return (diagnostic) => {
+    if (diagnostic.kind === 'progress') {
+      onReported?.(diagnostic)
+      return
+    }
     const key = diagnosticKey(diagnostic)
     if (reported.has(key)) {
       return

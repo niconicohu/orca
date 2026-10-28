@@ -3,6 +3,7 @@ import { captureBridgeError } from './bridge/bridge-error-capture'
 import type { BridgeHostDiagnostic } from './bridge-host-contract'
 
 export type BridgeHostFrames = {
+  readonly progress: () => string
   // True only after native post resolves; a vanished view rejects. Resolution proves handoff, not page receipt or one-shot consumption.
   readonly postJson: (json: string) => Promise<boolean>
   readonly sendJson: (json: string) => void
@@ -18,6 +19,9 @@ export function createBridgeHostFrames(args: {
 }): BridgeHostFrames {
   // Report once so repeated foreground/frame failures cannot bury the first cause.
   let postFailureReported = false
+  let posted = 0
+  let pendingPosts = 0
+  let largestPostChars = 0
 
   function reportPostFailure(error: unknown): void {
     if (postFailureReported) {
@@ -32,12 +36,17 @@ export function createBridgeHostFrames(args: {
       return false
     }
     try {
+      pendingPosts += 1
+      largestPostChars = Math.max(largestPostChars, json.length)
       // Await inside try so synchronous throws and rejected posts both stay out of the client’s state-change fan-out.
       await args.post(json)
+      posted += 1
       return true
     } catch (error) {
       reportPostFailure(error)
       return false
+    } finally {
+      pendingPosts -= 1
     }
   }
 
@@ -46,6 +55,8 @@ export function createBridgeHostFrames(args: {
   }
 
   return {
+    progress: () =>
+      `posts=${posted}; pendingPosts=${pendingPosts}; largestPostChars=${largestPostChars}`,
     postJson,
     sendJson,
     // Frame producers already serialized values or captured errors, so no cyclic/unserializable values remain.
