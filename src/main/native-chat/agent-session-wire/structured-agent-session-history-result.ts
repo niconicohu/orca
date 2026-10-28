@@ -14,6 +14,7 @@ import {
   withPublishedWorkResult,
   type AgentSessionPublishedWork
 } from './agent-session-published-work'
+import type { HistoryReader } from './agent-session-history-page-bounds'
 
 export function structuredAgentSessionProviderSessionMetadata(
   record: AgentSessionConversationView | null
@@ -28,12 +29,14 @@ export function readStructuredAgentSessionHistoryResult(input: {
   request: AgentSessionHistoryRequest
   scope?: AgentSessionHistoryScope
   replaceNormalizedHistory?: boolean
+  reader?: HistoryReader
   /** The host's current-work projection, which the page's turn and prompt fields state. */
   work?: AgentSessionPublishedWork
 }): AgentSessionHistoryResult {
   const result = withPublishedWorkResult(
     readAgentSessionHistory(input.journal, input.request, {
       scope: input.scope,
+      reader: input.reader,
       rowReplay: input.replaceNormalizedHistory === false
     }),
     input.work

@@ -11,6 +11,7 @@ import { structuredRunningChildWork } from '../../../shared/agent-child-work-lis
 import { readStructuredAgentSessionHistoryResult } from './structured-agent-session-history-result'
 import { hostStructuredAgentSessionCurrentWork } from './structured-agent-session-host-current-work'
 import type { AgentSessionHistoryScope } from './agent-session-history-page'
+import type { HistoryReader } from './agent-session-history-page-bounds'
 import type {
   AgentSessionSubscribers,
   AgentSessionSubscribeInput
@@ -39,7 +40,8 @@ export class StructuredAgentSessionBackgroundTaskChannel {
   async history(
     request: AgentSessionHistoryRequest,
     scope?: AgentSessionHistoryScope,
-    replaceNormalizedHistory = true
+    replaceNormalizedHistory = true,
+    reader?: HistoryReader
   ): Promise<AgentSessionHistoryResult> {
     const journal = (await this.conversation(request.sessionId)).journal
     const work = hostStructuredAgentSessionCurrentWork(
@@ -52,6 +54,7 @@ export class StructuredAgentSessionBackgroundTaskChannel {
       request,
       scope,
       replaceNormalizedHistory,
+      reader,
       ...(work ? { work } : {})
     })
     const backgroundTasks = this.read(request.sessionId)

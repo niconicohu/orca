@@ -112,8 +112,7 @@ export function readAgentSessionHistory(
     windowed,
     'newest',
     submissionBytesByItemId(snapshot.submissions),
-    reader.budgetBytes,
-    reader.form
+    reader
   )
   return {
     ok: true,
@@ -168,8 +167,7 @@ function buildHydrationPage(
     items,
     'newest',
     submissionBytesByItemId(snapshot.submissions),
-    reader.budgetBytes,
-    reader.form
+    reader
   )
   return buildPage({
     snapshot,
@@ -256,16 +254,15 @@ function readForward(
     contentBytes = pageContentBytes(projected.batch.items, projected.batch.removedItemIds)
   }
   let items = projected.batch.items
-  if (contentBytes > reader.budgetBytes) {
+  const maxGroupBytes = reader.maxGroupBytes ?? reader.budgetBytes
+  if (contentBytes > maxGroupBytes) {
     items = items.map((formed) => {
       const bytes = formed.bytes + (submissionBytes.get(formed.item.itemId) ?? 0)
-      return bytes > reader.budgetBytes
-        ? measureHistoryItem(oversizedHistoryItem(formed.item))
-        : formed
+      return bytes > maxGroupBytes ? measureHistoryItem(oversizedHistoryItem(formed.item)) : formed
     })
     contentBytes = pageContentBytes(items, projected.batch.removedItemIds)
   }
-  if (contentBytes > reader.budgetBytes) {
+  if (contentBytes > maxGroupBytes) {
     // Unsplittable removal IDs require whole-state reset; resume at the live cursor past the oversized row.
     return historyReset(snapshot, 'cursor_compacted', reader)
   }

@@ -19,7 +19,9 @@ import type { QueuePublication } from './structured-agent-session-queued-publica
 
 const BOUNDED_FRAME_READER: HistoryReader = {
   form: (item) => boundedFrameItem(agentJournalItemForWire(item)),
-  budgetBytes: BOUNDED_FRAME_CONTENT_BUDGET_BYTES
+  // Complete a page on slow links before its following health replies are held behind it.
+  budgetBytes: 96 * 1024,
+  maxGroupBytes: BOUNDED_FRAME_CONTENT_BUDGET_BYTES
 }
 
 export function subscriberHistoryReader(subscriber: { boundedFrames: boolean }): HistoryReader {

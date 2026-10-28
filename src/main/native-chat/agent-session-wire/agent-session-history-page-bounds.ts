@@ -75,15 +75,21 @@ export function measureHistoryItem(item: AgentJournalRenderItem): HistoryItemFor
 export type HistoryReader = {
   form: (item: AgentJournalRenderItem) => HistoryItemForm
   budgetBytes: number
+  /** An indivisible sequence group may exceed the page target up to this existing hard limit. */
+  maxGroupBytes?: number
 }
 
 export function boundHistoryItemsByBytes(
   items: AgentJournalRenderItem[],
   keep: 'newest' | 'oldest',
   submissionBytes: ReadonlyMap<string, number>,
-  maxBytes: number,
-  form: HistoryReader['form'] = measureHistoryItem
+  reader: number | HistoryReader
 ): { items: AgentJournalRenderItem[]; dropped: number } {
+  const {
+    budgetBytes: maxBytes,
+    form,
+    maxGroupBytes = maxBytes
+  } = typeof reader === 'number' ? { budgetBytes: reader, form: measureHistoryItem } : reader
   const ordered = groupItemsBySequence(items, keep)
   const kept: AgentJournalRenderItem[][] = []
   let total = 0
@@ -95,7 +101,7 @@ export function boundHistoryItemsByBytes(
       0
     )
     if (kept.length === 0 && bytes > maxBytes) {
-      kept.push(group.map((item) => oversizedHistoryItem(item)))
+      kept.push(bytes > maxGroupBytes ? group.map((item) => oversizedHistoryItem(item)) : group)
       break
     }
     if (total + bytes > maxBytes) {
