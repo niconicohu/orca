@@ -10,6 +10,19 @@ import {
 import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
 
 vi.mock('../hooks/use-now', () => ({ useNow: () => 200_000 }))
+vi.mock('../platform/media-picker', () => ({
+  useMediaPicker: () => ({
+    pickImage: () => {
+      throw new Error('Unexpected media picker use in a goal render')
+    },
+    pickImages: () => {
+      throw new Error('Unexpected media picker use in a goal render')
+    },
+    pickFiles: () => {
+      throw new Error('Unexpected media picker use in a goal render')
+    }
+  })
+}))
 vi.mock('react-native', async () => {
   const { reactNativeStub } = await import('./MobileNativeChatView.render-stubs.test-fixture')
   return reactNativeStub()
@@ -30,13 +43,24 @@ vi.mock('lucide-react-native', () => ({
   ChevronDown: 'ChevronDown',
   ChevronUp: 'ChevronUp'
 }))
-vi.mock('./MobileNativeChatMessage', () => ({ MobileNativeChatMessage: 'ChatMessage' }))
-vi.mock('./MobileNativeChatLiveLine', () => ({ MobileNativeChatLiveLine: 'LiveStatus' }))
-vi.mock('./MobileNativeChatAsk', () => ({ MobileNativeChatAsk: 'ChatAsk' }))
-vi.mock('./MobileNativeChatPermission', () => ({ MobileNativeChatPermission: 'ChatPermission' }))
-vi.mock('./MobileNativeChatQuestion', () => ({ MobileNativeChatQuestion: 'ChatQuestion' }))
+vi.mock('./native-chat/transcript/MobileNativeChatMessage', () => ({
+  MobileNativeChatMessage: 'ChatMessage'
+}))
+vi.mock('./native-chat/transcript/MobileNativeChatLiveLine', () => ({
+  MobileNativeChatLiveLine: 'LiveStatus'
+}))
+vi.mock('./native-chat/input/MobileNativeChatAsk', () => ({ MobileNativeChatAsk: 'ChatAsk' }))
+vi.mock('./native-chat/input/MobileNativeChatPermission', () => ({
+  MobileNativeChatPermission: 'ChatPermission'
+}))
+vi.mock('./native-chat/input/MobileNativeChatQuestion', () => ({
+  MobileNativeChatQuestion: 'ChatQuestion'
+}))
 vi.mock('../components/ActionSheetModal', () => ({ ActionSheetModal: 'ActionSheetModal' }))
-vi.mock('./MobileNativeChatComposer', async () => {
+vi.mock('./native-chat/input/MobileNativeChatPromptCard', () => ({
+  MobileNativeChatPromptCard: 'PromptCard'
+}))
+vi.mock('./native-chat/composer/MobileNativeChatComposer', async () => {
   const { composerStub } = await import('./MobileNativeChatView.render-stubs.test-fixture')
   return composerStub()
 })
@@ -75,6 +99,7 @@ describe('mobile goal banner', () => {
     const banner = root().findByProps({ testID: 'thread-goal-banner' })
     const button = banner.find((node) => hostType(node) === 'Pressable')
     expect(button.props.accessibilityState.expanded).toBe(false)
+    expect(button.props.accessibilityLabel).toContain('1m 17s')
     await act(async () => button.props.onPress())
     expect(button.props.accessibilityState.expanded).toBe(true)
     expect(button.props.accessibilityLabel).toContain('Hide full goal')

@@ -74,6 +74,9 @@ export function agentSessionThreadGoalFromReport(
   report: AgentSessionOptionsResult['threadGoal'] | AgentSessionOptionsResult['reportedThreadGoal'],
   journalEpoch?: string | null
 ): AgentJournalThreadGoal | null {
+  if (report?.contextFloor && journalEpoch && report.contextFloor.epoch !== journalEpoch) {
+    return report.current
+  }
   const floor =
     report?.contextFloor && (!journalEpoch || report.contextFloor.epoch === journalEpoch)
       ? report.contextFloor.sequence

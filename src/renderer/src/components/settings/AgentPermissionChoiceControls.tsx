@@ -5,6 +5,7 @@ import type { AgentPermissionChoice } from '../../../../shared/tui-agent-permiss
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { Button } from '../ui/button'
+import { Label } from '../ui/label'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -174,31 +175,53 @@ export type AgentPermissionChoiceRow = {
 export function AgentPermissionMenu({
   agentId,
   label,
-  permission
+  permission,
+  inheritLabel,
+  disabled,
+  size = 'xs',
+  layout = 'inline'
 }: {
   agentId: string
   label: string
   permission: AgentPermissionChoiceRow
+  inheritLabel?: string
+  disabled?: boolean
+  size?: 'xs' | 'sm'
+  layout?: 'inline' | 'stacked'
 }): React.JSX.Element {
-  const followAll = translate('settings.agents.permissionSameAsAll', 'Same as all agents')
+  const followAll =
+    inheritLabel ?? translate('settings.agents.permissionSameAsAll', 'Same as all agents')
   const current = agentPermissionChoiceLabel(permission.choice, label)
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <span className="text-xs font-medium">
-        {translate('settings.agents.rowPermissions', 'Permissions')}
-      </span>
+    <div
+      className={cn(
+        'flex min-w-0',
+        layout === 'stacked'
+          ? 'flex-col items-stretch gap-2'
+          : 'flex-wrap items-center gap-x-3 gap-y-1'
+      )}
+    >
+      {layout === 'stacked' ? (
+        <Label variant="settings">
+          {translate('settings.agents.rowPermissions', 'Permissions')}
+        </Label>
+      ) : (
+        <span className="text-xs font-medium">
+          {translate('settings.agents.rowPermissions', 'Permissions')}
+        </span>
+      )}
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger asChild disabled={disabled}>
           <Button
             type="button"
             variant="outline"
-            size="xs"
+            size={size}
             aria-label={translate('settings.agents.rowPermissionsLabel', '{{agent}} permissions', {
               agent: label
             })}
-            className="max-w-full"
+            className={cn('min-w-0 max-w-full', layout === 'stacked' && 'w-full justify-between')}
           >
-            <span className="truncate">
+            <span className="truncate text-xs">
               {permission.source === 'all' ? `${followAll} · ${current}` : current}
             </span>
             <ChevronDown className="size-3 shrink-0" />
@@ -208,7 +231,11 @@ export function AgentPermissionMenu({
           <DropdownMenuRadioGroup
             value={permission.source === 'all' ? 'default' : permission.choice}
           >
-            <DropdownMenuRadioItem value="default" onSelect={() => permission.onSelect('default')}>
+            <DropdownMenuRadioItem
+              value="default"
+              disabled={disabled}
+              onSelect={() => permission.onSelect('default')}
+            >
               <span className="truncate">
                 {followAll} · {agentPermissionChoiceLabel(permission.defaultChoice, label)}
               </span>
@@ -218,6 +245,7 @@ export function AgentPermissionMenu({
               <DropdownMenuRadioItem
                 key={choice}
                 value={choice}
+                disabled={disabled}
                 onSelect={() => permission.onSelect(choice)}
               >
                 <div className="min-w-0 py-0.5">
@@ -248,13 +276,14 @@ export function AgentPermissionMenu({
   )
 }
 
-export function AgentPermissionArgsChip({
+function AgentArgsChoiceChip({
   label,
   flag,
   onRemove,
   disabled,
   chipRef,
-  buttonRef
+  buttonRef,
+  choiceKey
 }: {
   label: string
   flag: string
@@ -262,13 +291,14 @@ export function AgentPermissionArgsChip({
   disabled?: boolean
   chipRef?: Ref<HTMLSpanElement>
   buttonRef?: Ref<HTMLButtonElement>
+  choiceKey: string
 }): React.JSX.Element {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span
           ref={chipRef}
-          className="relative z-10 -mb-5 flex h-5 w-fit max-w-[60%] items-center gap-1 rounded bg-muted px-1.5 font-mono text-xs leading-5 text-foreground/80 focus-within:ring-2 focus-within:ring-ring"
+          className="flex h-5 min-w-0 max-w-full items-center gap-1 rounded bg-muted px-1.5 font-mono text-xs leading-5 text-foreground/80 focus-within:ring-2 focus-within:ring-ring"
         >
           <span className="truncate">{flag}</span>
           <button
@@ -279,16 +309,26 @@ export function AgentPermissionArgsChip({
             onKeyDown={(event) => {
               if (event.key === 'Backspace') {
                 event.preventDefault()
-                if (!event.repeat && !event.altKey && !event.ctrlKey && !event.metaKey) {
+                if (
+                  !disabled &&
+                  !event.repeat &&
+                  !event.altKey &&
+                  !event.ctrlKey &&
+                  !event.metaKey
+                ) {
                   onRemove()
                 }
               }
             }}
-            aria-label={translate(
-              'settings.agents.permissionChipRemove',
-              "Remove {{flag}} and use {{agent}}'s own settings",
-              { flag, agent: label }
-            )}
+            aria-label={
+              choiceKey !== 'permissionMode'
+                ? translate('settings.agents.choiceChipRemove', 'Remove {{flag}}', { flag })
+                : translate(
+                    'settings.agents.permissionChipRemove',
+                    "Remove {{flag}} and use {{agent}}'s own settings",
+                    { flag, agent: label }
+                  )
+            }
             className="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
           >
             <X className="size-3" />
@@ -296,12 +336,63 @@ export function AgentPermissionArgsChip({
         </span>
       </TooltipTrigger>
       <TooltipContent>
-        {translate(
-          'settings.agents.permissionChipTooltip',
-          'Added by Permissions. Remove it to use {{agent}}’s own settings.',
-          { agent: label }
-        )}
+        {choiceKey !== 'permissionMode'
+          ? translate(
+              'settings.agents.choiceChipTooltip',
+              'Added by {{choice}}. Remove it to use the default.',
+              {
+                choice:
+                  choiceKey === 'model'
+                    ? translate('settings.sourceControl.actionModel.model', 'Model')
+                    : translate('settings.sourceControl.actionModel.effort', 'Effort')
+              }
+            )
+          : translate(
+              'settings.agents.permissionChipTooltip',
+              'Added by Permissions. Remove it to use {{agent}}’s own settings.',
+              { agent: label }
+            )}
       </TooltipContent>
     </Tooltip>
+  )
+}
+
+export type AgentArgsChoice = {
+  key: string
+  label: string
+  flag: string
+  onRemove: (text: string) => string
+}
+
+export function AgentArgsChoiceChips({
+  chips,
+  disabled,
+  chipRef,
+  buttonRef,
+  onRemove
+}: {
+  chips: readonly AgentArgsChoice[]
+  disabled?: boolean
+  chipRef?: Ref<HTMLSpanElement>
+  buttonRef?: Ref<HTMLButtonElement>
+  onRemove: (chip: AgentArgsChoice) => void
+}): React.JSX.Element {
+  return (
+    <span
+      ref={chipRef}
+      className="relative z-10 -mb-5 flex h-5 w-fit max-w-full items-center gap-1"
+    >
+      {chips.map((chip, index) => (
+        <AgentArgsChoiceChip
+          key={chip.key}
+          choiceKey={chip.key}
+          label={chip.label}
+          flag={chip.flag}
+          disabled={disabled}
+          buttonRef={index === chips.length - 1 ? buttonRef : undefined}
+          onRemove={() => onRemove(chip)}
+        />
+      ))}
+    </span>
   )
 }

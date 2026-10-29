@@ -1,7 +1,7 @@
 import { claudeProviderHandle } from '../../shared/agent-session-provider-handle-encoding'
 import {
   AgentSessionAcquisitionExitUnprovenError,
-  AgentSessionPreSpawnError,
+  launchPreparationFailure,
   type StructuredAgentSessionAcquireInput
 } from '../native-chat/agent-session-wire/structured-agent-session-adapter'
 import { stopAgentSessionProviderRoot } from '../native-chat/agent-session-wire/structured-agent-session-provider-exit-proof'
@@ -19,7 +19,7 @@ import {
   type ClaudeSession,
   type ClaudeSessionExit,
   type ClaudeStructuredSessionAdapterDeps
-} from './claude-structured-session-state'
+} from './structured/claude-structured-session-state'
 import {
   claudeAcquisitionCleanupError,
   closeClaudePublishedSessionForDeps
@@ -29,21 +29,16 @@ export type ClaudeAcquisitionLaunch = ClaudeStructuredLaunch & {
   savedOptions: Omit<ClaudeStructuredSpawnOptions, 'sdkOptions'>
 }
 
-export type ClaudeAcquisitionContext = {
+export async function resolveClaudeAcquisitionLaunch(args: {
   input: StructuredAgentSessionAcquireInput
   deps: ClaudeStructuredSessionAdapterDeps
   sessions: Map<string, ClaudeSession>
   acquisitions: ClaudeAcquisitionRegistry
   exits: Map<string, ClaudeSessionExit>
   callbacks: ClaudeAcquireCallbacks
-}
-
-export async function resolveClaudeAcquisitionLaunch(
-  args: ClaudeAcquisitionContext & {
-    previous: ClaudeAcquisitionAttempt | undefined
-    attempt: ClaudeAcquisitionAttempt
-  }
-): Promise<ClaudeAcquisitionLaunch> {
+  previous: ClaudeAcquisitionAttempt | undefined
+  attempt: ClaudeAcquisitionAttempt
+}): Promise<ClaudeAcquisitionLaunch> {
   const { input, deps, sessions, acquisitions, exits, callbacks, previous, attempt } = args
   const sessionId = input.identity.sessionId
   return withAgentSessionCreatePhase('auth_settle', input.recordPhase, async () => {
@@ -98,9 +93,7 @@ export async function resolveClaudeAcquisitionLaunch(
         ...(input.permissionMode ? { permissionMode: input.permissionMode } : {})
       })
       .catch((error: unknown) => {
-        throw error instanceof AgentSessionPreSpawnError
-          ? error
-          : new AgentSessionPreSpawnError(error)
+        throw launchPreparationFailure(error)
       })
     acquisitions.assertCurrent(sessionId, attempt)
     const spawn = claudeStructuredSpawnOptions({ launch, saved: input.options })

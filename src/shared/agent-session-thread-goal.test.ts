@@ -6,6 +6,7 @@ import type {
 } from './agent-session-journal-types'
 import {
   agentSessionThreadGoalElapsedSeconds,
+  agentSessionThreadGoalFromReport,
   agentSessionThreadGoalStatusChange,
   currentAgentSessionThreadGoal,
   currentAgentSessionThreadGoalSourceBySequence,
@@ -108,6 +109,35 @@ describe('current thread goal', () => {
     // A newer provider status must not read as a known one.
     const future = goalRow(5, 'set', Object.assign(goal(), { status: 'snoozed' }))
     expect(currentAgentSessionThreadGoal([goalRow(1, 'set'), future])).toBeNull()
+  })
+})
+
+describe('thread goal report epoch ownership', () => {
+  it.each(['set', 'cleared'] as const)(
+    'keeps the report when a %s row belongs to another epoch',
+    (state) => {
+      const reported = goal({ objective: 'Current conversation goal' })
+      const loaded = goal({ objective: 'Previous conversation goal' })
+      const report = { current: reported, contextFloor: { epoch: 'current', sequence: 2 } }
+      const items = [goalRow(3, state, loaded)]
+      expect.soft(agentSessionThreadGoalFromReport(items, report, 'previous')).toEqual(reported)
+      expect
+        .soft(agentSessionThreadGoalFromReport(items, report, 'current'))
+        .toEqual(state === 'set' ? loaded : null)
+    }
+  )
+
+  it('does not revive another epoch after the reported goal was cleared', () => {
+    expect(
+      agentSessionThreadGoalFromReport(
+        [goalRow(3, 'set')],
+        {
+          current: null,
+          contextFloor: { epoch: 'current', sequence: 2 }
+        },
+        'previous'
+      )
+    ).toBeNull()
   })
 })
 

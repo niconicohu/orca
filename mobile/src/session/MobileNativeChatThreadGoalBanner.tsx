@@ -35,7 +35,7 @@ export function MobileNativeChatThreadGoalBanner({
     <View style={styles.strip} testID="thread-goal-banner">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${expanded ? copy.collapse : copy.expand}: ${copy[key]} — ${goal.objective}`}
+        accessibilityLabel={`${expanded ? copy.collapse : copy.expand}: ${copy[key]} — ${goal.objective}, ${elapsed}`}
         accessibilityState={{ expanded }}
         onPress={() => setExpanded((value) => !value)}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}

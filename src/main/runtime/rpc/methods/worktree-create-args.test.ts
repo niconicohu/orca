@@ -12,6 +12,19 @@ const build = (params: Record<string, unknown>) =>
   buildManagedWorktreeCreateArgs(WorktreeCreate.parse(params), PROVENANCE)
 
 describe('buildManagedWorktreeCreateArgs', () => {
+  it('carries explicit existing intent through the RPC schema without inferring it for legacy names', () => {
+    const request = {
+      repo: 'repo-1',
+      name: 'feature/test',
+      baseBranch: 'origin/main',
+      branchNameOverride: 'feature/test'
+    }
+    expect(build(request)).not.toHaveProperty('branchIntent')
+    for (const branchIntent of ['open-existing', 'open-existing-v2', 'create-new']) {
+      expect(build({ ...request, branchIntent })).toMatchObject({ branchIntent })
+    }
+  })
+
   it('omits name provenance when the client did not claim a generated name', () => {
     // Absent means user-typed: default true would permanently retire deliberate names such as orca and molly.
     expect(build({ repo: 'id:repo-1', name: 'nautilus' })).not.toHaveProperty('nameWasGenerated')

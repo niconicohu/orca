@@ -79,7 +79,7 @@ export function useMobileStructuredAgentTurnTiming(
       ? {
           goal,
           runningTurn:
-            connected && working !== false && turnId !== null
+            connected && hostClock && working !== false && turnId !== null
               ? { startedAt: runningTiming?.startedAt ?? null }
               : null,
           hostClockOffsetMs: hostClock ? hostClock.receivedAt - hostClock.hostNow : 0

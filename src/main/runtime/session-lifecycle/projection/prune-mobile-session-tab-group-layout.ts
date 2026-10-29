@@ -117,7 +117,7 @@ export abstract class OrcaRuntimeWithPruneMobileSessionTabGroupLayout extends Or
 
   /** The desktop tab's rename, else the chat's saved name; null leaves the agent's default label. */
   private structuredConversationTabName(workspaceId: string, sessionId: string): string | null {
-    const record = getStructuredAgentSessionHost()?.deps?.store?.getRecord(sessionId)
+    const record = getStructuredAgentSessionHost()?.deps?.store?.getConversation(sessionId)
     const customLabel = this.getWorkspaceSessionForWorktree(workspaceId)?.unifiedTabs?.[
       workspaceId
     ]?.find((tab) => tab.contentType === 'agent-session' && tab.entityId === sessionId)?.customLabel
@@ -132,6 +132,7 @@ export abstract class OrcaRuntimeWithPruneMobileSessionTabGroupLayout extends Or
       leaves: this.leaves,
       ptysById: this.ptysById,
       getLiveBrowserTabs: (worktreeId) => this.getListedBrowserTabsByPageId(worktreeId),
+      isRendererOwnedMobileBrowserTab: (...args) => this.isRendererOwnedMobileBrowserTab(...args),
       getProviderSessionRows: (paneKey) => this.getAgentProviderSessionRowsForPaneFn?.(paneKey),
       getProviderSessionSnapshot: () => this.getAgentProviderSessionSnapshotFn?.() ?? [],
       getStatusSnapshot: () => this.getAgentStatusSnapshotFn?.() ?? [],
