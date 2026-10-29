@@ -1,3 +1,6 @@
+import { optionSession } from '../../../codex/codex-structured-option-session.test-fixture'
+import { resolvedCodexMessageOptions } from '../../../codex/codex-structured-message-options'
+import { startCodexTurn } from '../../../codex/codex-structured-turn-start'
 import { computeAgentSessionPayloadFingerprint } from '../../../../shared/agent-session-mutation-envelope'
 import '../unused-default-rpc-methods.test-fixture'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -264,6 +267,15 @@ const childSelections: {
   {
     name: 'fast mode only',
     picked: { fastMode: 'false' },
+    expected: {
+      model: sourceModelOptions.model,
+      effort: sourceModelOptions.effort,
+      fastMode: 'false'
+    }
+  },
+  {
+    name: 'explicit tier with Fast',
+    picked: { fastMode: 'false', serviceTier: 'priority' },
     expected: { ...sourceModelOptions, fastMode: 'false' }
   },
   { name: 'explicit model', picked: { model: 'gpt-6.1-sol' }, expected: { model: 'gpt-6.1-sol' } }
@@ -298,8 +310,29 @@ it.each(childSelections)(
         ok: true,
         result: { ok: true }
       })
-      expect(rig.store.getRecord(CHILD)?.options).toEqual(expected)
+      expect.soft(rig.store.getRecord(CHILD)?.options).toEqual(expected)
       expect(rig.store.getRecord(CHILD)?.permissionMode).toBe('ask')
+      if (picked.fastMode !== undefined) {
+        const request = vi.fn(async () => ({ turn: { id: 'child-turn' } }))
+        const native = optionSession(request)
+        const turnOptions = await resolvedCodexMessageOptions(
+          native,
+          rig.store.getRecord(CHILD)?.options
+        )
+        await startCodexTurn(native, {
+          clientMessageId: hostTestOperationId(),
+          body: hostTestMessage('Continue the side question'),
+          turnOptions
+        })
+        expect(request).toHaveBeenLastCalledWith(
+          'turn/start',
+          expect.objectContaining({
+            model: sourceModelOptions.model,
+            serviceTier: picked.serviceTier ?? 'default'
+          }),
+          expect.anything()
+        )
+      }
       expect(rig.store.getRecord(SOURCE)).toEqual(sourceBefore)
     }
   }

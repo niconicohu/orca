@@ -150,9 +150,17 @@ export async function prepareStructuredAgentSessionCreateForWorktree(args: {
     : args.sideChatOf
       ? args.options?.model === undefined
       : Object.keys(args.options ?? {}).every((id) => id === AGENT_CHAT_PERMISSION_MODE_OPTION_ID)
+  const seedOptions =
+    args.sideChatOf &&
+    args.options?.fastMode !== undefined &&
+    args.options.serviceTier === undefined
+      ? Object.fromEntries(
+          Object.entries(resolved.options ?? {}).filter(([key]) => key !== 'serviceTier')
+        )
+      : resolved.options
   const picked = args.options
     ? overlays
-      ? { ...resolved.options, ...args.options }
+      ? { ...seedOptions, ...args.options }
       : { ...seededPermissionMode(resolved.options), ...args.options }
     : resolved.options
   return {
