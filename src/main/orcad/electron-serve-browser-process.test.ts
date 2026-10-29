@@ -137,6 +137,8 @@ function spawnSpec(): ProcessSpec {
 
 beforeEach(async () => {
   harnessRoot = await mkdtemp(join(tmpdir(), 'orcad-electron-harness-'))
+  vi.stubEnv('HOME', harnessRoot)
+  vi.stubEnv('USERPROFILE', harnessRoot)
   logPath = join(harnessRoot, 'requests.jsonl')
   controlPath = join(harnessRoot, 'control.json')
   sidecarMode = undefined
