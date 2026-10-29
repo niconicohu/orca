@@ -9,6 +9,8 @@ import {
 } from './MobileNativeChatView.harness.test-fixture'
 import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
 
+const viewport = vi.hoisted(() => ({ height: 800 }))
+
 vi.mock('../hooks/use-now', () => ({ useNow: () => 200_000 }))
 vi.mock('../platform/media-picker', () => ({
   useMediaPicker: () => ({
@@ -25,7 +27,10 @@ vi.mock('../platform/media-picker', () => ({
 }))
 vi.mock('react-native', async () => {
   const { reactNativeStub } = await import('./MobileNativeChatView.render-stubs.test-fixture')
-  return reactNativeStub()
+  return {
+    ...(await reactNativeStub()),
+    useWindowDimensions: () => ({ width: 400, height: viewport.height })
+  }
 })
 vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 })
@@ -104,6 +109,37 @@ describe('mobile goal banner', () => {
     expect(button.props.accessibilityState.expanded).toBe(true)
     expect(button.props.accessibilityLabel).toContain('Hide full goal')
   })
+
+  it.each([360, 800])(
+    'keeps a long expanded goal scrollable outside the composer in a %spx viewport',
+    async (height) => {
+      viewport.height = height
+      const objective = 'A multi-paragraph objective that must stay readable.\n\n'.repeat(40)
+      await render({ threadGoal: { ...threadGoal, goal: { ...threadGoal.goal, objective } } })
+      const banner = root().findByProps({ testID: 'thread-goal-banner' })
+      const button = banner.find((node) => hostType(node) === 'Pressable')
+      await act(async () => button.props.onPress())
+      const scrolls = banner.findAll((node) => hostType(node) === 'ScrollView')
+      expect(scrolls).toHaveLength(1)
+      const details = scrolls[0]
+      if (!details) {
+        throw new Error('Expanded goal must own a bounded scroll area')
+      }
+      const style = Object.assign({}, ...details.props.style)
+      expect(style.maxHeight).toBeGreaterThan(0)
+      expect(style.maxHeight).toBeLessThanOrEqual(height / 3)
+      expect(
+        details
+          .findAll((node) => hostType(node) === 'Text')
+          .some((node) => node.props.children === objective)
+      ).toBe(true)
+      expect(details.findAll((node) => hostType(node) === 'Composer')).toHaveLength(0)
+      expect(root().findAll((node) => hostType(node) === 'Composer')).toHaveLength(1)
+      await act(async () => button.props.onPress())
+      expect(banner.findAll((node) => hostType(node) === 'ScrollView')).toHaveLength(0)
+      expect(button.props.accessibilityState.expanded).toBe(false)
+    }
+  )
 
   it('keeps an idle goal set, renders paused/blocked/limited goals, and hides completed or cleared goals', async () => {
     await render({ threadGoal: null })

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { ChevronDown, ChevronUp, Goal } from 'lucide-react-native'
 import type { AgentJournalThreadGoal } from '../../../src/shared/agent-session-journal-types'
 import { agentSessionThreadGoalElapsedSeconds } from '../../../src/shared/agent-session-thread-goal'
@@ -25,6 +25,7 @@ export function MobileNativeChatThreadGoalBanner({
   hostClockOffsetMs
 }: MobileNativeChatThreadGoal): React.JSX.Element | null {
   useMobileColorScheme()
+  const { height } = useWindowDimensions()
   const [expanded, setExpanded] = useState(false)
   const now = useNow(1_000, goal.status === 'active' && runningTurn !== null)
   const key = nativeChatThreadGoalStatusKey(goal.status, runningTurn !== null)
@@ -44,7 +45,7 @@ export function MobileNativeChatThreadGoalBanner({
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       >
         <Goal size={14} color={colors.textMuted} />
-        <Text style={styles.objective} numberOfLines={expanded ? undefined : 1}>
+        <Text style={styles.objective} numberOfLines={1}>
           <Text style={styles.label}>{copy[key]} </Text>
           {goal.objective}
         </Text>
@@ -57,6 +58,15 @@ export function MobileNativeChatThreadGoalBanner({
           <ChevronDown size={14} color={colors.textMuted} />
         )}
       </Pressable>
+      {expanded ? (
+        <ScrollView
+          style={[styles.details, { maxHeight: height / 4 }]}
+          nestedScrollEnabled
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.fullObjective}>{goal.objective}</Text>
+        </ScrollView>
+      ) : null}
     </View>
   )
 }
@@ -77,6 +87,12 @@ const styles = themedStyleSheet(() => ({
     fontSize: typography.metaSize,
     color: colors.textMuted,
     fontVariant: ['tabular-nums']
+  },
+  details: { minHeight: 0, flexShrink: 1 },
+  fullObjective: {
+    padding: spacing.sm,
+    fontSize: typography.metaSize,
+    color: colors.textSecondary
   },
   pressed: { opacity: 0.7 }
 }))
