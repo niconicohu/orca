@@ -10,8 +10,6 @@ import {
 import { activateMobileUiLocale } from '../i18n/mobile-i18n'
 import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
 
-const viewport = vi.hoisted(() => ({ height: 800 }))
-
 vi.mock('../hooks/use-now', () => ({ useNow: () => 200_000 }))
 vi.mock('../platform/media-picker', () => ({
   useMediaPicker: () => ({
@@ -30,7 +28,7 @@ vi.mock('react-native', async () => {
   const { reactNativeStub } = await import('./MobileNativeChatView.render-stubs.test-fixture')
   return {
     ...(await reactNativeStub()),
-    useWindowDimensions: () => ({ width: 400, height: viewport.height })
+    useWindowDimensions: () => ({ width: 800, height: 360 })
   }
 })
 vi.mock('react-native-safe-area-context', () => ({
@@ -111,36 +109,34 @@ describe('mobile goal banner', () => {
     expect(button.props.accessibilityLabel).toContain('Hide full goal')
   })
 
-  it.each([360, 800])(
-    'keeps a long expanded goal scrollable outside the composer in a %spx viewport',
-    async (height) => {
-      viewport.height = height
-      const objective = 'A multi-paragraph objective that must stay readable.\n\n'.repeat(40)
-      await render({ threadGoal: { ...threadGoal, goal: { ...threadGoal.goal, objective } } })
-      const banner = root().findByProps({ testID: 'thread-goal-banner' })
-      const button = banner.find((node) => hostType(node) === 'Pressable')
-      await act(async () => button.props.onPress())
-      const scrolls = banner.findAll((node) => hostType(node) === 'ScrollView')
-      expect(scrolls).toHaveLength(1)
-      const details = scrolls[0]
-      if (!details) {
-        throw new Error('Expanded goal must own a bounded scroll area')
-      }
-      const style = Object.assign({}, ...details.props.style)
-      expect(style.maxHeight).toBeGreaterThan(0)
-      expect(style.maxHeight).toBeLessThanOrEqual(height / 3)
-      expect(
-        details
-          .findAll((node) => hostType(node) === 'Text')
-          .some((node) => node.props.children === objective)
-      ).toBe(true)
-      expect(details.findAll((node) => hostType(node) === 'Composer')).toHaveLength(0)
-      expect(root().findAll((node) => hostType(node) === 'Composer')).toHaveLength(1)
-      await act(async () => button.props.onPress())
-      expect(banner.findAll((node) => hostType(node) === 'ScrollView')).toHaveLength(0)
-      expect(button.props.accessibilityState.expanded).toBe(false)
-    }
-  )
+  it('opens a long goal outside the chat layout in the existing scrollable drawer', async () => {
+    const objective = 'A multi-paragraph objective that must stay readable.\n\n'.repeat(40)
+    await render({
+      threadGoal: { ...threadGoal, goal: { ...threadGoal.goal, objective } },
+      keyboardInset: 240
+    })
+    const banner = root().findByProps({ testID: 'thread-goal-banner' })
+    const button = banner.find((node) => hostType(node) === 'Pressable')
+    expect(root().findAll((node) => hostType(node) === 'GoalDrawer')).toHaveLength(0)
+    await act(async () => button.props.onPress())
+    const drawer = root().find((node) => hostType(node) === 'GoalDrawer')
+    expect(drawer.props.contentScrollable).not.toBe(false)
+    expect(drawer.props.fillAvailable).toBe(true)
+    const full = drawer.find(
+      (node) => hostType(node) === 'Text' && node.props.children === objective
+    )
+    expect(full.props.numberOfLines).toBeUndefined()
+    expect(drawer.findAll((node) => hostType(node) === 'Composer')).toHaveLength(0)
+    expect(root().findAll((node) => hostType(node) === 'Composer')).toHaveLength(1)
+    expect(
+      button
+        .findAll((node) => hostType(node) === 'Text')
+        .some((node) => node.props.numberOfLines === 1)
+    ).toBe(true)
+    await act(async () => drawer.props.onClose())
+    expect(root().findAll((node) => hostType(node) === 'GoalDrawer')).toHaveLength(0)
+    expect(button.props.accessibilityState.expanded).toBe(false)
+  })
 
   it('uses the selected phone language for goal status and accessible actions', async () => {
     await act(async () => activateMobileUiLocale('zh'))
@@ -153,6 +149,11 @@ describe('mobile goal banner', () => {
       expect(button.props.accessibilityLabel).toContain('显示完整目标')
       await act(async () => button.props.onPress())
       expect(button.props.accessibilityLabel).toContain('隐藏完整目标')
+      await act(async () => activateMobileUiLocale('ja'))
+      for (const status of ['budgetLimited', 'usageLimited'] as const) {
+        await update({ threadGoal: { ...threadGoal, goal: { ...threadGoal.goal, status } } })
+        expect(texts().join('')).toContain('目標が上限に達しました')
+      }
     } finally {
       await act(async () => activateMobileUiLocale('en'))
     }

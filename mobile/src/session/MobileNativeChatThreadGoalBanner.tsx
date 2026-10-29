@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { BottomDrawer } from '../components/BottomDrawer'
 import { ChevronDown, ChevronUp, Goal } from 'lucide-react-native'
 import type { AgentJournalThreadGoal } from '../../../src/shared/agent-session-journal-types'
 import { agentSessionThreadGoalElapsedSeconds } from '../../../src/shared/agent-session-thread-goal'
@@ -27,7 +28,6 @@ export function MobileNativeChatThreadGoalBanner({
 }: MobileNativeChatThreadGoal): React.JSX.Element | null {
   useMobileColorScheme()
   const t = useMobileTranslation()
-  const { height } = useWindowDimensions()
   const [expanded, setExpanded] = useState(false)
   const now = useNow(1_000, goal.status === 'active' && runningTurn !== null)
   const key = nativeChatThreadGoalStatusKey(goal.status, runningTurn !== null)
@@ -70,15 +70,17 @@ export function MobileNativeChatThreadGoalBanner({
           <ChevronDown size={14} color={colors.textMuted} />
         )}
       </Pressable>
-      {expanded ? (
-        <ScrollView
-          style={[styles.details, { maxHeight: height / 4 }]}
-          nestedScrollEnabled
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.fullObjective}>{goal.objective}</Text>
-        </ScrollView>
-      ) : null}
+      <BottomDrawer
+        fillAvailable
+        visible={expanded}
+        onClose={() => setExpanded(false)}
+        scrollResetKey={goal.objective}
+      >
+        <Text style={[styles.fullObjective, styles.label]}>{label}</Text>
+        <Text style={styles.fullObjective} selectable>
+          {goal.objective}
+        </Text>
+      </BottomDrawer>
     </View>
   )
 }
@@ -100,7 +102,6 @@ const styles = themedStyleSheet(() => ({
     color: colors.textMuted,
     fontVariant: ['tabular-nums']
   },
-  details: { minHeight: 0, flexShrink: 1 },
   fullObjective: {
     padding: spacing.sm,
     fontSize: typography.metaSize,
