@@ -118,12 +118,14 @@ export function useMobileStructuredAgentOptions(args: {
     imageSupport?.sessionId === sessionId &&
     !imageSupport.statesPermissionMode &&
     optionState.permissionMode === null
+  const interactionReadyRef = useRef(!awaitingOptions)
   const lockSnapshotRef = useRef(
     (snapshot: ReturnType<typeof structuredAgentSessionShownSnapshot>) => snapshot
   )
   const lockSnapshot = (snapshot: ReturnType<typeof structuredAgentSessionShownSnapshot>) =>
     awaitingOptions ? lockedStructuredAgentSessionOptionSnapshot(snapshot) : snapshot
   useLayoutEffect(() => {
+    interactionReadyRef.current = !awaitingOptions
     lockSnapshotRef.current = lockSnapshot
   })
   const shown = lockSnapshot(
@@ -161,7 +163,8 @@ export function useMobileStructuredAgentOptions(args: {
           },
           id,
           value,
-          lockSnapshotRef.current(structuredAgentSessionShownSnapshot(currentState))
+          lockSnapshotRef.current(structuredAgentSessionShownSnapshot(currentState)),
+          interactionReadyRef.current
         )
       ) {
         return false

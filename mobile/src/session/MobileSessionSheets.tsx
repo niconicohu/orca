@@ -59,7 +59,7 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
     setDeleteKeyTarget,
     terminalModes,
     showDictationSetup,
-    setShowDictationSetup,
+    closeDictationSetup,
     browserScreencastSupported,
     quickCommandsSupported,
     quickCommandAgentPromptMaxLength,
@@ -375,8 +375,8 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
       <MobileDictationSetupSheet
         visible={showDictationSetup}
         client={client}
-        onClose={() => setShowDictationSetup(false)}
-        onReady={() => setShowDictationSetup(false)}
+        onClose={closeDictationSetup}
+        onReady={closeDictationSetup}
       />
       <ActionSheetModal
         visible={deleteKeyTarget != null}

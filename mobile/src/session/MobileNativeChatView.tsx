@@ -52,6 +52,7 @@ import {
   type MobileNativeChatStructuredComposer
 } from './native-chat/composer/MobileNativeChatComposer'
 import { MobileNativeChatPromptCard } from './native-chat/input/MobileNativeChatPromptCard'
+import type { MobileNativeChatMicProps } from './native-chat/composer/MobileNativeChatComposerMic'
 import {
   NO_COMPOSER_TRAY,
   type ComposerTrayProps
@@ -69,7 +70,9 @@ import type { AgentSessionThreadGoalView } from '../../../src/shared/agent-sessi
 
 export type MobileNativeChatInputLockReason = 'disconnected' | 'waiting'
 
-type Props = ComposerTrayProps & {
+type Props = ComposerTrayProps & MobileNativeChatMicProps & ChatViewProps
+
+type ChatViewProps = {
   // Keep raw messages to distinguish loading from a loaded transcript filtered to empty.
   messages: NativeChatMessage[]
   folded: NativeChatMessage[]
@@ -112,11 +115,6 @@ type Props = ComposerTrayProps & {
   attachments?: PendingNativeChatImage[]
   onRemoveAttachment?: (id: string) => void
   isAttaching?: boolean
-  onMicPress?: () => void
-  micActive?: boolean
-  dictationMode?: string
-  onMicPressIn?: () => void
-  onMicPressOut?: () => void
   inputLockReason?: MobileNativeChatInputLockReason | null
   // Report send failures here only while mounted; the route uses a toast otherwise.
   sendErrorMessage?: string | null
@@ -187,6 +185,8 @@ export function MobileNativeChatView({
   isAttaching,
   onMicPress,
   micActive,
+  micStarting,
+  micProcessing,
   dictationMode,
   onMicPressIn,
   onMicPressOut,
@@ -403,7 +403,8 @@ export function MobileNativeChatView({
         agent={agent}
         sessionOptions={sessionOptions}
         {...{ onAttachImage, attachments, onRemoveAttachment, isAttaching }}
-        {...{ onMicPress, micActive, dictationMode, onMicPressIn, onMicPressOut }}
+        {...{ onMicPress, micActive, micStarting, micProcessing }}
+        {...{ dictationMode, onMicPressIn, onMicPressOut }}
         disabled={lockReason !== null}
         sendDisabled={expandedPromptOwnsSend}
         placeholder={composerPlaceholder}

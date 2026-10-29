@@ -23,7 +23,6 @@ import type {
   StructuredAgentSessionFirstMessage
 } from '../../../../shared/structured-agent-session-create'
 import { structuredAgentSessionOptionOverridesRefusal } from '../../../native-chat/agent-session-wire/structured-agent-session-options-read'
-import { savedAgentSessionCatalogModels } from '../../../native-chat/agent-session-wire/structured-agent-session-pick-reply'
 import type { StructuredAgentSessionCreateOptions } from '../../../native-chat/agent-session-wire/structured-agent-session-create'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import {
@@ -32,8 +31,6 @@ import {
 } from '../../../native-chat/structured-agent-cli-source'
 import type { StructuredAgentId } from '../../../../shared/agent-session-provider-handle'
 import { resolveUncommittedStructuredCreate } from './structured-agent-session-precommit-refusal'
-import { structuredLaunchSeedOnSavedListing } from '../../session-tabs/structured-launch-seed-listing'
-import { seedOptionsAdmittedOnSavedListing } from '../../agent-session-record-options'
 
 export type PreparedStructuredAgentSessionCreate = {
   host: StructuredAgentSessionHost
@@ -156,43 +153,13 @@ export async function prepareStructuredAgentSessionCreateForWorktree(args: {
       ? { ...resolved.options, ...args.options }
       : { ...seededPermissionMode(resolved.options), ...args.options }
     : resolved.options
-  // Resolve picker cwd once so seed selection and host admission read the same catalog.
-  let folder: Promise<string | null> | undefined
-  const catalogFolder = () =>
-    (folder ??= args.runtime
-      .resolveStructuredAgentSessionLocalWorkspacePath(args.worktree)
-      .catch(() => null))
-  // After fingerprinting, remap stale remembered model/effort against saved listing; never remap an explicit model.
-  const options = args.options?.model
-    ? picked
-    : await structuredLaunchSeedOnSavedListing(host, args.agent, picked, catalogFolder)
-  const catalogModels =
-    options && host.deps.modelCatalog
-      ? await savedAgentSessionCatalogModels(
-          host.deps,
-          resolved.provider,
-          args.envelope.sessionId,
-          await catalogFolder()
-        )
-      : undefined
-  // Fit remembered values to the saved row instead of refusing the create (#31493).
-  const admittedSeed =
-    options && catalogModels && !args.options?.model
-      ? seedOptionsAdmittedOnSavedListing(
-          resolved.provider,
-          options,
-          catalogModels,
-          new Set(Object.keys(args.options ?? {}))
-        )
-      : options
   return {
     host,
-    ...(catalogModels ? { catalogModels } : {}),
     ...(hostLaunchDirectory ? { hostLaunchDirectory } : {}),
     attachParams: {
       ...resolvedAttach,
       ...(args.sideChatOf && args.firstMessage ? { createMessage: args.firstMessage } : {}),
-      ...(admittedSeed ? { options: admittedSeed } : {}),
+      ...(picked ? { options: picked } : {}),
       ...(args.tabId ? { surfaceTabId: args.tabId } : {}),
       provider: resolved.provider,
       agent: resolved.agent,
