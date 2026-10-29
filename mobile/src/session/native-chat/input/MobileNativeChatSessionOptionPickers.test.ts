@@ -32,6 +32,7 @@ vi.mock('react-native', () => ({
 }))
 vi.mock('lucide-react-native', () => ({
   Check: 'Check',
+  Eye: 'Eye',
   ChevronDown: 'ChevronDown',
   ChevronLeft: 'ChevronLeft',
   ChevronRight: 'ChevronRight',
@@ -383,7 +384,7 @@ describe('MobileNativeChatSessionOptionPickers', () => {
       rows
         .filter((row) => row.props.accessibilityState.checked)
         .map((row) => findAllByHostType(row, 'Text')[0]?.props.children)
-    ).toEqual(['accept-edits', 'full-access'].includes(mode) ? [label] : [])
+    ).toEqual(['accept-edits', 'full-access', 'read-only'].includes(mode) ? [label] : [])
     expect(
       findAllByHostType(renderer!.root, 'Text').some((node) =>
         String(node.props.children).includes('own settings')

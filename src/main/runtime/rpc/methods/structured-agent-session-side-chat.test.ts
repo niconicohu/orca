@@ -188,3 +188,22 @@ it('changes the child permission independently without changing the source chat'
   expect(rig.store.getRecord(CHILD)?.permissionMode).toBe('full-access')
   expect(rig.store.getRecord(SOURCE)).toEqual(sourceBefore)
 })
+
+it('creates a read-only child without changing the parent and keeps the mode across create replay', async () => {
+  const parent = structuredClone(rig.store.getRecord(SOURCE))
+  const input = structuredAgentSessionCreateParams({
+    ...create(false),
+    sessionId: CHILD,
+    options: { permissionMode: 'read-only' },
+    randomUuid: () => '00000000-0000-0000-0000-0000000000fa',
+    now: rig.clock.now
+  })
+  for (const _attempt of [1, 2]) {
+    expect(await call('agentSession.create', input, client, runtime)).toMatchObject({
+      ok: true,
+      result: { ok: true }
+    })
+    expect(rig.store.getRecord(CHILD)?.permissionMode).toBe('read-only')
+    expect(rig.store.getRecord(SOURCE)).toEqual(parent)
+  }
+})

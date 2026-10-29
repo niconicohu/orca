@@ -25,6 +25,7 @@ vi.mock('@/runtime/structured-agent-session-owner', () => ({
   structuredAgentSessionTargetForHost: () => ({ kind: 'local' })
 }))
 vi.mock('@/runtime/structured-agent-session-client', () => ({
+  supportsStructuredAgentSessionReadOnlySideChat: mocks.support,
   supportsStructuredAgentSessionSideChat: mocks.support
 }))
 vi.mock('./agent-session-launch-plan', () => ({
@@ -121,4 +122,24 @@ it('keeps same-text side questions with different picked skill files independent
     settlement.resolve({ kind: 'structured' })
     await Promise.all([first, second])
   }
+})
+
+it('keeps read-only and inherited opens independent and carries only the explicit permission override', async () => {
+  const settlement = Promise.withResolvers<{ kind: 'structured' }>()
+  mocks.begin.mockReturnValue({ settlement: settlement.promise })
+  const readOnly = openNativeChatSideChat(source, '', [], 'read-only')
+  const inherited = openNativeChatSideChat(source)
+  try {
+    await vi.waitFor(() => expect(mocks.begin).toHaveBeenCalledTimes(2))
+    const plans = mocks.begin.mock.calls.map(([args]) => args.plan)
+    expect(plans).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ launchOptions: { permissionMode: 'read-only' } }),
+        expect.not.objectContaining({ launchOptions: expect.anything() })
+      ])
+    )
+  } finally {
+    settlement.resolve({ kind: 'structured' })
+  }
+  await expect(Promise.all([readOnly, inherited])).resolves.toEqual([true, true])
 })

@@ -1,4 +1,4 @@
-import { getMobileSideChatActions } from './mobile-native-chat-side-chat-actions'
+import { MobileNativeChatTabActionSheet } from './mobile-native-chat-side-chat-actions'
 import { Platform } from 'react-native'
 import { getRepoIdFromWorktreeId } from '../../../src/shared/worktree/id'
 import { useClipboardWriter } from '../platform/clipboard'
@@ -274,15 +274,11 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
         onCloseTab={handleCloseSessionTab}
         bulkCloseActions={bulkCloseActions}
       />
-      <ActionSheetModal
-        visible={agentSessionActionTarget != null}
-        title={agentSessionActionTarget?.title || 'Chat'}
+      <MobileNativeChatTabActionSheet
+        controller={controller}
+        source={agentSessionActionTarget}
+        onClose={() => setAgentSessionActionTarget(null)}
         actions={[
-          ...getMobileSideChatActions({
-            controller,
-            tab: agentSessionActionTarget,
-            onDismiss: () => setAgentSessionActionTarget(null)
-          }),
           ...getMobileNativeChatCliForkActions({
             controller,
             tab: agentSessionActionTarget,
@@ -291,7 +287,6 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
           }),
           ...closeWithBulkActions(agentSessionActionTarget, () => setAgentSessionActionTarget(null))
         ]}
-        onClose={() => setAgentSessionActionTarget(null)}
       />
       <ActionSheetModal
         visible={leaveDrafts != null}

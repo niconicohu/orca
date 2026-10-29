@@ -1,3 +1,4 @@
+import type { SideChatPermission } from '../../../src/shared/agent-session-side-chat'
 import type { AgentJournalSkillRef } from '../../../src/shared/agent-session-journal-types'
 import { useCallback } from 'react'
 import type { MobileSessionTab } from './mobile-session-route-types'
@@ -17,6 +18,7 @@ export async function openMobileSideChat(input: {
   worktreeId: string
   sessionId: string
   agent: string
+  permission?: SideChatPermission
   question?: string
   skills?: readonly AgentJournalSkillRef[]
   onError: (message: string) => void
@@ -37,7 +39,8 @@ export async function openMobileSideChat(input: {
       input.agent,
       input.sessionId,
       input.question,
-      input.skills
+      input.skills,
+      input.permission
     )
   } catch {
     if (lock !== undefined) {
@@ -70,7 +73,8 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
     async (
       tab: Extract<MobileSessionTab, { type: 'agent-session' }>,
       question = '',
-      skills?: readonly AgentJournalSkillRef[]
+      skills?: readonly AgentJournalSkillRef[],
+      permission: SideChatPermission = 'inherit'
     ) => {
       const current = scope.sessionTabsRef.current.find((entry) => entry.id === tab.id)
       if (
@@ -85,6 +89,10 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
         showToast('This chat is not currently available for a side chat.', 3000)
         return false
       }
+      if (permission === 'read-only' && !agentSessionHostSupport.readOnlySideChat) {
+        showToast('Update Orca on this host to open a read-only side chat.', 3000)
+        return false
+      }
       return openMobileSideChat({
         client,
         worktreeId,
@@ -92,6 +100,7 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
         agent: tab.agent,
         question,
         skills,
+        permission,
         navigation: {
           pendingSelectionRef: scope.pendingSelectionRef,
           sessionTabsRef: scope.sessionTabsRef,
@@ -107,6 +116,7 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
       scope.pendingSelectionRef,
       scope.switchSessionTabRef,
       agentSessionHostSupport?.sideChat,
+      agentSessionHostSupport?.readOnlySideChat,
       worktreeId,
       showToast
     ]

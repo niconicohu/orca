@@ -11,6 +11,9 @@ const sheets = vi.hoisted(() => ({ labelsByTitle: new Map<string, string[]>() })
 vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }))
 vi.mock('lucide-react-native', () => ({
   Copy: 'Icon',
+  Eye: 'Icon',
+  GitFork: 'Icon',
+  CornerDownRight: 'Icon',
   FileText: 'Icon',
   Globe: 'Icon',
   RefreshCw: 'Icon',

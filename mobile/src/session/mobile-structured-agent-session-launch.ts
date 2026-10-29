@@ -1,3 +1,4 @@
+import type { SideChatPermission } from '../../../src/shared/agent-session-side-chat'
 import type { AgentJournalSkillRef } from '../../../src/shared/agent-session-journal-types'
 import type { StructuredAgentId } from '../../../src/shared/agent-session-provider-handle'
 import type {
@@ -50,13 +51,17 @@ function createParamsFor(
   worktree: string,
   sideChatOf?: string,
   question?: string,
-  skills: readonly AgentJournalSkillRef[] = []
+  skills: readonly AgentJournalSkillRef[] = [],
+  permission: SideChatPermission = 'inherit'
 ): StructuredAgentSessionCreateParams {
   return structuredAgentSessionCreateParams({
     sessionId: createStructuredAgentSessionId(agent, randomV4Uuid),
     worktree,
     agent,
     ...(sideChatOf ? { sideChatOf } : {}),
+    ...(sideChatOf && permission === 'read-only'
+      ? { options: { permissionMode: 'read-only' } }
+      : {}),
     ...(question?.trim()
       ? {
           firstMessage: {
@@ -103,7 +108,8 @@ export async function createMobileStructuredAgentSession(
   agent: StructuredAgentId,
   sideChatOf?: string,
   question?: string,
-  skills: readonly AgentJournalSkillRef[] = []
+  skills: readonly AgentJournalSkillRef[] = [],
+  permission: SideChatPermission = 'inherit'
 ): Promise<MobileStructuredAgentLaunchResult> {
   const worktree = `id:${worktreeId}`
   if (!sideChatOf) {
@@ -153,7 +159,8 @@ export async function createMobileStructuredAgentSession(
         agent,
         sideChatOf,
         question ?? '',
-        skills
+        skills,
+        permission
       ])
     : null
   const pending = key
@@ -164,7 +171,7 @@ export async function createMobileStructuredAgentSession(
   }
   const params =
     (key ? pending?.get(key) : undefined) ??
-    createParamsFor(agent, worktree, sideChatOf, question, skills)
+    createParamsFor(agent, worktree, sideChatOf, question, skills, permission)
   if (key) {
     pending?.set(key, params)
   }
