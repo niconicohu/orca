@@ -72,7 +72,9 @@ function commandParts(text: string): { name: string; argument: string } | null {
   if (!text.startsWith('/')) {
     return null
   }
-  const match = /^\/([^\s]+)(?:\s+([\s\S]*))?$/.exec(text.trimEnd())
+  const trimmed = text.trimEnd()
+  const match =
+    /^\/(btw)(?:\s+([\s\S]*))?$/i.exec(trimmed) ?? /^\/([^\s]+)(?:\s+(.*))?$/.exec(trimmed)
   return match ? { name: match[1]!.toLowerCase(), argument: match[2]?.trim() ?? '' } : null
 }
 

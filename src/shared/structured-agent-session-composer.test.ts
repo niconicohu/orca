@@ -7,6 +7,30 @@ import {
 } from './structured-agent-session-composer'
 
 describe('side chat commands', () => {
+  it.each(['compact', 'model', 'goal'])(
+    'preserves multiline /%s message passthrough',
+    async (name) => {
+      const setOption = vi.fn(async () => true)
+      const runConversationCommand = vi.fn(async () => ({ accepted: true, error: null }))
+      const setThreadGoalObjective = vi.fn(async () => true)
+      const text = `/${name} first line\nsecond line`
+      expect(isStructuredAgentSessionComposerCommand(text, 'codex', undefined, true)).toBe(false)
+      expect(
+        await dispatchStructuredAgentSessionComposerCommand(text, {
+          snapshot: [],
+          invokeAction: async () => false,
+          setOption,
+          conversationCommands: ['compact'],
+          runConversationCommand,
+          setThreadGoalObjective
+        })
+      ).toEqual({ handled: false, accepted: false, error: null })
+      expect(setOption).not.toHaveBeenCalled()
+      expect(runConversationCommand).not.toHaveBeenCalled()
+      expect(setThreadGoalObjective).not.toHaveBeenCalled()
+    }
+  )
+
   it('forwards the picked skill files with a side question', async () => {
     const skills = [{ name: 'review', path: '/picked/SKILL.md' }]
     const openSideChat = vi.fn(async () => true)
