@@ -1,3 +1,4 @@
+import type { StructuredAgentSessionComposerOptions } from '../../../src/shared/structured-agent-session-composer'
 import { useLayoutEffect, useRef, type MutableRefObject } from 'react'
 import type { RpcClient } from '../transport/rpc-client'
 import type { ConnectionState } from '../transport/types'
@@ -19,7 +20,7 @@ import type { MobileNativeChatTab } from './native-chat/mobile-native-chat-eligi
 export type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
 
 export function useMobileNativeChatController(args: {
-  openSideChat?: (question: string) => Promise<boolean>
+  openSideChat?: StructuredAgentSessionComposerOptions['openSideChat']
   client: RpcClient | null
   hostId: string
   worktreeId: string

@@ -131,6 +131,7 @@ export function useMobileStructuredSendWithOutcome(args: {
       const sendAttachments = attachments ?? []
       const commandOutcome = await dispatchMobileStructuredCommand({
         text,
+        skills: pickedSkills,
         hasAttachments: Boolean(sendAttachments.length || images?.length),
         client,
         sessionId,

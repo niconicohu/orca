@@ -1,3 +1,4 @@
+import type { AgentJournalSkillRef } from '../../../src/shared/agent-session-journal-types'
 import { useCallback } from 'react'
 import type { MobileSessionTab } from './mobile-session-route-types'
 import type { MobileSessionFeedbackCapabilitiesModel } from './use-mobile-session-feedback-capabilities'
@@ -17,6 +18,7 @@ export async function openMobileSideChat(input: {
   sessionId: string
   agent: string
   question?: string
+  skills?: readonly AgentJournalSkillRef[]
   onError: (message: string) => void
   navigation: Pick<
     MobileSessionFeedbackCapabilitiesModel,
@@ -34,7 +36,8 @@ export async function openMobileSideChat(input: {
       input.worktreeId,
       input.agent,
       input.sessionId,
-      input.question
+      input.question,
+      input.skills
     )
   } catch {
     if (lock !== undefined) {
@@ -64,7 +67,11 @@ export async function openMobileSideChat(input: {
 export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel) {
   const { client, agentSessionHostSupport, worktreeId, showToast, activeSessionTab } = scope
   const handleOpenSideChat = useCallback(
-    async (tab: Extract<MobileSessionTab, { type: 'agent-session' }>, question = '') => {
+    async (
+      tab: Extract<MobileSessionTab, { type: 'agent-session' }>,
+      question = '',
+      skills?: readonly AgentJournalSkillRef[]
+    ) => {
       const current = scope.sessionTabsRef.current.find((entry) => entry.id === tab.id)
       if (
         !client ||
@@ -84,6 +91,7 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
         sessionId: tab.sessionId,
         agent: tab.agent,
         question,
+        skills,
         navigation: {
           pendingSelectionRef: scope.pendingSelectionRef,
           sessionTabsRef: scope.sessionTabsRef,
@@ -104,9 +112,9 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
     ]
   )
   const openCurrentSideChat = useCallback(
-    (question: string) =>
+    (question: string, skills?: readonly AgentJournalSkillRef[]) =>
       activeSessionTab?.type === 'agent-session'
-        ? handleOpenSideChat(activeSessionTab, question)
+        ? handleOpenSideChat(activeSessionTab, question, skills)
         : Promise.resolve(false),
     [activeSessionTab, handleOpenSideChat]
   )

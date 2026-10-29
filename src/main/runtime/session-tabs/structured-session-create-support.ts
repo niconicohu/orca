@@ -81,6 +81,14 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
   async resolveStructuredAgentSessionCreateIntent(
     input: StructuredAgentSessionCreateIntentInput
   ): Promise<AgentSessionAttachParams & { hostLaunchDirectory?: string }> {
+    // A side chat follows its source identity and pinned folder, not mutable new-chat defaults.
+    if (input.sideChatOf) {
+      return structuredSideChatCreateIntent({
+        ...input,
+        host: getStructuredAgentSessionHost(),
+        location: await this.resolveStructuredAgentSessionLocation(input.worktree)
+      })
+    }
     if (input.resumeFrom) {
       const { providerSessionId, cliSource } = input.resumeFrom
       try {
@@ -167,9 +175,6 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
     const location = await this.resolveStructuredAgentSessionLocation(input.worktree)
     const definition = this.requireRegisteredStructuredAgent(input.agent)
     const host = getStructuredAgentSessionHost()
-    if (input.sideChatOf) {
-      return structuredSideChatCreateIntent({ ...input, host, location })
-    }
     const committedReplay = resolveCommittedStructuredAgentSessionAdoptionIntent({
       host,
       ...input,

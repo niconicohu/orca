@@ -62,6 +62,22 @@ describe('mobile structured conversation commands', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
+  it('hands picked skill files to the side-chat opener', async () => {
+    const { input, sendRequest } = setup()
+    const skills = [{ name: 'review', path: '/picked/SKILL.md' }]
+    const openSideChat = vi.fn(async () => true)
+    expect(
+      await dispatchMobileStructuredCommand({
+        ...input,
+        text: '/btw use $review',
+        skills,
+        controller: { ...input.controller, openSideChat }
+      })
+    ).toBe('accepted')
+    expect(openSideChat).toHaveBeenCalledExactlyOnceWith('use $review', skills)
+    expect(sendRequest).not.toHaveBeenCalled()
+  })
+
   it.each(['/clear', '/compact'])(
     'uses the command RPC for %s without an ordinary send',
     async (text) => {

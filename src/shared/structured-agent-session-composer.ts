@@ -1,3 +1,4 @@
+import type { AgentJournalSkillRef } from './agent-session-journal-types'
 import {
   getHostClaimedNativeChatCommands,
   getTextDrivenNativeChatCommands
@@ -48,7 +49,7 @@ export type StructuredAgentSessionComposerOptions = {
   ) => Promise<Omit<StructuredAgentSessionCommandOutcome, 'handled'>>
   /** Without host goal support, /goal remains agent-handled text. */
   setThreadGoalObjective?: (objective: string) => Promise<boolean>
-  openSideChat?: (question: string) => Promise<boolean>
+  openSideChat?: (question: string, skills?: readonly AgentJournalSkillRef[]) => Promise<boolean>
 }
 
 /** Visible condition holding a refusal: agent/prompt/background work, an in-flight send or a Retry card. */
@@ -216,14 +217,17 @@ function unavailable(name: string): StructuredAgentSessionCommandOutcome {
 
 export async function dispatchStructuredAgentSessionComposerCommand(
   text: string,
-  controller: StructuredAgentSessionComposerOptions
+  controller: StructuredAgentSessionComposerOptions,
+  skills: readonly AgentJournalSkillRef[] = []
 ): Promise<StructuredAgentSessionCommandOutcome> {
   const command = commandParts(text)
   if (command?.name === 'btw') {
     if (!controller.openSideChat) {
       return { handled: false, accepted: false, error: null }
     }
-    const accepted = await controller.openSideChat(command.argument)
+    const accepted = await (skills.length > 0
+      ? controller.openSideChat(command.argument, skills)
+      : controller.openSideChat(command.argument))
     return { handled: true, accepted, error: accepted ? null : 'Could not open a side chat.' }
   }
   if (command?.name === 'goal' && controller.setThreadGoalObjective) {
