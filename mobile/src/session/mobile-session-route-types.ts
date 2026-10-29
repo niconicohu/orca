@@ -72,6 +72,8 @@ export type MobileSessionTab =
 
 export type SessionTabsResult = {
   worktree: string
+  clientHostedPagesUnreconciled?: true
+  agentSessionsUnverifiable?: true
   publicationEpoch?: string
   snapshotVersion: number
   tabs: MobileSessionTab[]

@@ -128,5 +128,13 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
         : Promise.resolve(false),
     [activeSessionTab, handleOpenSideChat]
   )
-  return { handleOpenSideChat, openCurrentSideChat }
+  return {
+    handleOpenSideChat,
+    openCurrentSideChat:
+      activeSessionTab?.type === 'agent-session' &&
+      activeSessionTab.sideChatSupported &&
+      agentSessionHostSupport?.sideChat
+        ? openCurrentSideChat
+        : undefined
+  }
 }
