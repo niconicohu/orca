@@ -244,3 +244,63 @@ it('refuses changed explicit permissions for the same side-chat create operation
     result: { ok: true }
   })
 })
+
+const sourceModelOptions = {
+  model: 'gpt-5.6-sol',
+  effort: 'medium',
+  fastMode: 'true',
+  serviceTier: 'priority'
+}
+const childSelections: {
+  name: string
+  picked: Record<string, string>
+  expected: Record<string, string>
+}[] = [
+  {
+    name: 'effort only',
+    picked: { effort: 'high' },
+    expected: { ...sourceModelOptions, effort: 'high' }
+  },
+  {
+    name: 'fast mode only',
+    picked: { fastMode: 'false' },
+    expected: { ...sourceModelOptions, fastMode: 'false' }
+  },
+  { name: 'explicit model', picked: { model: 'gpt-6.1-sol' }, expected: { model: 'gpt-6.1-sol' } }
+]
+
+it.each(childSelections)(
+  'keeps source selections unless the child replaces its model: $name',
+  async ({ picked, expected }) => {
+    const parent = rig.store.getRecord(SOURCE)!
+    await rig.store.replaceSessionOptions({
+      sessionId: SOURCE,
+      fence: parent.lease.runtimeFence,
+      options: sourceModelOptions,
+      now: rig.clock.now
+    })
+    await rig.store.replaceSessionOptions({
+      sessionId: SOURCE,
+      fence: parent.lease.runtimeFence,
+      permissionMode: 'ask',
+      now: rig.clock.now
+    })
+    const sourceBefore = structuredClone(rig.store.getRecord(SOURCE))
+    const input = structuredAgentSessionCreateParams({
+      ...create(false),
+      sessionId: CHILD,
+      options: picked,
+      randomUuid: () => '00000000-0000-0000-0000-0000000eff01',
+      now: rig.clock.now
+    })
+    for (const _attempt of [1, 2]) {
+      expect(await call('agentSession.create', input, client, runtime)).toMatchObject({
+        ok: true,
+        result: { ok: true }
+      })
+      expect(rig.store.getRecord(CHILD)?.options).toEqual(expected)
+      expect(rig.store.getRecord(CHILD)?.permissionMode).toBe('ask')
+      expect(rig.store.getRecord(SOURCE)).toEqual(sourceBefore)
+    }
+  }
+)

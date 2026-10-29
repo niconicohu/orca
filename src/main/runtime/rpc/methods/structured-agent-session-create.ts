@@ -84,7 +84,6 @@ export async function prepareStructuredAgentSessionCreateForWorktree(args: {
   resumeFrom?: StructuredAgentSessionResumeSource
   sideChatOf?: string
   structuredAgentCliSourceEvidence?: StructuredAgentCliSourceEvidence
-  /** Explicit picks override seed keys at rest; acquired in-process launches replace the seed. */
   optionsMode?: 'replace-model-selection'
   options?: Readonly<Record<string, string>>
   /** Use the caller-reserved tab id at publication; absent, derive the legacy id. Keep it outside launch fingerprints. */
@@ -145,10 +144,12 @@ export async function prepareStructuredAgentSessionCreateForWorktree(args: {
     }
   }
   const { agent: _agent, provider: _provider, hostLaunchDirectory, ...resolvedAttach } = resolved
-  // Fingerprint explicit picks, never replay-varying defaults; explicit options replace saved seeds, while permission default stays chat-owned.
+  // Fingerprint explicit picks; inherit source model settings until the child explicitly picks a model.
   const overlays = atRest
     ? args.optionsMode !== 'replace-model-selection'
-    : Object.keys(args.options ?? {}).every((id) => id === AGENT_CHAT_PERMISSION_MODE_OPTION_ID)
+    : args.sideChatOf
+      ? args.options?.model === undefined
+      : Object.keys(args.options ?? {}).every((id) => id === AGENT_CHAT_PERMISSION_MODE_OPTION_ID)
   const picked = args.options
     ? overlays
       ? { ...resolved.options, ...args.options }
