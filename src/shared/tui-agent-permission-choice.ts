@@ -13,6 +13,7 @@ export type AgentPermissionChoice = 'own' | AgentChatPermissionMode
 
 export const AGENT_PERMISSION_CHOICES = [
   'own',
+  'read-only',
   'ask',
   'accept-edits',
   'auto',
