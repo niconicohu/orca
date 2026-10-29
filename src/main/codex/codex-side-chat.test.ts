@@ -41,7 +41,7 @@ describe('Codex side conversations', () => {
       await adapter.closeAll()
     }
   })
-  it.each(['own', 'ask', 'accept-edits', 'auto', 'full-access'] as const)(
+  it.each(['own', 'read-only', 'ask', 'accept-edits', 'auto', 'full-access'] as const)(
     'applies the ordinary %s policy to every resumed side-chat turn',
     async (mode) => {
       const codex = fakeCodex()
@@ -79,7 +79,8 @@ describe('Codex side conversations', () => {
             expect(params).not.toHaveProperty('approvalPolicy')
           } else {
             expect(params).toMatchObject({
-              approvalPolicy: mode === 'full-access' ? 'never' : 'on-request',
+              approvalPolicy:
+                mode === 'full-access' || mode === 'read-only' ? 'never' : 'on-request',
               approvalsReviewer: mode === 'auto' ? 'auto_review' : 'user',
               sandboxPolicy: {
                 type:

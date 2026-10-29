@@ -1,3 +1,4 @@
+import { agentChatPermissionModes } from '../../../shared/agent-chat-permission-mode'
 import { structuredAgentSessionSendBody } from '../../../shared/structured-agent-session-send-mutation'
 import type { AgentJournalSkillRef } from '../../../shared/agent-session-journal-types'
 import { useAppStore } from '@/store'
@@ -8,7 +9,11 @@ import {
   structuredAgentSessionOwnerForTab,
   structuredAgentSessionTargetForHost
 } from '@/runtime/structured-agent-session-owner'
-import { supportsStructuredAgentSessionSideChat } from '@/runtime/structured-agent-session-client'
+import type { SideChatPermission } from '../../../shared/agent-session-side-chat'
+import {
+  supportsStructuredAgentSessionSideChat,
+  supportsStructuredAgentSessionReadOnlySideChat
+} from '@/runtime/structured-agent-session-client'
 import { isTuiAgent } from '../../../shared/tui-agent-config'
 import {
   captureWebSessionIntentOwner,
@@ -33,7 +38,8 @@ function readSideChatSource(source: SideChatSource) {
 export function openNativeChatSideChat(
   source: SideChatSource,
   question = '',
-  skills: readonly AgentJournalSkillRef[] = []
+  skills: readonly AgentJournalSkillRef[] = [],
+  permission: SideChatPermission = 'inherit'
 ): Promise<boolean> {
   skills = structuredAgentSessionSendBody(question, [], skills).skills ?? []
   const tab = readSideChatSource(source)
@@ -51,7 +57,8 @@ export function openNativeChatSideChat(
     source.tabId,
     source.sessionId,
     question,
-    skills
+    skills,
+    permission
   ])
   const existing = pending.get(key)
   if (existing) {
@@ -61,6 +68,7 @@ export function openNativeChatSideChat(
     source,
     question,
     skills,
+    permission,
     () => !owner || matchesWebSessionIntentOwner(owner)
   ).finally(() => {
     if (pending.get(key) === opening) {
@@ -75,6 +83,7 @@ async function launchNativeChatSideChat(
   source: SideChatSource,
   question: string,
   skills: readonly AgentJournalSkillRef[],
+  permission: SideChatPermission,
   isCurrentOwner: () => boolean
 ): Promise<boolean> {
   const readSource = () => readSideChatSource(source)
@@ -86,6 +95,13 @@ async function launchNativeChatSideChat(
   const host = structuredAgentSessionOwnerForTab(useAppStore.getState(), tab)
   const target = structuredAgentSessionTargetForHost(host)
   if (!host || !target || !(await supportsStructuredAgentSessionSideChat(target))) {
+    return false
+  }
+  if (
+    permission === 'read-only' &&
+    (!agentChatPermissionModes(agent)?.modes.includes('read-only') ||
+      !(await supportsStructuredAgentSessionReadOnlySideChat(target)))
+  ) {
     return false
   }
   const isCurrent = () => {
@@ -108,6 +124,7 @@ async function launchNativeChatSideChat(
     executionHostId: host,
     agent,
     sideChatOf: source.sessionId,
+    ...(permission === 'read-only' ? { launchOptions: { permissionMode: 'read-only' } } : {}),
     ...(question.trim()
       ? {
           prompt: question,

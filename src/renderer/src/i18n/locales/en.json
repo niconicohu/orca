@@ -18466,7 +18466,8 @@
       "sideChat": {
         "new": "New side chat",
         "badge": "btw",
-        "failed": "Could not open a side chat."
+        "failed": "Could not open a side chat.",
+        "inheritPermissions": "Use main chat permissions"
       },
       "install": {
         "checking": "Checking whether {{agent}} is ready on this host…"
@@ -18821,7 +18822,9 @@
           "medium": "Med",
           "xhigh": "XHigh"
         },
-        "imageUnavailable": "Preview unavailable"
+        "imageUnavailable": "Preview unavailable",
+        "permissionReadOnly": "Read only",
+        "permissionReadOnlyDescription": "Uses a read-only sandbox without permission escalation"
       },
       "tool": {
         "exitCode": "exit {{value0}}",

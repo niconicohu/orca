@@ -1,5 +1,8 @@
 import { AGENT_SESSION_COHERENT_MODEL_CATALOG_CAPABILITY } from '../../../src/shared/structured-agent-session-surface-capabilities'
-import { AGENT_SESSION_SIDE_CHAT_RUNTIME_CAPABILITY } from '../../../src/shared/agent-session-side-chat'
+import {
+  AGENT_SESSION_SIDE_CHAT_RUNTIME_CAPABILITY,
+  AGENT_SESSION_SIDE_CHAT_READ_ONLY_CAPABILITY
+} from '../../../src/shared/agent-session-side-chat'
 import {
   AGENT_SESSION_CONVERSATION_STOP_RUNTIME_CAPABILITY,
   AGENT_SESSION_ITEM_DETAIL_RUNTIME_CAPABILITY,
@@ -28,6 +31,7 @@ import {
 import { SKILL_DISCOVER_WORKSPACE_CAPABILITY } from '../../../src/shared/skill-install-capability'
 
 export type StructuredAgentSessionHostSupport = {
+  readOnlySideChat?: boolean
   sideChat?: boolean
   coherentModelCatalog?: boolean
   promptCancel: boolean
@@ -63,6 +67,7 @@ export function structuredAgentSessionHostSupport(
   capabilities: readonly string[]
 ): StructuredAgentSessionHostSupport {
   return {
+    readOnlySideChat: capabilities.includes(AGENT_SESSION_SIDE_CHAT_READ_ONLY_CAPABILITY),
     sideChat: capabilities.includes(AGENT_SESSION_SIDE_CHAT_RUNTIME_CAPABILITY),
     coherentModelCatalog: capabilities.includes(AGENT_SESSION_COHERENT_MODEL_CATALOG_CAPABILITY),
     promptCancel: capabilities.includes(AGENT_SESSION_PROMPT_CANCEL_RUNTIME_CAPABILITY),

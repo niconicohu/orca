@@ -96,6 +96,10 @@ function structuredLaunchCreateOptions(
 ): Readonly<Record<string, string>> | undefined {
   const { intent, selection } = state
   const requested = structuredLaunchRequestedOptions(selection)
+  if (intent.params.sideChatOf) {
+    const picked = { ...requested, ...selection.held }
+    return Object.keys(picked).length ? picked : undefined
+  }
   const firstFrame = firstFrameOptionState(intent.agent, intent.target, {
     newLaunch: !intent.params.resumeFrom,
     worktree: intent.params.worktree,
