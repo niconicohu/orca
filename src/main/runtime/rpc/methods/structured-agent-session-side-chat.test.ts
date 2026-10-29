@@ -207,3 +207,40 @@ it('creates a read-only child without changing the parent and keeps the mode acr
     expect(rig.store.getRecord(SOURCE)).toEqual(parent)
   }
 })
+
+it('refuses changed explicit permissions for the same side-chat create operation', async () => {
+  const input = structuredAgentSessionCreateParams({
+    ...create(false),
+    sessionId: CHILD,
+    options: { permissionMode: 'read-only' },
+    randomUuid: () => '00000000-0000-0000-0000-0000000000fa',
+    now: rig.clock.now
+  })
+  expect(await call('agentSession.create', input, client, runtime)).toMatchObject({
+    ok: true,
+    result: { ok: true }
+  })
+  const changed = { ...input, options: { permissionMode: 'full-access' } }
+  changed.envelope = {
+    ...input.envelope,
+    payloadFingerprint: computeAgentSessionPayloadFingerprint({
+      method: 'agentSession.create',
+      sessionId: CHILD,
+      fields: {
+        worktree: input.worktree,
+        agent: input.agent,
+        sideChatOf: input.sideChatOf,
+        options: changed.options
+      }
+    })
+  }
+  expect(await call('agentSession.create', changed, client, runtime)).toMatchObject({
+    ok: true,
+    result: { ok: false, refusal: { code: 'agent_session_operation_conflict' } }
+  })
+  expect(rig.store.getRecord(CHILD)?.permissionMode).toBe('read-only')
+  expect(await call('agentSession.create', input, client, runtime)).toMatchObject({
+    ok: true,
+    result: { ok: true }
+  })
+})
