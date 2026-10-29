@@ -15,9 +15,10 @@ import {
   heldConversationCommandParts,
   structuredConversationCommandHold
 } from '../../../src/shared/structured-conversation-command-hold'
-import { agentSessionWriteNoticeEnglish } from '../../../src/shared/agent-session-refusal-notice'
+import { mobileAgentSessionWriteNoticeText } from './agent-session-write-notice-copy'
 import type { RpcClient } from '../transport/rpc-client'
 import { translate } from '../i18n/mobile-i18n'
+import { sayMobileAgentSessionFailure } from './agent-session-failure-copy'
 import type { MobileNativeChatSendOutcome } from './native-chat/mobile-native-chat-send'
 import { requestStructuredAgentSessionMutation } from './mobile-structured-agent-session-rpc'
 import type { MobileNativeChatSendErrorReporter } from './native-chat/use-mobile-native-chat-send-error'
@@ -74,7 +75,7 @@ export async function dispatchMobileStructuredCommand(input: {
       ...input.controller,
       runConversationCommand: async (command) => {
         const held = (hold: Parameters<typeof heldConversationCommandParts>[1]) =>
-          agentSessionWriteNoticeEnglish(heldConversationCommandParts(command, hold))
+          mobileAgentSessionWriteNoticeText(heldConversationCommandParts(command, hold))
         // A command on its way is the agent's work in flight.
         if (input.pending.current) {
           return { accepted: false, error: held('working') }
@@ -129,7 +130,8 @@ export async function dispatchMobileStructuredCommand(input: {
           }
           const reply = conversationCommandReply(result.value, {
             agentName: input.agentName,
-            startFailures: input.startFailures()
+            startFailures: input.startFailures(),
+            say: sayMobileAgentSessionFailure
           })
           // A refusal names its cause only when the phone showed it, as on desktop.
           return {
