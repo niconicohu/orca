@@ -2464,7 +2464,12 @@
       "readOnly": "Solo lectura",
       "readOnlyDescription": "Usa un entorno de solo lectura sin ampliar permisos",
       "inheritPermissions": "Usar permisos del chat principal",
-      "inheritDescription": "Comienza con los permisos del chat principal; los cambios posteriores son independientes"
+      "inheritDescription": "Comienza con los permisos del chat principal; los cambios posteriores son independientes",
+      "badge": "btw",
+      "failed": "No se pudo abrir un chat paralelo.",
+      "unsupportedHost": "Este host no puede abrir un chat paralelo.",
+      "unavailable": "Este chat no está disponible para abrir un chat paralelo en este momento.",
+      "updateHostForReadOnly": "Actualiza Orca en este host para abrir un chat paralelo de solo lectura."
     }
   },
   "settings": {

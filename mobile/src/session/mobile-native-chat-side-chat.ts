@@ -1,3 +1,4 @@
+import { translate } from '../i18n/mobile-i18n'
 import type { SideChatPermission } from '../../../src/shared/agent-session-side-chat'
 import type { AgentJournalSkillRef } from '../../../src/shared/agent-session-journal-types'
 import { useCallback } from 'react'
@@ -46,7 +47,7 @@ export async function openMobileSideChat(input: {
     if (lock !== undefined) {
       pendingSelectionRef.current = withoutUnansweredLaunch(pendingSelectionRef.current, lock)
     }
-    input.onError('Could not open a side chat.')
+    input.onError(translate('session.sideChat.failed', 'Could not open a side chat.'))
     return false
   }
   const sessionId = 'sessionId' in result ? result.sessionId : undefined
@@ -63,7 +64,11 @@ export async function openMobileSideChat(input: {
   } else {
     pendingSelectionRef.current = withoutUnansweredLaunch(pendingSelectionRef.current, lock)
   }
-  input.onError('message' in result ? result.message : 'This host cannot open a side chat.')
+  input.onError(
+    'message' in result
+      ? result.message
+      : translate('session.sideChat.unsupportedHost', 'This host cannot open a side chat.')
+  )
   return false
 }
 
@@ -86,11 +91,23 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
         current.agent !== tab.agent ||
         !current.sideChatSupported
       ) {
-        showToast('This chat is not currently available for a side chat.', 3000)
+        showToast(
+          translate(
+            'session.sideChat.unavailable',
+            'This chat is not currently available for a side chat.'
+          ),
+          3000
+        )
         return false
       }
       if (permission === 'read-only' && !agentSessionHostSupport.readOnlySideChat) {
-        showToast('Update Orca on this host to open a read-only side chat.', 3000)
+        showToast(
+          translate(
+            'session.sideChat.updateHostForReadOnly',
+            'Update Orca on this host to open a read-only side chat.'
+          ),
+          3000
+        )
         return false
       }
       return openMobileSideChat({

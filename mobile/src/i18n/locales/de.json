@@ -2402,7 +2402,12 @@
       "readOnly": "Nur lesen",
       "readOnlyDescription": "Verwendet eine schreibgeschützte Sandbox ohne Rechteerweiterung",
       "inheritPermissions": "Berechtigungen des Hauptchats übernehmen",
-      "inheritDescription": "Übernimmt anfangs die Berechtigungen des Hauptchats; spätere Änderungen sind unabhängig"
+      "inheritDescription": "Übernimmt anfangs die Berechtigungen des Hauptchats; spätere Änderungen sind unabhängig",
+      "badge": "btw",
+      "failed": "Der Nebenchat konnte nicht geöffnet werden.",
+      "unsupportedHost": "Dieser Host kann keinen Nebenchat öffnen.",
+      "unavailable": "Dieser Chat ist derzeit nicht für einen Nebenchat verfügbar.",
+      "updateHostForReadOnly": "Aktualisiere Orca auf diesem Host, um einen schreibgeschützten Nebenchat zu öffnen."
     }
   },
   "settings": {

@@ -2398,7 +2398,12 @@
       "readOnly": "只读",
       "readOnlyDescription": "使用只读沙箱，不允许提升权限",
       "inheritPermissions": "沿用主会话权限",
-      "inheritDescription": "创建时沿用主会话权限；后续可独立修改"
+      "inheritDescription": "创建时沿用主会话权限；后续可独立修改",
+      "badge": "btw",
+      "failed": "无法打开旁支会话。",
+      "unsupportedHost": "此主机无法打开旁支会话。",
+      "unavailable": "当前无法从此会话打开旁支会话。",
+      "updateHostForReadOnly": "请更新此主机上的 Orca，以打开只读旁支会话。"
     }
   },
   "settings": {

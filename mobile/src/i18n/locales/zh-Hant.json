@@ -2398,7 +2398,12 @@
       "readOnly": "唯讀",
       "readOnlyDescription": "使用唯讀沙箱，不允許提升權限",
       "inheritPermissions": "沿用主對話權限",
-      "inheritDescription": "建立時沿用主對話權限；之後可獨立修改"
+      "inheritDescription": "建立時沿用主對話權限；之後可獨立修改",
+      "badge": "btw",
+      "failed": "無法開啟旁支對話。",
+      "unsupportedHost": "此主機無法開啟旁支對話。",
+      "unavailable": "目前無法從此對話開啟旁支對話。",
+      "updateHostForReadOnly": "請更新此主機上的 Orca，以開啟唯讀旁支對話。"
     }
   },
   "settings": {
