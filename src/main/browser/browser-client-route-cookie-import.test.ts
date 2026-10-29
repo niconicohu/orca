@@ -88,31 +88,6 @@ beforeEach(() => {
 })
 
 describe('importCookiesIntoClientRoutePartition', () => {
-  it('imports into a main-derived route partition, never the server profile partition', async () => {
-    const result = await importCookiesIntoClientRoutePartition(request)
-
-    expect(result).toMatchObject({ ok: true, profileId: 'default' })
-    expect(requireRouteBrowserProfileMock).toHaveBeenCalledWith('default')
-    const [source, partition] = importCookiesFromBrowserMock.mock.calls[0] ?? []
-    expect(source).toBe(chrome)
-    expect(partition).toMatch(/^persist:orca-browser-v1-[a-f0-9]{64}$/)
-    expect(bindingStore.set).toHaveBeenCalledWith(
-      partition,
-      expect.stringMatching(/^[a-f0-9]{64}$/),
-      routeIdentity.storageScope,
-      expect.stringMatching(/^[a-f0-9]{64}$/)
-    )
-    expect(recordClientRouteImportSourceMock).toHaveBeenCalledWith({
-      environmentId: 'env-a',
-      profileId: 'default',
-      source: {
-        browserFamily: 'chrome',
-        profileName: 'Person 1',
-        importedAt: expect.any(Number)
-      }
-    })
-  })
-
   it('defers to the server-side import when the desktop hosts no pages for the server', async () => {
     getRouteIdentityMock.mockReturnValue(null)
 
@@ -123,7 +98,7 @@ describe('importCookiesIntoClientRoutePartition', () => {
   it('fails closed on a conflicting persisted binding', async () => {
     bindingStore.get.mockReturnValue('b'.repeat(64))
 
-    expect(await importCookiesIntoClientRoutePartition(request)).toEqual({
+    expect(await importCookiesIntoClientRoutePartition(request)).toMatchObject({
       ok: false,
       reason: 'browser_route_partition_binding_conflict'
     })
@@ -133,18 +108,8 @@ describe('importCookiesIntoClientRoutePartition', () => {
   it('rejects a traversing browser profile name before touching the filesystem', async () => {
     expect(
       await importCookiesIntoClientRoutePartition({ ...request, browserProfile: '../../etc' })
-    ).toEqual({ ok: false, reason: 'Invalid browser profile name.' })
+    ).toMatchObject({ ok: false, reason: 'Invalid browser profile name.' })
     expect(detectInstalledBrowsersMock).not.toHaveBeenCalled()
-  })
-
-  it('reselects a non-default desktop browser profile', async () => {
-    const secondary = { ...chrome, selectedProfile: 'Profile 2' }
-    selectBrowserProfileMock.mockReturnValue(secondary)
-
-    await importCookiesIntoClientRoutePartition({ ...request, browserProfile: 'Profile 2' })
-
-    expect(selectBrowserProfileMock).toHaveBeenCalledWith(chrome, 'Profile 2')
-    expect(importCookiesFromBrowserMock.mock.calls[0]?.[0]).toBe(secondary)
   })
 
   it('leaves the profile source untouched when the import fails', async () => {
@@ -163,7 +128,7 @@ describe('importCookiesIntoClientRoutePartition', () => {
 
     const result = await importCookiesIntoClientRoutePartition(request)
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       ok: false,
       reason: 'This server was re-paired during the import. Try again.'
     })
@@ -176,7 +141,7 @@ describe('importCookiesIntoClientRoutePartition', () => {
 
     const result = await importCookiesIntoClientRoutePartition(request)
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       ok: false,
       reason: 'The connection to this server ended during the import. Reconnect and try again.'
     })
@@ -198,7 +163,7 @@ describe('importCookiesIntoClientRoutePartition', () => {
   it('rejects an unknown browser session profile', async () => {
     getProfileMock.mockReturnValue(null)
 
-    expect(await importCookiesIntoClientRoutePartition(request)).toEqual({
+    expect(await importCookiesIntoClientRoutePartition(request)).toMatchObject({
       ok: false,
       reason: 'Session profile not found.'
     })

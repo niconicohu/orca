@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   NATIVE_CHAT_FONT_WEIGHTS,
   type NativeChatAppearanceSettings
-} from '../../../../shared/native-chat-appearance-settings'
+} from '../../../../shared/native-chat/native-chat-appearance-settings'
 import { Slider } from '../ui/slider'
 import { SearchableSetting } from './SearchableSetting'
 import { SettingsDisabledControlTooltip } from './SettingsDisabledControlTooltip'

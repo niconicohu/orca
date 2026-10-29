@@ -1,5 +1,10 @@
 import { agentSessionFailureFact, providerDiagnosticOf } from '../../shared/agent-session-failure'
-import { providerExitObserved } from '../native-chat/agent-session-wire/structured-agent-session-failure-text'
+import {
+  providerExitObserved,
+  providerStartupFailureFact,
+  startupAcquisitionRefusal
+} from '../native-chat/agent-session-wire/structured-agent-session-failure-text'
+import { providerSpawnAbsent } from '../provider-process/provider-executable-missing'
 import { settledClaudeTurnEndLeaf } from './claude-structured-resume-point'
 import { claudeHeldSends } from './claude-command-lifecycle'
 import {
@@ -12,7 +17,7 @@ import type {
   ClaudeSessionExit,
   ClaudeStructuredSessionAdapterDeps,
   ClaudeStructuredSessionEvent
-} from './claude-structured-session-state'
+} from './structured/claude-structured-session-state'
 
 export type ClaudeExitLifecycle = {
   sessions: Map<string, ClaudeSession>
@@ -83,10 +88,15 @@ export function settleClaudeUnexpectedExit(
       type: 'ended',
       sessionId,
       reason: exit.error.message,
-      // Distinguish provider exit from a host fault that forced cleanup.
-      failure: providerExitObserved(exit.error)
-        ? agentSessionFailureFact('providerExited', { detail: providerDiagnosticOf(exit.error) })
-        : agentSessionFailureFact('hostFault'),
+      // A typed startup refusal or a spawn ENOENT keeps its next step; else provider exit vs host fault.
+      failure:
+        startupAcquisitionRefusal(exit.error) || providerSpawnAbsent(exit.error)
+          ? providerStartupFailureFact(exit.error)
+          : providerExitObserved(exit.error)
+            ? agentSessionFailureFact('providerExited', {
+                detail: providerDiagnosticOf(exit.error)
+              })
+            : agentSessionFailureFact('hostFault'),
       cause: 'unexpected-exit',
       fence: exit.session.fence,
       acquisitionGeneration: exit.session.acquisitionGeneration,

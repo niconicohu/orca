@@ -5,7 +5,7 @@ import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import {
   DEFAULT_NATIVE_CHAT_FONT_WEIGHT,
   resolveNativeChatAppearanceSettings
-} from '../../../../shared/native-chat-appearance-settings'
+} from '../../../../shared/native-chat/native-chat-appearance-settings'
 import { resolveConfiguredTerminalColors } from '../../../../shared/terminal-theme-selection'
 import { buildFontFamily } from '@/lib/monospace-font-family'
 import { buildAppFontFamily } from '@/lib/app-font-family'

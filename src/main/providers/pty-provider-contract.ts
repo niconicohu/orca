@@ -95,6 +95,8 @@ export type PtySpawnOptions = {
   startupIngress?: PtyStartupIngressIntent
   /** Why the caller is starting this terminal; presence lets the host defer an automatic restore. */
   spawnIntent?: SpawnIntent
+  /** A restore no user act asked for: a WSL bridge pane whose distro is stopped is held, not started. */
+  wslPassiveRestore?: true
   agentSessionEnsure?: {
     claim: AgentSessionExecutionClaim
     surface: AgentSessionSurfaceBinding
@@ -221,6 +223,10 @@ export type IPtyProvider = {
       cause?: TerminalExitCause
       /** Main ended the session to restart the daemon; the pane stays for its next process. */
       replacedByRestart?: true
+      /** The session's host went away; its pane and history stay to cold-restore. */
+      hostLost?: true
+      /** The emitting provider already reported this exit to the runtime through configure().onExit. */
+      runtimeFed?: true
     }) => void
   ): () => void
 }

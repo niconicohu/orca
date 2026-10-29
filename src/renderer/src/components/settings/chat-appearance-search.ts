@@ -1,6 +1,7 @@
-import { NATIVE_CHAT_FONT_WEIGHTS } from '../../../../shared/native-chat-appearance-settings'
+import { NATIVE_CHAT_FONT_WEIGHTS } from '../../../../shared/native-chat/native-chat-appearance-settings'
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
+import { translateSearchKeyword } from './settings-search-keywords'
 import type { SettingsSearchEntry } from './settings-search'
 import { formatPrimaryShortcutLabel } from '@/hooks/useShortcutLabel'
 
@@ -54,7 +55,12 @@ const getChatAppearanceCatalog = createLocalizedCatalog(
           'settings.appearance.chat.fontFamilyDescription',
           'Font used for messages, activity, and the message box.'
         ),
-        keywords: ['chat', 'font', 'family', 'typeface', 'typography']
+        keywords: [
+          ...translateSearchKeyword('settings.appearance.chat.title', 'Chat'),
+          ...translateSearchKeyword('settings.appearance.chat.fontFamily', 'Font family'),
+          ...translateSearchKeyword('settings.appearance.chat.fontKeywordTypeface', 'typeface'),
+          ...translateSearchKeyword('settings.appearance.chat.fontKeywordTypography', 'typography')
+        ]
       },
       textSize: {
         targetSectionId: 'chat-text-size',
