@@ -16,7 +16,8 @@ const GOAL_FRAME_KINDS = new Set([
   'notification:thread/goal/cleared'
 ])
 
-type GoalCandidate = Pick<AgentJournalRenderItem, 'sequence' | 'body' | 'agentId'>
+type GoalCandidate = Pick<AgentJournalRenderItem, 'sequence' | 'body' | 'agentId'> &
+  Partial<Pick<AgentJournalRenderItem, 'revision'>>
 
 export function isAgentJournalThreadGoalStatus(
   value: string
@@ -59,10 +60,18 @@ export function currentAgentSessionThreadGoal(
   items: readonly GoalCandidate[],
   minimumSequence = 0
 ): AgentJournalThreadGoal | null | undefined {
+  const latest = lastGoalTransition(items, minimumSequence)
+  return latest ? goalFromRow(latest.body) : undefined
+}
+
+function lastGoalTransition(
+  items: readonly GoalCandidate[],
+  minimumSequence: number
+): GoalCandidate | undefined {
   for (let index = items.length - 1; index >= 0; index -= 1) {
     const item = items[index]
     if (item && item.sequence > minimumSequence && isGoalTransition(item)) {
-      return goalFromRow(item.body)
+      return item
     }
   }
   return undefined
@@ -74,15 +83,28 @@ export function agentSessionThreadGoalFromReport(
   report: AgentSessionOptionsResult['threadGoal'] | AgentSessionOptionsResult['reportedThreadGoal'],
   journalEpoch?: string | null
 ): AgentJournalThreadGoal | null {
-  if (report?.contextFloor && journalEpoch && report.contextFloor.epoch !== journalEpoch) {
+  const source = report?.source
+  if (
+    journalEpoch &&
+    ((source && source.epoch !== journalEpoch) ||
+      (report?.contextFloor && report.contextFloor.epoch !== journalEpoch))
+  ) {
     return report.current
   }
   const floor =
     report?.contextFloor && (!journalEpoch || report.contextFloor.epoch === journalEpoch)
       ? report.contextFloor.sequence
       : 0
-  const loaded = currentAgentSessionThreadGoal(items, floor)
-  return loaded === undefined ? (report?.current ?? null) : loaded
+  const loaded = lastGoalTransition(items, floor)
+  if (
+    !loaded ||
+    (source &&
+      (loaded.sequence < source.sequence ||
+        (loaded.sequence === source.sequence && (loaded.revision ?? 0) <= source.revision)))
+  ) {
+    return report?.current ?? null
+  }
+  return goalFromRow(loaded.body)
 }
 
 /** The same answer and its source for items a caller holds unordered, such as the host's map. */

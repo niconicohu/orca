@@ -9,6 +9,7 @@ import {
 } from '../../../src/shared/native-chat-thread-goal-copy'
 import { formatNativeChatDuration } from '../../../src/shared/native-chat-turn-status'
 import { useNow } from '../hooks/use-now'
+import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { colors, radii, spacing, typography } from '../theme/mobile-theme'
 import { themedStyleSheet } from '../theme/themed-styles'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
@@ -25,6 +26,7 @@ export function MobileNativeChatThreadGoalBanner({
   hostClockOffsetMs
 }: MobileNativeChatThreadGoal): React.JSX.Element | null {
   useMobileColorScheme()
+  const t = useMobileTranslation()
   const { height } = useWindowDimensions()
   const [expanded, setExpanded] = useState(false)
   const now = useNow(1_000, goal.status === 'active' && runningTurn !== null)
@@ -32,6 +34,16 @@ export function MobileNativeChatThreadGoalBanner({
   if (key === null) {
     return null
   }
+  const label = {
+    pursuing: t('components.native-chat.goal.pursuing', copy.pursuing),
+    set: t('components.native-chat.goal.set', copy.set),
+    paused: t('components.native-chat.goal.paused', copy.paused),
+    blocked: t('components.native-chat.goal.blocked', copy.blocked),
+    limited: t('components.native-chat.goal.limited', copy.limited)
+  }[key]
+  const action = expanded
+    ? t('components.native-chat.goal.collapse', copy.collapse)
+    : t('components.native-chat.goal.expand', copy.expand)
   const elapsed = formatNativeChatDuration(
     agentSessionThreadGoalElapsedSeconds(goal, now - hostClockOffsetMs, runningTurn)
   )
@@ -39,14 +51,14 @@ export function MobileNativeChatThreadGoalBanner({
     <View style={styles.strip} testID="thread-goal-banner">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${expanded ? copy.collapse : copy.expand}: ${copy[key]} — ${goal.objective}, ${elapsed}`}
+        accessibilityLabel={`${action}: ${label} — ${goal.objective}, ${elapsed}`}
         accessibilityState={{ expanded }}
         onPress={() => setExpanded((value) => !value)}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       >
         <Goal size={14} color={colors.textMuted} />
         <Text style={styles.objective} numberOfLines={1}>
-          <Text style={styles.label}>{copy[key]} </Text>
+          <Text style={styles.label}>{label} </Text>
           {goal.objective}
         </Text>
         <Text style={styles.elapsed} importantForAccessibility="no" accessibilityElementsHidden>

@@ -976,6 +976,17 @@
       "folder": "フォルダー",
       "project": "プロジェクト {{repo}}",
       "remoteHost": "リモートホスト"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "目標を追求中",
+        "set": "目標を設定済み",
+        "paused": "一時停止されたゴール",
+        "blocked": "ゴール阻止",
+        "limited": "目標が限定されている",
+        "expand": "完全な目標を表示",
+        "collapse": "完全な目標を非表示にする"
+      }
     }
   },
   "connection": {

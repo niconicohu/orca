@@ -1016,6 +1016,17 @@
       "folder": "Pasta",
       "project": "Projeto {{repo}}",
       "remoteHost": "Host remoto"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "Buscando o objetivo",
+        "set": "Objetivo definido",
+        "paused": "Objetivo pausado",
+        "blocked": "Objetivo bloqueado",
+        "limited": "Objetivo limitado",
+        "expand": "Mostrar objetivo completo",
+        "collapse": "Ocultar objetivo completo"
+      }
     }
   },
   "connection": {

@@ -1016,6 +1016,17 @@
       "folder": "Carpeta",
       "project": "Proyecto {{repo}}",
       "remoteHost": "Host remoto"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "Objetivo en curso",
+        "set": "Objetivo establecido",
+        "paused": "Objetivo en pausa",
+        "blocked": "Objetivo bloqueado",
+        "limited": "Objetivo limitado",
+        "expand": "Mostrar objetivo completo",
+        "collapse": "Ocultar objetivo completo"
+      }
     }
   },
   "connection": {

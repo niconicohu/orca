@@ -7,6 +7,7 @@ import {
   update,
   hostType
 } from './MobileNativeChatView.harness.test-fixture'
+import { activateMobileUiLocale } from '../i18n/mobile-i18n'
 import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
 
 const viewport = vi.hoisted(() => ({ height: 800 }))
@@ -140,6 +141,22 @@ describe('mobile goal banner', () => {
       expect(button.props.accessibilityState.expanded).toBe(false)
     }
   )
+
+  it('uses the selected phone language for goal status and accessible actions', async () => {
+    await act(async () => activateMobileUiLocale('zh'))
+    try {
+      await render({ threadGoal })
+      expect(texts().join('')).toContain('正在追求目标')
+      const button = root()
+        .findByProps({ testID: 'thread-goal-banner' })
+        .find((node) => hostType(node) === 'Pressable')
+      expect(button.props.accessibilityLabel).toContain('显示完整目标')
+      await act(async () => button.props.onPress())
+      expect(button.props.accessibilityLabel).toContain('隐藏完整目标')
+    } finally {
+      await act(async () => activateMobileUiLocale('en'))
+    }
+  })
 
   it('keeps an idle goal set, renders paused/blocked/limited goals, and hides completed or cleared goals', async () => {
     await render({ threadGoal: null })

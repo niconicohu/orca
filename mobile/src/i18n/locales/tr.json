@@ -980,6 +980,17 @@
       "folder": "Klasör",
       "project": "{{repo}} projesi",
       "remoteHost": "Uzak sunucu"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "Hedef üzerinde çalışılıyor",
+        "set": "Hedef belirlendi",
+        "paused": "Hedef duraklatıldı",
+        "blocked": "Hedef engellendi",
+        "limited": "Hedef sınırına ulaşıldı",
+        "expand": "Hedefin tamamını göster",
+        "collapse": "Hedefin tamamını gizle"
+      }
     }
   },
   "connection": {

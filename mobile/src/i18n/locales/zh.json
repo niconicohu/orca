@@ -976,6 +976,17 @@
       "folder": "文件夹",
       "project": "项目 {{repo}}",
       "remoteHost": "远程主机"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "正在追求目标",
+        "set": "目标已设定",
+        "paused": "目标已暂停",
+        "blocked": "目标受阻",
+        "limited": "目标受限",
+        "expand": "显示完整目标",
+        "collapse": "隐藏完整目标"
+      }
     }
   },
   "connection": {

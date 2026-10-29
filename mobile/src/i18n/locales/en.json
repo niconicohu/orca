@@ -1275,6 +1275,17 @@
       "detailsChangedMessage": "The account or reset offer changed before the host contacted Codex. Review the updated details, then confirm again.",
       "resetFailed": "Could not reset rate limits",
       "confirmTitle": "Use a rate-limit reset?"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "Pursuing goal",
+        "set": "Goal set",
+        "paused": "Paused goal",
+        "blocked": "Goal blocked",
+        "limited": "Goal limited",
+        "expand": "Show full goal",
+        "collapse": "Hide full goal"
+      }
     }
   },
   "pullRequest": {

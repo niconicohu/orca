@@ -8,14 +8,21 @@ import type {
   AgentSessionModelOption
 } from './agent-session-wire'
 
+export type AgentSessionThreadGoalReport = {
+  current: AgentJournalThreadGoal | null
+  contextFloor?: AgentJournalCursor
+  /** Exact goal/clear transition observed by the host; older hosts omit this. */
+  source?: AgentJournalCursor & { revision: number }
+}
+
 /** Additive read-only choices/effective next-turn values; older hosts may reject this without changing structured v1 writes. */
 export type AgentSessionOptionsResult = {
   rewind?: AgentSessionRewindSupport
   conversationCommands?: readonly AgentSessionConversationCommand[]
   /** Offer goal controls only with threadGoal support; current spans the whole journal, including unloaded pages. */
-  threadGoal?: { current: AgentJournalThreadGoal | null; contextFloor?: AgentJournalCursor }
+  threadGoal?: AgentSessionThreadGoalReport
   /** Journal goal changed only by the agent's /goal; separate from threadGoal so older clients never offer host controls. */
-  reportedThreadGoal?: { current: AgentJournalThreadGoal; contextFloor?: AgentJournalCursor }
+  reportedThreadGoal?: AgentSessionThreadGoalReport & { current: AgentJournalThreadGoal }
   /** Present for sessions writing turn context facts; current takes each part from the whole journal, including unloaded pages. */
   contextUsage?: { current: AgentSessionContextUsage; contextFloor?: AgentJournalCursor }
   /** This session takes image attachments. Absent = unknown (an older host). */
