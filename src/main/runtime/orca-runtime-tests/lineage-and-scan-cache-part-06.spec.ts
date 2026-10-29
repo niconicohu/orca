@@ -90,7 +90,8 @@ describe('OrcaRuntimeService', () => {
   )
 
   it('does not return stale completed orchestration context for renderer-synced terminal leaves', () => {
-    const completedAt = new Date(Date.now() - AGENT_STATUS_STALE_AFTER_MS - 1).toISOString()
+    // Fixed before the sync so its `now` is never older than this timestamp.
+    const staleCompletedAt = new Date(Date.now() - AGENT_STATUS_STALE_AFTER_MS - 1).toISOString()
     const runtime = new OrcaRuntimeService(store)
     const workerLeafId = '77777777-7777-4777-8777-777777777777'
     const workerHandle = runtime.preAllocateHandleForPty('pty-worker')
@@ -105,7 +106,7 @@ describe('OrcaRuntimeService', () => {
               task_id: 'task-stale',
               assignee_handle: workerHandle,
               status: 'completed',
-              completed_at: completedAt
+              completed_at: staleCompletedAt
             })
           : undefined
     )

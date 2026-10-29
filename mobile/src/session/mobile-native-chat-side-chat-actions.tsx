@@ -1,3 +1,6 @@
+import { getMobileNativeChatCliForkActions } from './mobile-native-chat-cli-fork'
+import { translate } from '../i18n/mobile-i18n'
+import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { agentChatPermissionModes } from '../../../src/shared/agent-chat-permission-mode'
 import { useState } from 'react'
 import { ActionSheetModal } from '../components/ActionSheetModal'
@@ -19,7 +22,7 @@ export function getMobileSideChatActions(args: {
   }
   return [
     {
-      label: 'New side chat',
+      label: translate('session.sideChat.new', 'New side chat'),
       icon: CornerDownRight,
       closeBeforePress: true,
       onPress: () => args.onChoosePermission(tab)
@@ -36,6 +39,7 @@ export function MobileSideChatPermissionSheet({
   source: Parameters<MobileSessionController['handleOpenSideChat']>[0] | null
   onClose: () => void
 }) {
+  const t = useMobileTranslation()
   const choose = (permission: 'inherit' | 'read-only') => {
     if (source) {
       void controller.handleOpenSideChat(source, '', [], permission)
@@ -44,22 +48,28 @@ export function MobileSideChatPermissionSheet({
   return (
     <ActionSheetModal
       visible={source != null}
-      title="New side chat"
+      title={t('session.sideChat.new', 'New side chat')}
       onClose={onClose}
       actions={[
         {
-          label: 'Read only',
+          label: t('session.sideChat.readOnly', 'Read only'),
           icon: Eye,
-          hint: 'Uses a read-only sandbox without permission escalation',
+          hint: t(
+            'session.sideChat.readOnlyDescription',
+            'Uses a read-only sandbox without permission escalation'
+          ),
           disabled:
             !controller.agentSessionHostSupport?.readOnlySideChat ||
             !agentChatPermissionModes(source?.agent ?? '')?.modes.includes('read-only'),
           onPress: () => choose('read-only')
         },
         {
-          label: 'Use main chat permissions',
+          label: t('session.sideChat.inheritPermissions', 'Use main chat permissions'),
           icon: GitFork,
-          hint: 'Starts with the main chat’s permissions; later changes are independent',
+          hint: t(
+            'session.sideChat.inheritDescription',
+            'Starts with the main chat’s permissions; later changes are independent'
+          ),
           onPress: () => choose('inherit')
         }
       ]}
@@ -71,25 +81,35 @@ export function MobileNativeChatTabActionSheet({
   controller,
   source,
   onClose,
-  actions
+  actions,
+  workspaceOnPairedHost
 }: {
-  controller: Pick<MobileSessionController, 'agentSessionHostSupport' | 'handleOpenSideChat'>
+  controller: Pick<MobileSessionController, 'agentSessionHostSupport' | 'handleOpenSideChat'> &
+    Parameters<typeof getMobileNativeChatCliForkActions>[0]['controller']
   source: Parameters<MobileSessionController['handleOpenSideChat']>[0] | null
   onClose: () => void
   actions: ActionSheetAction[]
+  workspaceOnPairedHost: boolean
 }) {
+  const t = useMobileTranslation()
   const [permissionSource, setPermissionSource] = useState<typeof source>(null)
   return (
     <>
       <ActionSheetModal
         visible={source != null}
-        title={source?.title || 'Chat'}
+        title={source?.title || t('session.sheets.chat', 'Chat')}
         onClose={onClose}
         actions={[
           ...getMobileSideChatActions({
             controller,
             tab: source,
             onChoosePermission: setPermissionSource,
+            onDismiss: onClose
+          }),
+          ...getMobileNativeChatCliForkActions({
+            controller,
+            tab: source,
+            workspaceOnPairedHost,
             onDismiss: onClose
           }),
           ...actions

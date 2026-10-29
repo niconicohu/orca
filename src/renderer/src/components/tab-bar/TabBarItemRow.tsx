@@ -17,6 +17,7 @@ import {
   useStructuredChatTabNamingFailure
 } from '@/runtime/structured-conversation-name'
 import { agentTypeToIconAgent } from '@/lib/agent-status'
+import { formatSimulatorTabLabel } from '@/lib/simulator-tab-label'
 import { useStructuredChatTabSideChat } from '@/runtime/use-structured-chat-tab-side-chat'
 
 // Why only values and `actions`: anything a tab draws must be a compared prop, or a skipped render shows it stale.
@@ -179,7 +180,7 @@ function TabBarItemRow({
     onCloseAll: actions.closeAllFiles
   }
   if (item.type === 'simulator') {
-    const simulatorLabel = item.data.label || 'Mobile Emulator'
+    const simulatorLabel = formatSimulatorTabLabel(item.data.label)
     const simulatorFile: OpenFile & { tabId: string } = {
       id: item.id,
       tabId: item.id,
