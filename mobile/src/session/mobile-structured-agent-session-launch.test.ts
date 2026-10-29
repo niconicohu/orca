@@ -39,6 +39,40 @@ const acceptedCreateResult = {
 const acceptedCreate = { ok: true, result: acceptedCreateResult }
 
 describe('mobile side chat launch', () => {
+  it('preserves picked skill paths and distinguishes uncertain questions by those paths', async () => {
+    const client = clientReturning()
+    client.sendRequest.mockResolvedValue({
+      ok: true,
+      result: {
+        ok: false,
+        refusal: { code: 'agent_session_operation_unknown', message: 'Unconfirmed' }
+      }
+    })
+    const one = [{ name: 'review', path: '/one/SKILL.md' }]
+    const two = [{ name: 'review', path: '/two/SKILL.md' }]
+    await createMobileStructuredAgentSession(
+      client,
+      'folder-1',
+      'codex',
+      'codex_parent_123',
+      'use $review',
+      one
+    )
+    await createMobileStructuredAgentSession(
+      client,
+      'folder-1',
+      'codex',
+      'codex_parent_123',
+      'use $review',
+      two
+    )
+    const first = CreateIntentParams.parse(client.sendRequest.mock.calls[0]?.[1])
+    const second = CreateIntentParams.parse(client.sendRequest.mock.calls[1]?.[1])
+    expect(first.firstMessage?.body.skills).toEqual(one)
+    expect(second.firstMessage?.body.skills).toEqual(two)
+    expect(second.envelope.clientOperationId).not.toBe(first.envelope.clientOperationId)
+  })
+
   it('does not replay an uncertain create into a different client authority generation', async () => {
     const client = clientReturning()
     let generation = 0

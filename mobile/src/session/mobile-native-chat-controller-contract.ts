@@ -1,3 +1,4 @@
+import type { StructuredAgentSessionComposerOptions } from '../../../src/shared/structured-agent-session-composer'
 import type { NativeChatSkillDiscoverySnapshot } from '../../../src/shared/native-chat/input/native-chat-picker-items'
 import type { StructuredMobileSendAttachment } from './use-mobile-structured-send-with-outcome'
 import type { MobileSessionView } from '../storage/session-view-preferences'
@@ -24,7 +25,7 @@ import type { MobileNativeChatVisualSource } from './native-chat/visual/mobile-n
 import type { useMobileStructuredSessionCommands } from './use-mobile-structured-session-commands'
 
 export type MobileNativeChatController = {
-  openSideChat?: (question: string) => Promise<boolean>
+  openSideChat?: StructuredAgentSessionComposerOptions['openSideChat']
   sessionViewReady: boolean
   isTabChatView: (tabId: string) => boolean
   setTabView: (tabId: string, view: MobileSessionView) => void

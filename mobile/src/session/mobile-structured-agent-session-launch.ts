@@ -1,3 +1,4 @@
+import type { AgentJournalSkillRef } from '../../../src/shared/agent-session-journal-types'
 import type { StructuredAgentId } from '../../../src/shared/agent-session-provider-handle'
 import type {
   AgentSessionAttachResult,
@@ -48,7 +49,8 @@ function createParamsFor(
   agent: StructuredAgentId,
   worktree: string,
   sideChatOf?: string,
-  question?: string
+  question?: string,
+  skills: readonly AgentJournalSkillRef[] = []
 ): StructuredAgentSessionCreateParams {
   return structuredAgentSessionCreateParams({
     sessionId: createStructuredAgentSessionId(agent, randomV4Uuid),
@@ -59,7 +61,7 @@ function createParamsFor(
       ? {
           firstMessage: {
             clientMessageId: structuredSessionOperationId(),
-            body: structuredAgentSessionSendBody(question, [])
+            body: structuredAgentSessionSendBody(question, [], skills)
           }
         }
       : {}),
@@ -100,7 +102,8 @@ export async function createMobileStructuredAgentSession(
   worktreeId: string,
   agent: StructuredAgentId,
   sideChatOf?: string,
-  question?: string
+  question?: string,
+  skills: readonly AgentJournalSkillRef[] = []
 ): Promise<MobileStructuredAgentLaunchResult> {
   const worktree = `id:${worktreeId}`
   if (!sideChatOf) {
@@ -144,7 +147,14 @@ export async function createMobileStructuredAgentSession(
   }
 
   const key = sideChatOf
-    ? JSON.stringify([client.getGeneration?.() ?? 0, worktree, agent, sideChatOf, question ?? ''])
+    ? JSON.stringify([
+        client.getGeneration?.() ?? 0,
+        worktree,
+        agent,
+        sideChatOf,
+        question ?? '',
+        skills
+      ])
     : null
   const pending = key
     ? (pendingSideChatCreates.get(client) ?? new Map<string, StructuredAgentSessionCreateParams>())
@@ -153,7 +163,8 @@ export async function createMobileStructuredAgentSession(
     pendingSideChatCreates.set(client, pending)
   }
   const params =
-    (key ? pending?.get(key) : undefined) ?? createParamsFor(agent, worktree, sideChatOf, question)
+    (key ? pending?.get(key) : undefined) ??
+    createParamsFor(agent, worktree, sideChatOf, question, skills)
   if (key) {
     pending?.set(key, params)
   }

@@ -95,3 +95,30 @@ it('keeps distinct side questions independent while both launches are pending', 
   }
   await expect(Promise.all([first, second])).resolves.toEqual([true, true])
 })
+
+it('keeps same-text side questions with different picked skill files independent', async () => {
+  const settlement = Promise.withResolvers<{ kind: 'structured' }>()
+  mocks.begin.mockReturnValue({ settlement: settlement.promise })
+  const one = [{ name: 'review', path: '/one/SKILL.md' }]
+  const two = [{ name: 'review', path: '/two/SKILL.md' }]
+  const first = openNativeChatSideChat(source, 'use $review', one)
+  const second = openNativeChatSideChat(source, 'use $review', two)
+  try {
+    await vi.waitFor(() => expect(mocks.begin).toHaveBeenCalledTimes(2))
+    expect(mocks.begin).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        plan: expect.objectContaining({ skills: one })
+      })
+    )
+    expect(mocks.begin).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        plan: expect.objectContaining({ skills: two })
+      })
+    )
+  } finally {
+    settlement.resolve({ kind: 'structured' })
+    await Promise.all([first, second])
+  }
+})

@@ -7,6 +7,22 @@ import {
 } from './structured-agent-session-composer'
 
 describe('side chat commands', () => {
+  it('forwards the picked skill files with a side question', async () => {
+    const skills = [{ name: 'review', path: '/picked/SKILL.md' }]
+    const openSideChat = vi.fn(async () => true)
+    await dispatchStructuredAgentSessionComposerCommand(
+      '/btw use $review',
+      {
+        snapshot: [],
+        invokeAction: async () => false,
+        setOption: async () => false,
+        openSideChat
+      },
+      skills
+    )
+    expect(openSideChat).toHaveBeenCalledExactlyOnceWith('use $review', skills)
+  })
+
   it.each(['codex', 'claude', 'opencode', 'pi'] as const)(
     'uses declared support rather than %s agent names',
     async (agent) => {

@@ -1,3 +1,4 @@
+import type { AgentJournalSkillRef } from '../../../../shared/agent-session-journal-types'
 import { useCallback, useMemo } from 'react'
 import { useHostStructuredAgent } from '@/runtime/use-host-structured-agent'
 import { useStructuredAgentSessionHostCapability } from '@/runtime/structured-agent-session-host-capability'
@@ -20,10 +21,10 @@ export function useNativeChatSideChat(input: {
   const supported = hostSupports && agent?.capabilities.sideChat === true && !!input.worktreeId
   const { tabId, worktreeId, sessionId } = input
   const open = useCallback(
-    async (question: string) =>
+    async (question: string, skills?: readonly AgentJournalSkillRef[]) =>
       supported &&
       !!worktreeId &&
-      openNativeChatSideChat({ tabId, worktreeId, sessionId }, question),
+      openNativeChatSideChat({ tabId, worktreeId, sessionId }, question, skills),
     [supported, tabId, worktreeId, sessionId]
   )
   return useMemo(() => (supported ? open : undefined), [supported, open])

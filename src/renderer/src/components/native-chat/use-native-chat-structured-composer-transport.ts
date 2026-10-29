@@ -80,21 +80,25 @@ export function useNativeChatStructuredComposerTransport(args: {
             ...request
           )
         ),
-      dispatchCommand: (text: string) =>
-        dispatchStructuredAgentSessionComposerCommand(text, {
-          agent: props.agent,
-          ...(openSideChat ? { openSideChat } : {}),
-          snapshot: controller.optionSnapshot,
-          invokeAction: async (id) => {
-            setOptionPickerRequest({ id, consume: () => setOptionPickerRequest(null) })
-            return true
+      dispatchCommand: (text, skills) =>
+        dispatchStructuredAgentSessionComposerCommand(
+          text,
+          {
+            agent: props.agent,
+            ...(openSideChat ? { openSideChat } : {}),
+            snapshot: controller.optionSnapshot,
+            invokeAction: async (id) => {
+              setOptionPickerRequest({ id, consume: () => setOptionPickerRequest(null) })
+              return true
+            },
+            setOption: controller.setStructuredOption,
+            sessionCommands: controller.sessionCommands,
+            conversationCommands: controller.conversationCommands,
+            runConversationCommand: controller.runConversationCommand,
+            ...(setThreadGoalObjective ? { setThreadGoalObjective } : {})
           },
-          setOption: controller.setStructuredOption,
-          sessionCommands: controller.sessionCommands,
-          conversationCommands: controller.conversationCommands,
-          runConversationCommand: controller.runConversationCommand,
-          ...(setThreadGoalObjective ? { setThreadGoalObjective } : {})
-        }),
+          skills
+        ),
       ...(setThreadGoalObjective ? { threadGoal: { setObjective: setThreadGoalObjective } } : {}),
       sendOut: controller.sendOut || starting,
       ...(sendBlockedReason !== null ? { sendBlockedReason } : {}),

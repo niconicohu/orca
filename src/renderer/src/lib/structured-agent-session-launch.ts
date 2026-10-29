@@ -19,6 +19,7 @@ import {
 import type { StructuredPromptDeliveryResult } from '@/lib/structured-agent-session-launch-prompt'
 import {
   addStructuredLaunchCaller,
+  launchPromptOptions,
   createStructuredLaunchCallerGroup,
   releaseStructuredLaunchCallerAfterUnknownOutcome,
   type StructuredAgentLaunchOptions,
@@ -157,10 +158,6 @@ function restartStructuredLaunchState(state: StructuredLaunchState): void {
   notifyStructuredLaunchListeners()
 }
 
-function promptOwner(options: StructuredAgentLaunchOptions): { callerKeepsText?: true } {
-  return options.promptKeptByCaller ? { callerKeepsText: true } : {}
-}
-
 function joinStructuredLaunchState(
   existing: StructuredLaunchState,
   agent: TuiAgent,
@@ -173,7 +170,7 @@ function joinStructuredLaunchState(
   // Unconfirmed launches retain text; rechecks must not stage/send a second copy.
   const text = retrying || repeat ? '' : launchPromptText(joined)
   const stagedPrompt = text
-    ? stageStructuredLaunchPrompt(existing.intent.sessionId, text, promptOwner(options))
+    ? stageStructuredLaunchPrompt(existing.intent.sessionId, text, launchPromptOptions(options))
     : (repeat?.stagedPrompt ?? null)
   if (retrying) {
     restartStructuredLaunchState(existing)
@@ -223,7 +220,7 @@ function structuredAgentLaunchState(
   intent.surfaceAddress = options.surfaceAddress
   const text = launchPromptText(options)
   const stagedPrompt = text
-    ? stageStructuredLaunchPrompt(intent.sessionId, text, promptOwner(options))
+    ? stageStructuredLaunchPrompt(intent.sessionId, text, launchPromptOptions(options))
     : null
   launchDraft.seedStructuredAgentLaunchDraft(intent.sessionId, agent, options)
   const callers = createStructuredLaunchCallerGroup({

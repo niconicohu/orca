@@ -1,3 +1,5 @@
+import { structuredAgentSessionSendBody } from '../../../shared/structured-agent-session-send-mutation'
+import type { AgentJournalSkillRef } from '../../../shared/agent-session-journal-types'
 import { useAppStore } from '@/store'
 import { newAgentLaunchRequestId } from './agent-launch-request-id'
 import { adoptAgentSessionLaunchVerdict } from './agent-session-launch-plan'
@@ -28,7 +30,12 @@ function readSideChatSource(source: SideChatSource) {
 }
 
 /** Coalesce identical pending opens; later actions can still create independent side chats. */
-export function openNativeChatSideChat(source: SideChatSource, question = ''): Promise<boolean> {
+export function openNativeChatSideChat(
+  source: SideChatSource,
+  question = '',
+  skills: readonly AgentJournalSkillRef[] = []
+): Promise<boolean> {
+  skills = structuredAgentSessionSendBody(question, [], skills).skills ?? []
   const tab = readSideChatSource(source)
   const host = tab && structuredAgentSessionOwnerForTab(useAppStore.getState(), tab)
   const target = structuredAgentSessionTargetForHost(host)
@@ -43,7 +50,8 @@ export function openNativeChatSideChat(source: SideChatSource, question = ''): P
     source.worktreeId,
     source.tabId,
     source.sessionId,
-    question
+    question,
+    skills
   ])
   const existing = pending.get(key)
   if (existing) {
@@ -52,6 +60,7 @@ export function openNativeChatSideChat(source: SideChatSource, question = ''): P
   const opening: Promise<boolean> = launchNativeChatSideChat(
     source,
     question,
+    skills,
     () => !owner || matchesWebSessionIntentOwner(owner)
   ).finally(() => {
     if (pending.get(key) === opening) {
@@ -65,6 +74,7 @@ export function openNativeChatSideChat(source: SideChatSource, question = ''): P
 async function launchNativeChatSideChat(
   source: SideChatSource,
   question: string,
+  skills: readonly AgentJournalSkillRef[],
   isCurrentOwner: () => boolean
 ): Promise<boolean> {
   const readSource = () => readSideChatSource(source)
@@ -98,7 +108,13 @@ async function launchNativeChatSideChat(
     executionHostId: host,
     agent,
     sideChatOf: source.sessionId,
-    ...(question.trim() ? { prompt: question, promptDelivery: 'auto-submit' } : {})
+    ...(question.trim()
+      ? {
+          prompt: question,
+          promptDelivery: 'auto-submit',
+          ...(skills.length > 0 ? { skills } : {})
+        }
+      : {})
   })
   const launch = beginStructuredAgentSessionProvisionalLaunch({
     plan,
