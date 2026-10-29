@@ -196,7 +196,8 @@ export function MobileSessionTabStrip({
             const hostAgentIdentity = getMobileTerminalTabHostAgentIdentity(tab, terminals)
             const title = getMobileSessionTabTitle(tab, hostAgentIdentity)
             const sideChat = tab.type === 'agent-session' && !!tab.sideChatOf
-            const accessibleTitle = sideChat ? `btw, ${title}` : title
+            const sideChatBadge = t('session.sideChat.badge', 'btw')
+            const accessibleTitle = sideChat ? `${sideChatBadge}, ${title}` : title
             return (
               <Pressable
                 key={tab.id}
@@ -259,7 +260,7 @@ export function MobileSessionTabStrip({
                         )
                       })()}
                   </View>
-                  {sideChat ? <Text style={styles.sideChatBadge}>btw</Text> : null}
+                  {sideChat ? <Text style={styles.sideChatBadge}>{sideChatBadge}</Text> : null}
                   <Text
                     style={[styles.tabText, tab.id === activeSessionTabId && styles.tabTextActive]}
                     numberOfLines={1}

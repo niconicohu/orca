@@ -2464,7 +2464,12 @@
       "readOnly": "Lecture seule",
       "readOnlyDescription": "Utilise un bac à sable en lecture seule sans élévation des permissions",
       "inheritPermissions": "Utiliser les permissions de la discussion principale",
-      "inheritDescription": "Démarre avec les permissions de la discussion principale ; les modifications ultérieures sont indépendantes"
+      "inheritDescription": "Démarre avec les permissions de la discussion principale ; les modifications ultérieures sont indépendantes",
+      "badge": "btw",
+      "failed": "Impossible d’ouvrir une discussion parallèle.",
+      "unsupportedHost": "Cet hôte ne peut pas ouvrir de discussion parallèle.",
+      "unavailable": "Cette discussion n’est actuellement pas disponible pour ouvrir une discussion parallèle.",
+      "updateHostForReadOnly": "Mettez à jour Orca sur cet hôte pour ouvrir une discussion parallèle en lecture seule."
     }
   },
   "settings": {
