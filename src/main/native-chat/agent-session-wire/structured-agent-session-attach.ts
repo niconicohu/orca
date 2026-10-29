@@ -52,6 +52,7 @@ export type AgentSessionAttachParams = {
   options?: Readonly<Record<string, string>>
   sideChat?: AgentSessionRecord['sideChat']
   createMessage?: StructuredAgentSessionFirstMessage
+  createOptions?: Readonly<Record<string, string>>
   /** Exclude tab placement from conversation identity/fingerprints. */
   surfaceTabId?: string
   launchArgs?: string[]
@@ -89,6 +90,7 @@ export function attachFingerprintFields(params: AgentSessionAttachParams): Recor
     adoptedProviderHandle: params.adopt?.providerHandle,
     sideChat: params.sideChat,
     createMessage: params.createMessage,
+    ...(params.createOptions ? { createOptions: params.createOptions } : {}),
     expectedRuntimeFence: params.envelope.expectedRuntimeFence
   }
 }

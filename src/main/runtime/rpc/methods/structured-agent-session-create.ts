@@ -114,7 +114,8 @@ export async function prepareStructuredAgentSessionCreateForWorktree(args: {
     fields: attachFingerprintFields({
       ...resolved,
       envelope: args.envelope,
-      ...(args.sideChatOf && args.firstMessage ? { createMessage: args.firstMessage } : {})
+      ...(args.sideChatOf && args.firstMessage ? { createMessage: args.firstMessage } : {}),
+      ...(args.sideChatOf && args.options ? { createOptions: args.options } : {})
     })
   })
   host ??= await args.ensureHost()
@@ -159,6 +160,7 @@ export async function prepareStructuredAgentSessionCreateForWorktree(args: {
     attachParams: {
       ...resolvedAttach,
       ...(args.sideChatOf && args.firstMessage ? { createMessage: args.firstMessage } : {}),
+      ...(args.sideChatOf && args.options ? { createOptions: args.options } : {}),
       ...(picked ? { options: picked } : {}),
       ...(args.tabId ? { surfaceTabId: args.tabId } : {}),
       provider: resolved.provider,
