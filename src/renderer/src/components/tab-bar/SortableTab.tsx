@@ -19,7 +19,7 @@ import {
   type DropIndicator
 } from './drop-indicator'
 import { preventMiddleButtonDefault } from './middle-button-default-guard'
-import { useSortableTabRename } from './use-sortable-tab-rename'
+import { useSortableTabRename, tabRenameInputEvents } from './use-sortable-tab-rename'
 import { useTabRenameReturnFocus } from './use-tab-rename-return-focus'
 import { SortableTabContextMenu } from './SortableTabContextMenu'
 import { useSortableTabContextMenu } from './use-sortable-tab-context-menu'
@@ -194,6 +194,9 @@ export default function SortableTab({
     disabled: isEditing
   })
   const slotProps = useTabStripSlotProps(tab.id, isActive)
+  const sideChatLabel = nativeChat?.sideChat
+    ? translate('components.native-chat.sideChat.title', 'Side chat')
+    : undefined
   const tabTitle = tab.customTitle ?? tab.title
   const tabRoot = (
     <div
@@ -201,13 +204,14 @@ export default function SortableTab({
       data-testid="sortable-tab"
       data-tab-id={tab.id}
       data-tab-title={tabTitle}
+      aria-description={sideChatLabel}
       data-pinned={isPinned ? 'true' : 'false'}
       // Expose rendered selection so E2E catches visual regressions missed by store-only assertions.
       data-active={isActive ? 'true' : 'false'}
       data-agent-activity-status={activityStatus}
       {...attributes}
       {...dragListeners}
-      className={`group relative flex items-center h-full px-1.5 text-xs cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none ${getTabStripBorderClasses(hasTabsToRight, { includeTopBorder: includeTopTabBorder })} ${getDropIndicatorClasses(dropIndicator ?? null)} ${getTabRootStateClasses(isActive)}`}
+      className={`group relative flex min-w-0 overflow-hidden items-center h-full px-1.5 text-xs cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none ${getTabStripBorderClasses(hasTabsToRight, { includeTopBorder: includeTopTabBorder })} ${getDropIndicatorClasses(dropIndicator ?? null)} ${getTabRootStateClasses(isActive)}`}
       onDoubleClick={(e) => {
         if (isEditing) {
           return
@@ -245,6 +249,7 @@ export default function SortableTab({
       )}
       <TerminalTabLeadingIcon
         agent={tabAgent}
+        sideChat={nativeChat?.sideChat}
         activityStatus={activityStatus}
         shell={tab.shellOverride}
         showUnreadActivity={showUnreadActivity}
@@ -254,7 +259,9 @@ export default function SortableTab({
       {isPinned && !isEditing && (
         <Pin className="mr-1 size-3 shrink-0 text-muted-foreground" aria-hidden />
       )}
-      {nativeChat?.sideChat && !isEditing && <SideChatTabBadge />}
+      {nativeChat?.sideChat && !isEditing && (
+        <SideChatTabBadge className="hidden @[128px]/chat-tab:inline-flex group-data-[side-chat-only=true]/side-chat-pane:hidden" />
+      )}
       {isEditing ? (
         <Input
           ref={setRenameInputElement}
@@ -268,18 +275,7 @@ export default function SortableTab({
           onChange={(event) => setRenameValue(event.target.value)}
           onBlur={commitRename}
           onKeyDown={onRenameKeyDown}
-          // Why: stop bubbling so clicking inside the input doesn't activate the tab or start a dnd-kit drag.
-          onPointerDown={(event) => event.stopPropagation()}
-          onMouseDown={(event) => {
-            // Why: stopPropagation avoids outer tab activation/drag; preventDefault on middle-click blocks Linux X11 paste.
-            event.stopPropagation()
-            if (event.button === 1) {
-              event.preventDefault()
-            }
-          }}
-          onClick={(event) => event.stopPropagation()}
-          onDoubleClick={(event) => event.stopPropagation()}
-          onAuxClick={(event) => event.stopPropagation()}
+          {...tabRenameInputEvents}
           // Why: base Input's min-w-0 lets flex shrink it to ~0 in a saturated tab bar; force a usable minimum width.
           className="mr-1 h-5 min-w-[72px] flex-1 px-1 py-0 text-xs"
           spellCheck={false}
@@ -289,7 +285,7 @@ export default function SortableTab({
       )}
       {tab.color && !isEditing && (
         <span
-          className="mr-1.5 size-2 rounded-full shrink-0"
+          className={`mr-1.5 size-2 rounded-full shrink-0 ${nativeChat?.sideChat ? 'hidden @[128px]/chat-tab:block' : ''}`}
           style={{ backgroundColor: tab.color }}
         />
       )}
@@ -353,6 +349,7 @@ export default function SortableTab({
       <div
         ref={renameOwnerRef}
         {...slotProps}
+        className={`${slotProps.className} @container/chat-tab`}
         onContextMenuCapture={(event) => {
           // The hover card is portalled: React still routes its events through this slot.
           if (event.target instanceof Node && event.currentTarget.contains(event.target)) {
@@ -368,6 +365,7 @@ export default function SortableTab({
         ) : (
           <TabHoverCard
             title={displayTitle}
+            description={sideChatLabel}
             programName={
               tabAgent
                 ? getAgentLabel(tabAgent)

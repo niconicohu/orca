@@ -34,6 +34,30 @@ export const getChatBehaviorEntriesByKey = createLocalizedCatalog(() => ({
       translate('components.settings.nativeChat.queueSearchSteer', 'steer')
     ]
   },
+  linkPreviews: {
+    targetSectionId: 'chat-link-previews',
+    title: translate('components.settings.nativeChat.linkPreviewsTitle', 'Link previews'),
+    description: translate(
+      'components.settings.nativeChat.linkPreviewsCopy',
+      'Hovering a web link shows a preview card. Orca fetches the page to build it, so the site can see the request.'
+    ),
+    keywords: [
+      translate('components.settings.nativeChat.linkPreviewsSearchUnfurl', 'unfurl'),
+      translate('components.settings.nativeChat.linkPreviewsSearchHover', 'hover card')
+    ]
+  },
+  sideChatPane: {
+    targetSectionId: 'chat-side-chat-pane',
+    title: translate(
+      'components.settings.nativeChat.sideChatPaneTitle',
+      'Group side chats in one pane'
+    ),
+    description: translate(
+      'components.settings.nativeChat.sideChatPaneCopy',
+      'Collect this workspace’s side chats in a shared split pane. When off, new side chats open beside their source tab; existing panes stay in place.'
+    ),
+    keywords: [translate('components.native-chat.sideChat.badge', 'btw')]
+  },
   shellEnvironment: {
     targetSectionId: 'chat-shell-environment',
     title: translate(

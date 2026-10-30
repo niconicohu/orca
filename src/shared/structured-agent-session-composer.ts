@@ -1,8 +1,5 @@
 import type { AgentJournalSkillRef } from './agent-session-journal-types'
-import {
-  getHostClaimedNativeChatCommands,
-  getTextDrivenNativeChatCommands
-} from './native-chat-agent-profiles'
+import { getTextDrivenNativeChatCommands } from './native-chat-agent-profiles'
 import type { AgentType } from './agent-status-types'
 import type {
   SessionOptionDescriptor,
@@ -129,20 +126,8 @@ export function structuredSessionSlashCommands(
   ]
 }
 
-/** Claim hidden TUI-only commands too, preventing literal prose delivery; leave agent-handled
- *  and session-reported commands unclaimed for passthrough. */
-function structuredRecognizedCommands(
-  agent: AgentType,
-  reported: readonly AgentSessionSlashCommand[] | undefined
-): readonly SlashCommandSuggestion[] {
-  const sessionHandled = new Set(
-    reported?.filter((entry) => entry.kind === 'command').map((entry) => entry.name)
-  )
-  return [
-    ...STRUCTURED_AGENT_SESSION_SLASH_COMMANDS,
-    ...CONVERSATION_COMMANDS,
-    ...getHostClaimedNativeChatCommands(agent).filter((entry) => !sessionHandled.has(entry.name))
-  ]
+function structuredRecognizedCommands(): readonly SlashCommandSuggestion[] {
+  return [...STRUCTURED_AGENT_SESSION_SLASH_COMMANDS, ...CONVERSATION_COMMANDS]
 }
 
 /** Whether the chat host, rather than the agent, owns this command. Callers also
@@ -150,8 +135,8 @@ function structuredRecognizedCommands(
  *  would be silently dropped, whereas a pass-through command is a real send. */
 export function isStructuredAgentSessionComposerCommand(
   text: string,
-  agent: AgentType = 'codex',
-  reported?: readonly AgentSessionSlashCommand[],
+  _agent: AgentType = 'codex',
+  _reported?: readonly AgentSessionSlashCommand[],
   sideChat = false
 ): boolean {
   const command = commandParts(text)
@@ -159,15 +144,15 @@ export function isStructuredAgentSessionComposerCommand(
     command &&
     (command.name === 'btw'
       ? sideChat
-      : structuredRecognizedCommands(agent, reported).some((entry) => entry.name === command.name))
+      : structuredRecognizedCommands().some((entry) => entry.name === command.name))
   )
 }
 
 export function prepareStructuredAgentSessionComposerCommand(
-  agent: AgentType,
-  reported?: readonly AgentSessionSlashCommand[]
+  _agent: AgentType,
+  _reported?: readonly AgentSessionSlashCommand[]
 ): (text: string) => boolean {
-  const names = new Set(structuredRecognizedCommands(agent, reported).map((entry) => entry.name))
+  const names = new Set(structuredRecognizedCommands().map((entry) => entry.name))
   return (text) => {
     const command = commandParts(text)
     return command !== null && names.has(command.name)
