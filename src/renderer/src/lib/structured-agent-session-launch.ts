@@ -19,6 +19,7 @@ import {
 import type { StructuredPromptDeliveryResult } from '@/lib/structured-agent-session-launch-prompt'
 import {
   addStructuredLaunchCaller,
+  launchPromptOptions,
   createStructuredLaunchCallerGroup,
   releaseStructuredLaunchCallerAfterUnknownOutcome,
   type StructuredAgentLaunchOptions,
@@ -137,8 +138,7 @@ function resetStructuredLaunchCallers(state: StructuredLaunchState): void {
 }
 
 function restartStructuredLaunchState(state: StructuredLaunchState): void {
-  const wasVisibilityUnknown = state.visibilityUnknown
-  if (!wasVisibilityUnknown) {
+  if (!state.visibilityUnknown) {
     const surfaceAddress = state.intent.surfaceAddress
     state.intent = retryStructuredAgentSessionLaunchIntent(state.intent)
     state.intent.surfaceAddress = surfaceAddress
@@ -152,15 +152,11 @@ function restartStructuredLaunchState(state: StructuredLaunchState): void {
   state.onHostSeed = (seedOptions) => adoptPairedHostSeed(state, seedOptions)
   state.promise = publishWithHeldOptions(
     state,
-    wasVisibilityUnknown ? reconcileUnknownLaunch(state) : launchAndReconcile(state)
+    state.visibilityUnknown ? reconcileUnknownLaunch(state) : launchAndReconcile(state)
   )
   trackLaunchSettlement(state, state.promise)
   trackStructuredLaunchConfirmationDeadline(state, state.promise)
   notifyStructuredLaunchListeners()
-}
-
-function promptOwner(options: StructuredAgentLaunchOptions): { callerKeepsText?: true } {
-  return options.promptKeptByCaller ? { callerKeepsText: true } : {}
 }
 
 function joinStructuredLaunchState(
@@ -175,7 +171,7 @@ function joinStructuredLaunchState(
   // Unconfirmed launches retain text; rechecks must not stage/send a second copy.
   const text = retrying || repeat ? '' : launchPromptText(joined)
   const stagedPrompt = text
-    ? stageStructuredLaunchPrompt(existing.intent.sessionId, text, promptOwner(options))
+    ? stageStructuredLaunchPrompt(existing.intent.sessionId, text, launchPromptOptions(options))
     : (repeat?.stagedPrompt ?? null)
   if (retrying) {
     restartStructuredLaunchState(existing)
@@ -217,14 +213,15 @@ function structuredAgentLaunchState(
     options.executionHostId,
     options.resumeFrom,
     options.hostSeedOptions,
-    options.activate
+    options.activate,
+    ...(options.sideChatOf ? [options.sideChatOf] : [])
   )
   intent.explicitLaunchOptions = options.launchOptions ? { ...options.launchOptions } : undefined
   intent.beforeCreate = options.beforeCreate
   intent.surfaceAddress = options.surfaceAddress
   const text = launchPromptText(options)
   const stagedPrompt = text
-    ? stageStructuredLaunchPrompt(intent.sessionId, text, promptOwner(options))
+    ? stageStructuredLaunchPrompt(intent.sessionId, text, launchPromptOptions(options))
     : null
   launchDraft.seedStructuredAgentLaunchDraft(intent.sessionId, agent, options)
   const callers = createStructuredLaunchCallerGroup({

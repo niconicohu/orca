@@ -1,3 +1,4 @@
+import { MobileNativeChatTabActionSheet } from './mobile-native-chat-side-chat-actions'
 import { Platform } from 'react-native'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { getRepoIdFromWorktreeId } from '../../../src/shared/worktree/id'
@@ -15,7 +16,6 @@ import { MobileDictationSetupSheet } from '../components/MobileDictationSetupShe
 import { useWorkspaceOnPairedHost } from '../navigation/workspace-execution-host'
 import { MobileBrowserTabActionSheet } from './MobileBrowserTabActionSheet'
 import { getMobileTerminalActionSheetActions } from './mobile-terminal-action-sheet-actions'
-import { getMobileNativeChatCliForkActions } from './mobile-native-chat-cli-fork'
 import { isTerminalPhoneDisplayMode } from './mobile-session-route-helpers'
 import type { MobileSessionController } from './use-mobile-session-controller'
 
@@ -285,19 +285,14 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
         onCloseTab={handleCloseSessionTab}
         bulkCloseActions={bulkCloseActions}
       />
-      <ActionSheetModal
-        visible={agentSessionActionTarget != null}
-        title={agentSessionActionTarget?.title || t('session.sheets.chat', 'Chat')}
-        actions={[
-          ...getMobileNativeChatCliForkActions({
-            controller,
-            tab: agentSessionActionTarget,
-            workspaceOnPairedHost: onPairedHost,
-            onDismiss: () => setAgentSessionActionTarget(null)
-          }),
-          ...closeWithBulkActions(agentSessionActionTarget, () => setAgentSessionActionTarget(null))
-        ]}
+      <MobileNativeChatTabActionSheet
+        controller={controller}
+        source={agentSessionActionTarget}
         onClose={() => setAgentSessionActionTarget(null)}
+        workspaceOnPairedHost={onPairedHost}
+        actions={closeWithBulkActions(agentSessionActionTarget, () =>
+          setAgentSessionActionTarget(null)
+        )}
       />
       <ActionSheetModal
         visible={leaveDrafts != null}
