@@ -5,6 +5,7 @@ import type {
   AgentLaunchSurfaceExecution
 } from '../agent-launch/agent-launch-execution'
 import { executeAgentLaunch } from '../agent-launch/agent-launch-executor'
+import type { RuntimeTerminalCreate } from '../../shared/runtime-terminal-create-contract'
 import type { Automation, AutomationRun } from '../../shared/automations-types'
 import { findReusableAutomationRun } from '../../shared/automation-session-reuse'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
@@ -30,7 +31,7 @@ export async function launchHeadlessAutomationAgent(
   runtime: OrcaRuntimeService,
   request: {
     automation: Automation
-    run: Pick<AutomationRun, 'id' | 'title' | 'scheduledFor'>
+    run: Pick<AutomationRun, 'id' | 'title' | 'scheduledFor' | 'trigger'>
     target: Extract<AutomationRunTargetResult, { ok: true }>
     runs: readonly AutomationRun[]
   }
@@ -68,7 +69,11 @@ export async function launchHeadlessAutomationAgent(
           run,
           repo: target.repo
         })
+        let startupTerminalCreation: RuntimeTerminalCreate | undefined
         const created = await runtime.createManagedWorktree({
+          onStartupTerminalCreated: (terminal) => {
+            startupTerminalCreation = terminal
+          },
           ...create,
           startupAgent,
           ...(startupPrompt ? { startupPrompt } : {})
@@ -87,6 +92,7 @@ export async function launchHeadlessAutomationAgent(
         return {
           worktreeId: created.worktree.id,
           startupTerminalHandle: startup.handle,
+          startupTerminalCreation,
           ...(startup.paneKey ? { startupTerminalPaneKey: startup.paneKey } : {}),
           // Creation stages long prompts while keeping them on the launch command.
           ...(startupPrompt ? { promptRodeLaunchCommand: true } : {})
@@ -103,19 +109,22 @@ export async function launchHeadlessAutomationAgent(
           prompt: startupPrompt ?? '',
           title: run.title,
           suppressStartupUpdatePrompt: true,
-          ...(automation.extraAgentArgs ? { extraAgentArgs: automation.extraAgentArgs } : {})
+          ...(automation.extraAgentArgs ? { extraAgentArgs: automation.extraAgentArgs } : {}),
+          // Run now is the user's act and may start a stopped WSL distro; a scheduled run never does.
+          ...(run.trigger === 'scheduled' ? {} : { wslUserAct: true as const })
         })
         terminal = launched
         const shown = await runtime.showManagedWorktree(`id:${launched.worktreeId}`)
         workspace = { id: launched.worktreeId, displayName: shown.displayName ?? null }
         return {
           handle: launched.handle,
+          terminalCreation: launched,
           ...(launched.paneKey ? { paneKey: launched.paneKey } : {}),
           ...(startupPrompt ? { promptRodeLaunchCommand: true } : {})
         }
       },
-      deliverTerminalPrompt: ({ handle, prompt }) =>
-        runtime.deliverStartupFollowup(handle, { agent, prompt: prompt.text })
+      deliverTerminalPrompt: ({ handle, prompt, terminalCreation }) =>
+        runtime.deliverStartupFollowup(handle, { agent, prompt: prompt.text }, { terminalCreation })
     }
   }
   await launchUntilPublished(execution)

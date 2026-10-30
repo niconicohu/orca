@@ -1,12 +1,10 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type {
   AgentSessionThreadGoalChange,
   AgentSessionThreadGoalResult
 } from '../../../src/shared/agent-session-thread-goal-wire'
-import {
-  agentSessionWriteNoticeEnglish,
-  agentSessionWriteNoticeParts
-} from '../../../src/shared/agent-session-refusal-notice'
+import { agentSessionWriteNoticeParts } from '../../../src/shared/agent-session-refusal-notice'
+import { mobileAgentSessionWriteNoticeText } from './agent-session-write-notice-copy'
 import type { RpcClient } from '../transport/rpc-client'
 import type { MobileStructuredAgentMutate } from './use-mobile-structured-agent-mutation'
 
@@ -27,9 +25,12 @@ export function useMobileStructuredThreadGoalControls(args: {
   onSendError: (message: string) => void
 }): MobileThreadGoalControls | undefined {
   const { sessionKey, client, fence, enabled, supported, mutate, reread, onSendError } = args
+  const generation = useSyncExternalStore(client?.onStateChange ?? (() => () => {}), () =>
+    client?.getGeneration?.()
+  )
   const context = useMemo(
     () => ({ live: false, pending: false }),
-    [sessionKey, client, fence, enabled, supported]
+    [sessionKey, client, generation, fence, enabled, supported]
   )
   useLayoutEffect(() => {
     context.live = true
@@ -40,7 +41,8 @@ export function useMobileStructuredThreadGoalControls(args: {
   const [pendingContext, setPendingContext] = useState<typeof context | null>(null)
   const change = useCallback(
     async (next: AgentSessionThreadGoalChange): Promise<boolean> => {
-      if (!context.live || context.pending || !enabled || !supported || fence === null) {
+      const isCurrent = () => context.live && client?.getGeneration?.() === generation
+      if (!isCurrent() || context.pending || !enabled || !supported || fence === null) {
         return false
       }
       context.pending = true
@@ -50,14 +52,14 @@ export function useMobileStructuredThreadGoalControls(args: {
           'agentSession.threadGoal',
           'agentSession.threadGoal',
           { change: next },
-          () => context.live
+          isCurrent
         )
-        if (!context.live) {
+        if (!isCurrent()) {
           return false
         }
         if (result.status === 'unknown') {
           onSendError(
-            agentSessionWriteNoticeEnglish(
+            mobileAgentSessionWriteNoticeText(
               agentSessionWriteNoticeParts({ kind: 'unconfirmed' }, 'goal')
             )
           )
@@ -74,7 +76,7 @@ export function useMobileStructuredThreadGoalControls(args: {
         }
       }
     },
-    [context, enabled, supported, fence, mutate, reread, onSendError]
+    [context, client, generation, enabled, supported, fence, mutate, reread, onSendError]
   )
   return supported ? { pending: pendingContext === context, disabled: !enabled, change } : undefined
 }

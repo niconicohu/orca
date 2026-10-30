@@ -46,6 +46,7 @@ describe('mobile structured goal visibility', () => {
   let renderer: ReactTestRenderer | null = null
   let hook: ReturnType<typeof useMobileStructuredAgentSession> | null = null
   let listener: ((value: unknown) => void) | null = null
+  let generation = 1
   const onSendError = vi.fn()
   const sendRequest = vi.fn<RpcClient['sendRequest']>()
   const client: RpcClient = {
@@ -56,6 +57,7 @@ describe('mobile structured goal visibility', () => {
     },
     updateTerminalSubscriptionViewport: () => {},
     getState: () => 'connected',
+    getGeneration: () => generation,
     getReconnectAttempt: () => 0,
     getLastConnectedAt: () => null,
     onStateChange: () => () => {},
@@ -95,6 +97,7 @@ describe('mobile structured goal visibility', () => {
     renderer = null
     hook = null
     listener = null
+    generation = 1
     vi.clearAllMocks()
   })
 
@@ -332,5 +335,22 @@ describe('mobile structured goal visibility', () => {
     expect(
       sendRequest.mock.calls.filter(([method]) => method === 'agentSession.options')
     ).toHaveLength(readsBefore)
+  })
+
+  it('fences a retained goal action when the logical connection changes before rerender', async () => {
+    sendRequest.mockImplementation(async (method) =>
+      method === 'agentSession.options'
+        ? ok({ models: [], current: {}, threadGoal: { current: goal } })
+        : ok({})
+    )
+    await mount()
+    await vi.waitFor(() => expect(hook?.threadGoal?.controls).toBeDefined())
+    const retained = hook?.threadGoal?.controls?.change
+    generation += 1
+    await act(async () => expect(await retained?.({ kind: 'clear' })).toBe(false))
+    expect(hook?.threadGoal?.goal).toEqual(goal)
+    expect(sendRequest.mock.calls.some(([method]) => method === 'agentSession.threadGoal')).toBe(
+      false
+    )
   })
 })

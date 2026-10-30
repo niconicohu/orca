@@ -122,6 +122,7 @@ function GoalAction(props: {
   onPress: () => void
   icon: React.ReactNode
 }): React.JSX.Element {
+  useMobileColorScheme()
   const disabled = props.controls.disabled || props.controls.pending
   return (
     <Pressable
@@ -165,7 +166,7 @@ const styles = themedStyleSheet(() => ({
     alignItems: 'center',
     gap: spacing.sm,
     padding: spacing.md,
-    borderRadius: radii.row,
+    borderRadius: radii.control,
     backgroundColor: colors.bgPanel
   },
   actionLabel: { fontSize: typography.bodySize, color: colors.textPrimary },
@@ -174,8 +175,8 @@ const styles = themedStyleSheet(() => ({
     marginHorizontal: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
-    borderTopLeftRadius: radii.row,
-    borderTopRightRadius: radii.row,
+    borderTopLeftRadius: radii.control,
+    borderTopRightRadius: radii.control,
     backgroundColor: colors.bgPanel
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm },

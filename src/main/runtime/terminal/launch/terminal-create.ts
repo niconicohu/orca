@@ -40,7 +40,7 @@ export abstract class OrcaRuntimeWithCreateTerminal extends OrcaRuntimeWithTermi
       if (!ptyController?.spawn) {
         throw new Error('runtime_unavailable')
       }
-      const workspace = await this.resolveTerminalWorkspaceLaunchScope(worktreeSelector, created)
+      const workspace = await this.resolveTerminalCreateLaunchScope(worktreeSelector, created, opts)
       const launchOpts = await this.resolveAgentTerminalCreateOptions(workspace, opts)
       const launchTitleAt = { sequence: this.nextTitleObservationSequence(), epochMs: Date.now() }
       let cwd = this.resolveWorkspaceTerminalStartupCwd(workspace, launchOpts.cwd) ?? workspace.path
@@ -221,7 +221,7 @@ export abstract class OrcaRuntimeWithCreateTerminal extends OrcaRuntimeWithTermi
           ;({ terminalHandle: preAllocatedHandle, tabId, leafId } = launch.surface)
           paneKey = dependencies.makePaneKey(tabId, leafId)
         }
-        this.assertCreatedPtyRegistrationAllowed(result.id, result.incarnationId)
+        this.assertCreatedPtyRegistrationAllowed(result)
         // Provider reattachment still needs this runtime's handle and workspace binding.
         if (!result.stablePaneOwner) {
           this.registerPreAllocatedHandleForPty(result.id, preAllocatedHandle)
