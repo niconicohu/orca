@@ -57,7 +57,6 @@ export function useMobileStructuredAgentSession(
     sessionId,
     sourceIdentity = '',
     enabled,
-    onActionResolved,
     onSendError,
     hostSupport,
     onCommandsChanged
@@ -95,6 +94,7 @@ export function useMobileStructuredAgentSession(
     agent,
     client,
     sessionId,
+    sessionKey,
     enabled,
     fence: state.fence,
     mutate,
@@ -153,8 +153,9 @@ export function useMobileStructuredAgentSession(
     [transcriptItems, sends.optimistic, state.submissions]
   )
   const turnTiming = useMobileStructuredAgentTurnTiming(
-    { ...state, items: transcriptItems },
-    turnId
+    { ...state, threadGoalReport: options.threadGoalReport, connected },
+    turnId,
+    transcriptItems
   )
   const isWorking = structuredAgentSessionHostSaysWorking(state.working, () =>
     isStructuredAgentSessionMainAgentWorking(turnId, state.submissions, state.fence)
@@ -188,7 +189,6 @@ export function useMobileStructuredAgentSession(
     queueCapable,
     queueFollowUps
   })
-  const { stopping } = turnIndicator
   const sendWithOutcome = useMobileStructuredSendWithOutcome({
     agent,
     client,
@@ -198,7 +198,7 @@ export function useMobileStructuredAgentSession(
     queueFollowUps,
     commandsWait,
     stateRef,
-    stopping,
+    stopping: turnIndicator.stopping,
     accept: sends.accept,
     hold: sends.hold,
     commandPending: commandPendingRef,
@@ -225,7 +225,6 @@ export function useMobileStructuredAgentSession(
   )
   const queued = useMobileStructuredQueuedMessageControls({
     ...args,
-    appendComposerText: args.appendComposerText,
     sessionKey,
     agentName: agent ? (tuiAgentDisplayName(agent) ?? agent) : undefined,
     journalItems: state.items,
@@ -240,7 +239,7 @@ export function useMobileStructuredAgentSession(
     chatActive: enabled,
     enabled: enabled && connected,
     mutate,
-    ...(onActionResolved ? { onActionResolved } : {})
+    ...(args.onActionResolved ? { onActionResolved: args.onActionResolved } : {})
   })
   // Stop preserves host-held cards under queue pause; only a later user action resumes them.
   const requestCancel = useCallback(
@@ -280,6 +279,7 @@ export function useMobileStructuredAgentSession(
     imagePreviewsByMessageId: sends.imagePreviewsByMessageId,
     session: {
       messages,
+      threadGoal: turnTiming.threadGoal,
       status,
       transcriptLoading: status === 'loading',
       error: state.error,

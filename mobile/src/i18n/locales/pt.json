@@ -1050,6 +1050,17 @@
       "title": "Algo deu errado",
       "tryAgain": "Tentar novamente",
       "home": "Início"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "Buscando o objetivo",
+        "set": "Objetivo definido",
+        "paused": "Objetivo pausado",
+        "blocked": "Objetivo bloqueado",
+        "limited": "Objetivo limitado",
+        "expand": "Mostrar objetivo completo",
+        "collapse": "Ocultar objetivo completo"
+      }
     }
   },
   "connection": {

@@ -1050,6 +1050,17 @@
       "title": "Une erreur est survenue",
       "tryAgain": "Réessayer",
       "home": "Accueil"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "Objectif en cours",
+        "set": "Objectif défini",
+        "paused": "Objectif suspendu",
+        "blocked": "Objectif bloqué",
+        "limited": "Objectif limité",
+        "expand": "Afficher l'objectif complet",
+        "collapse": "Masquer l'objectif complet"
+      }
     }
   },
   "connection": {

@@ -1003,6 +1003,17 @@
       "title": "문제가 발생했습니다",
       "tryAgain": "다시 시도",
       "home": "홈"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "목표 추구 중",
+        "set": "목표 설정됨",
+        "paused": "일시중지된 목표",
+        "blocked": "목표가 차단되었습니다.",
+        "limited": "목표 제한됨",
+        "expand": "전체 목표 표시",
+        "collapse": "전체 목표 숨기기"
+      }
     }
   },
   "connection": {

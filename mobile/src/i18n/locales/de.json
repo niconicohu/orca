@@ -1007,6 +1007,17 @@
       "title": "Etwas ist schiefgelaufen",
       "tryAgain": "Erneut versuchen",
       "home": "Startseite"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "Ziel wird verfolgt",
+        "set": "Ziel festgelegt",
+        "paused": "Pausiertes Ziel",
+        "blocked": "Ziel blockiert",
+        "limited": "Ziel eingeschränkt",
+        "expand": "Vollständiges Ziel anzeigen",
+        "collapse": "Vollständiges Ziel ausblenden"
+      }
     }
   },
   "connection": {

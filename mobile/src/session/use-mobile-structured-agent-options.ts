@@ -35,6 +35,7 @@ export function useMobileStructuredAgentOptions(args: {
   agent: string | null
   client: RpcClient | null
   sessionId: string | null
+  sessionKey?: string
   enabled: boolean
   fence: number | null
   turnId: string | null
@@ -70,6 +71,7 @@ export function useMobileStructuredAgentOptions(args: {
     updateOptionState,
     conversationSupport,
     imageSupport,
+    threadGoalReport,
     awaitingOptions,
     receiveCatalog,
     isCurrentContext,
@@ -86,6 +88,7 @@ export function useMobileStructuredAgentOptions(args: {
     client,
     optionStamp,
     sendSelection: hostSupport?.sendSelection === true,
+    sessionKey: args.sessionKey,
     newLaunch: createdHere !== undefined,
     worktree: createdHere?.worktree,
     coherentCatalog: hostSupport?.coherentModelCatalog === true
@@ -261,6 +264,7 @@ export function useMobileStructuredAgentOptions(args: {
     })
 
   return {
+    threadGoalReport,
     optionPickerRequest,
     conversationCommands:
       conversationSupport?.sessionId === sessionId ? conversationSupport.commands : NO_COMMANDS,

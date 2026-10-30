@@ -36,6 +36,7 @@ export function useMobileStructuredOptionState(args: {
   optionCatalog: AgentSessionOptionCatalog | null
   sessionId: string | null
   turnId: string | null
+  sessionKey?: string
 }) {
   const {
     agent,
@@ -92,7 +93,16 @@ export function useMobileStructuredOptionState(args: {
     },
     []
   )
-  const contextKey = JSON.stringify([agent, sessionId, newLaunch, worktree, fence, connected])
+  const contextKey = JSON.stringify([
+    agent,
+    sessionId,
+    args.sessionKey,
+    newLaunch,
+    worktree,
+    fence,
+    connected
+  ])
+  const goalIdentityKey = JSON.stringify([agent, sessionId, args.sessionKey, fence])
   const contextRef = useRef({ key: contextKey, client })
   useEffect(() => {
     contextRef.current = { key: contextKey, client }
@@ -157,6 +167,12 @@ export function useMobileStructuredOptionState(args: {
   const awaitingOptions =
     conversationSupport?.sessionId === sessionId && conversationSupport.fence !== fence
 
+  const [goalReport, setGoalReport] = useState<{
+    contextKey: string
+    client: RpcClient
+    value: AgentSessionOptionsResult['threadGoal'] | AgentSessionOptionsResult['reportedThreadGoal']
+  } | null>(null)
+
   const receiveCatalog = (
     catalog: AgentSessionModelCatalogResult | null,
     _event: 'demand' | 'progress' | 'settled'
@@ -205,6 +221,11 @@ export function useMobileStructuredOptionState(args: {
         }
         // Latch for this view; a later view may run the model selected here.
         forgetMobileCreatedStructuredSession(sessionId)
+        setGoalReport({
+          contextKey: goalIdentityKey,
+          client,
+          value: result.threadGoal ?? result.reportedThreadGoal
+        })
         setImageSupport({
           sessionId,
           acceptsImages: result.acceptsImages,
@@ -239,6 +260,7 @@ export function useMobileStructuredOptionState(args: {
     sendSelection,
     controller,
     isCurrentContext,
+    goalIdentityKey,
     coherentCatalog,
     providerStarting,
     sessionId,
@@ -251,6 +273,10 @@ export function useMobileStructuredOptionState(args: {
     projectPermission,
     conversationSupport,
     imageSupport,
+    threadGoalReport:
+      enabled && goalReport?.contextKey === goalIdentityKey && goalReport.client === client
+        ? goalReport.value
+        : undefined,
     awaitingOptions,
     controller,
     reread,

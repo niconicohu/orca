@@ -1003,6 +1003,17 @@
       "title": "問題が発生しました",
       "tryAgain": "再試行",
       "home": "ホーム"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "目標を追求中",
+        "set": "目標を設定済み",
+        "paused": "一時停止されたゴール",
+        "blocked": "ゴール阻止",
+        "limited": "目標が上限に達しました",
+        "expand": "完全な目標を表示",
+        "collapse": "完全な目標を非表示にする"
+      }
     }
   },
   "connection": {

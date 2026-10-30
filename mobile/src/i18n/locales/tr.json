@@ -1007,6 +1007,17 @@
       "title": "Bir sorun oluştu",
       "tryAgain": "Tekrar dene",
       "home": "Ana sayfa"
+    },
+    "native-chat": {
+      "goal": {
+        "pursuing": "Hedef üzerinde çalışılıyor",
+        "set": "Hedef belirlendi",
+        "paused": "Hedef duraklatıldı",
+        "blocked": "Hedef engellendi",
+        "limited": "Hedef sınırına ulaşıldı",
+        "expand": "Hedefin tamamını göster",
+        "collapse": "Hedefin tamamını gizle"
+      }
     }
   },
   "connection": {

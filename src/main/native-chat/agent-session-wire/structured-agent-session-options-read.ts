@@ -91,8 +91,6 @@ export async function readStructuredAgentSessionOptions(
   const session = await context.conversation(sessionId)
   const agent = session.params.provider
   const capabilities = agents.capabilities(agent)
-  const floor = session.journal.context.floor()
-  const contextFloor = floor ? { contextFloor: floor } : {}
   const restingOptions = await atRest()
   const resting = live ? restingOptions : null
   const record = store.getConversation(sessionId)
@@ -179,6 +177,16 @@ export async function readStructuredAgentSessionOptions(
       current.serviceTier = projected.options.serviceTier
     }
   }
+  const floor = session.journal.context.floor()
+  const contextFloor = floor ? { contextFloor: floor } : {}
+  const goalSource = session.journal.threadGoalSource()
+  const cursor = session.journal.cursor()
+  const source = {
+    epoch: cursor.epoch,
+    sequence: cursor.sequence,
+    revision: 0,
+    ...goalSource.transition
+  }
   return {
     ...options,
     ...(live?.effortFixed
@@ -214,8 +222,9 @@ export async function readStructuredAgentSessionOptions(
     acceptsImages: capabilities?.imagePrompts === true && options.acceptsImages !== false,
     ...structuredAgentSessionThreadGoalReport(
       capabilities?.threadGoal === true,
-      session.journal.threadGoal(),
-      contextFloor
+      goalSource.goal,
+      contextFloor,
+      source
     ),
     ...(capabilities?.contextUsage
       ? { contextUsage: { current: session.journal.contextUsage(), ...contextFloor } }
