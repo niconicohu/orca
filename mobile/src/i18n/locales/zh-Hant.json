@@ -985,7 +985,10 @@
         "blocked": "目標受阻",
         "limited": "目標受限",
         "expand": "顯示完整目標",
-        "collapse": "隱藏完整目標"
+        "collapse": "隱藏完整目標",
+        "clear": "清除目標",
+        "pause": "暫停目標",
+        "resume": "恢復目標"
       }
     }
   },

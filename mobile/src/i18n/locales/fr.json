@@ -1025,7 +1025,10 @@
         "blocked": "Objectif bloqué",
         "limited": "Objectif limité",
         "expand": "Afficher l'objectif complet",
-        "collapse": "Masquer l'objectif complet"
+        "collapse": "Masquer l'objectif complet",
+        "clear": "Effacer l'objectif",
+        "pause": "Suspendre l'objectif",
+        "resume": "Reprendre l'objectif"
       }
     }
   },

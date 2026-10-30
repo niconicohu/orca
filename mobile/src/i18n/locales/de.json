@@ -989,7 +989,10 @@
         "blocked": "Ziel blockiert",
         "limited": "Ziel eingeschränkt",
         "expand": "Vollständiges Ziel anzeigen",
-        "collapse": "Vollständiges Ziel ausblenden"
+        "collapse": "Vollständiges Ziel ausblenden",
+        "clear": "Ziel entfernen",
+        "pause": "Ziel pausieren",
+        "resume": "Ziel fortsetzen"
       }
     }
   },

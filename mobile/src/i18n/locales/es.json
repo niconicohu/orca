@@ -1025,7 +1025,10 @@
         "blocked": "Objetivo bloqueado",
         "limited": "Objetivo limitado",
         "expand": "Mostrar objetivo completo",
-        "collapse": "Ocultar objetivo completo"
+        "collapse": "Ocultar objetivo completo",
+        "clear": "Borrar objetivo",
+        "pause": "Pausar objetivo",
+        "resume": "Reanudar objetivo"
       }
     }
   },

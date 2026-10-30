@@ -147,6 +147,7 @@ export function useMobileStructuredOptionState(args: {
   const [goalReport, setGoalReport] = useState<{
     contextKey: string
     client: RpcClient
+    hostChanges: boolean
     value: AgentSessionOptionsResult['threadGoal'] | AgentSessionOptionsResult['reportedThreadGoal']
   } | null>(null)
 
@@ -199,6 +200,7 @@ export function useMobileStructuredOptionState(args: {
         setGoalReport({
           contextKey: goalIdentityKey,
           client,
+          hostChanges: result.threadGoal !== undefined,
           value: result.threadGoal ?? result.reportedThreadGoal
         })
         setImageSupport({
@@ -248,6 +250,12 @@ export function useMobileStructuredOptionState(args: {
       enabled && goalReport?.contextKey === goalIdentityKey && goalReport.client === client
         ? goalReport.value
         : undefined,
+    threadGoalHostChanges:
+      enabled &&
+      goalReport?.contextKey === goalIdentityKey &&
+      goalReport.client === client &&
+      goalReport.hostChanges,
+    rereadThreadGoal: useCallback(() => readRef.current?.(), []),
     awaitingOptions,
     writes,
     readRef,

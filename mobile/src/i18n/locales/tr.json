@@ -989,7 +989,10 @@
         "blocked": "Hedef engellendi",
         "limited": "Hedef sınırına ulaşıldı",
         "expand": "Hedefin tamamını göster",
-        "collapse": "Hedefin tamamını gizle"
+        "collapse": "Hedefin tamamını gizle",
+        "clear": "Hedefi temizle",
+        "pause": "Hedefi duraklat",
+        "resume": "Hedefe devam et"
       }
     }
   },

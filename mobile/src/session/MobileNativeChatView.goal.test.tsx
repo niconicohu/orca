@@ -45,7 +45,10 @@ vi.mock('lucide-react-native', () => ({
   Square: 'Square',
   Goal: 'Goal',
   ChevronDown: 'ChevronDown',
-  ChevronUp: 'ChevronUp'
+  ChevronUp: 'ChevronUp',
+  Pause: 'Pause',
+  Play: 'Play',
+  Trash2: 'Trash2'
 }))
 vi.mock('./native-chat/transcript/MobileNativeChatMessage', () => ({
   MobileNativeChatMessage: 'ChatMessage'
@@ -180,5 +183,56 @@ describe('mobile goal banner', () => {
     expect(root().findAllByProps({ testID: 'thread-goal-banner' })).toHaveLength(0)
     await update({ threadGoal: null })
     expect(root().findAllByProps({ testID: 'thread-goal-banner' })).toHaveLength(0)
+  })
+
+  it('offers clear and status-appropriate controls in the full-goal drawer', async () => {
+    const change = vi.fn(async () => true)
+    const controls = { pending: false, disabled: false, change }
+    await render({ threadGoal: { ...threadGoal, controls } })
+    const expand = root()
+      .findByProps({ testID: 'thread-goal-banner' })
+      .find((node) => hostType(node) === 'Pressable')
+    await act(async () => expand.props.onPress())
+    const action = (label: string) =>
+      root().find(
+        (node) => hostType(node) === 'Pressable' && node.props.accessibilityLabel === label
+      )
+    await act(async () => action('Pause goal').props.onPress())
+    expect(change).toHaveBeenLastCalledWith({ kind: 'status', status: 'paused' })
+    expect(texts()).toContain(threadGoal.goal.objective)
+    await update({
+      threadGoal: { ...threadGoal, goal: { ...threadGoal.goal, status: 'paused' }, controls }
+    })
+    await act(async () => action('Resume goal').props.onPress())
+    expect(change).toHaveBeenLastCalledWith({ kind: 'status', status: 'active' })
+    await act(async () => action('Clear goal').props.onPress())
+    expect(change).toHaveBeenLastCalledWith({ kind: 'clear' })
+    await update({
+      threadGoal: {
+        ...threadGoal,
+        goal: { ...threadGoal.goal, status: 'budgetLimited' },
+        controls: { ...controls, pending: true }
+      }
+    })
+    expect(
+      root().findAll(
+        (node) => hostType(node) === 'Pressable' && node.props.accessibilityLabel === 'Resume goal'
+      )
+    ).toHaveLength(0)
+    expect(action('Clear goal').props.disabled).toBe(true)
+    await act(async () => activateMobileUiLocale('zh'))
+    try {
+      await update({ threadGoal: { ...threadGoal, controls } })
+      expect(action('清除目标').props.disabled).toBe(false)
+      expect(action('暂停目标').props.disabled).toBe(false)
+    } finally {
+      await act(async () => activateMobileUiLocale('en'))
+    }
+    await update({ threadGoal })
+    expect(
+      root().findAll(
+        (node) => hostType(node) === 'Pressable' && node.props.accessibilityLabel === 'Clear goal'
+      )
+    ).toHaveLength(0)
   })
 })

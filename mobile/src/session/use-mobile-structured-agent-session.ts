@@ -93,16 +93,14 @@ export function useMobileStructuredAgentSession(
   })
   const turnId = runningStructuredAgentSessionTurnId(state)
   const options = useMobileStructuredAgentOptions({
+    ...stateArgs,
     agent,
-    client,
-    sessionId,
-    sessionKey,
-    enabled,
     fence: state.fence,
     mutate,
     optionStamp,
     turnId,
-    hostSupport
+    hostSupport,
+    goalActions: { enabled: enabled && connected && state.status === 'ready', onSendError }
   })
   const { conversationCommands, invokeStructuredOption, optionSnapshot, setStructuredOption } =
     options
@@ -270,6 +268,9 @@ export function useMobileStructuredAgentSession(
     () => (client && sessionId ? { client, sessionId } : null),
     [client, sessionId]
   )
+  const threadGoal = turnTiming.threadGoal
+    ? { ...turnTiming.threadGoal, controls: options.threadGoalControls }
+    : null
 
   return {
     ...options,
@@ -277,7 +278,7 @@ export function useMobileStructuredAgentSession(
     imagePreviewsByMessageId: sends.imagePreviewsByMessageId,
     session: {
       messages,
-      threadGoal: turnTiming.threadGoal,
+      threadGoal,
       status,
       transcriptLoading: status === 'loading',
       error: state.error,
@@ -292,6 +293,7 @@ export function useMobileStructuredAgentSession(
     turnId,
     turnIndicator,
     ...turnTiming,
+    threadGoal,
     sendWithOutcome,
     cancel: () => void stopPress.track(() => requestCancel()),
     cancelPrompt: (prompt?: { itemId: string; expectedRevision: number }) =>

@@ -1,9 +1,13 @@
 import { useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { BottomDrawer } from '../components/BottomDrawer'
-import { ChevronDown, ChevronUp, Goal } from 'lucide-react-native'
+import { ChevronDown, ChevronUp, Goal, Pause, Play, Trash2 } from 'lucide-react-native'
 import type { AgentJournalThreadGoal } from '../../../src/shared/agent-session-journal-types'
-import { agentSessionThreadGoalElapsedSeconds } from '../../../src/shared/agent-session-thread-goal'
+import {
+  agentSessionThreadGoalElapsedSeconds,
+  agentSessionThreadGoalStatusChange
+} from '../../../src/shared/agent-session-thread-goal'
+import type { MobileThreadGoalControls } from './use-mobile-structured-thread-goal-controls'
 import {
   NATIVE_CHAT_THREAD_GOAL_COPY as copy,
   nativeChatThreadGoalStatusKey
@@ -19,12 +23,14 @@ export type MobileNativeChatThreadGoal = {
   goal: AgentJournalThreadGoal
   runningTurn: { startedAt: number | null } | null
   hostClockOffsetMs: number
+  controls?: MobileThreadGoalControls
 }
 
 export function MobileNativeChatThreadGoalBanner({
   goal,
   runningTurn,
-  hostClockOffsetMs
+  hostClockOffsetMs,
+  controls
 }: MobileNativeChatThreadGoal): React.JSX.Element | null {
   useMobileColorScheme()
   const t = useMobileTranslation()
@@ -76,6 +82,31 @@ export function MobileNativeChatThreadGoalBanner({
         onClose={() => setExpanded(false)}
         scrollResetKey={goal.objective}
       >
+        {controls ? (
+          <View style={styles.actions}>
+            {agentSessionThreadGoalStatusChange(goal.status) === 'paused' ? (
+              <GoalAction
+                label={t('components.native-chat.goal.pause', 'Pause goal')}
+                controls={controls}
+                onPress={() => void controls.change({ kind: 'status', status: 'paused' })}
+                icon={<Pause size={16} color={colors.textSecondary} />}
+              />
+            ) : agentSessionThreadGoalStatusChange(goal.status) === 'active' ? (
+              <GoalAction
+                label={t('components.native-chat.goal.resume', 'Resume goal')}
+                controls={controls}
+                onPress={() => void controls.change({ kind: 'status', status: 'active' })}
+                icon={<Play size={16} color={colors.textSecondary} />}
+              />
+            ) : null}
+            <GoalAction
+              label={t('components.native-chat.goal.clear', 'Clear goal')}
+              controls={controls}
+              onPress={() => void controls.change({ kind: 'clear' })}
+              icon={<Trash2 size={16} color={colors.statusRed} />}
+            />
+          </View>
+        ) : null}
         <Text style={[styles.fullObjective, styles.label]}>{label}</Text>
         <Text style={styles.fullObjective} selectable>
           {goal.objective}
@@ -85,7 +116,60 @@ export function MobileNativeChatThreadGoalBanner({
   )
 }
 
+function GoalAction(props: {
+  label: string
+  controls: MobileThreadGoalControls
+  onPress: () => void
+  icon: React.ReactNode
+}): React.JSX.Element {
+  const disabled = props.controls.disabled || props.controls.pending
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={props.label}
+      accessibilityState={{ disabled, busy: props.controls.pending }}
+      disabled={disabled}
+      onPress={() => {
+        if (!disabled) {
+          props.onPress()
+        }
+      }}
+      style={({ pressed }) => [
+        styles.action,
+        pressed && styles.pressed,
+        disabled && styles.disabled
+      ]}
+    >
+      <View style={styles.actionIcon}>
+        {props.controls.pending ? (
+          <ActivityIndicator size="small" color={colors.textMuted} />
+        ) : (
+          props.icon
+        )}
+      </View>
+      <Text style={styles.actionLabel}>{props.label}</Text>
+    </Pressable>
+  )
+}
+
 const styles = themedStyleSheet(() => ({
+  actions: { gap: spacing.sm, padding: spacing.sm },
+  actionIcon: {
+    width: spacing.xl,
+    height: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.row,
+    backgroundColor: colors.bgPanel
+  },
+  actionLabel: { fontSize: typography.bodySize, color: colors.textPrimary },
+  disabled: { opacity: 0.5 },
   strip: {
     marginHorizontal: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,

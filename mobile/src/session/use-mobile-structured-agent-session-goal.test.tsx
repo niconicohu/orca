@@ -9,6 +9,8 @@ import type { RpcClient } from '../transport/rpc-client'
 import { useMobileStructuredAgentSession } from './use-mobile-structured-agent-session'
 import {
   CAPABLE,
+  fieldsOf,
+  mutationOk,
   ok,
   snapshotEvent
 } from './use-mobile-structured-agent-session-queued.test-fixture'
@@ -44,6 +46,7 @@ describe('mobile structured goal visibility', () => {
   let renderer: ReactTestRenderer | null = null
   let hook: ReturnType<typeof useMobileStructuredAgentSession> | null = null
   let listener: ((value: unknown) => void) | null = null
+  const onSendError = vi.fn()
   const sendRequest = vi.fn<RpcClient['sendRequest']>()
   const client: RpcClient = {
     sendRequest,
@@ -76,7 +79,7 @@ describe('mobile structured goal visibility', () => {
       connected,
       agent: 'codex',
       hostSupport: CAPABLE,
-      onSendError: vi.fn()
+      onSendError
     })
     return null
   }
@@ -178,5 +181,156 @@ describe('mobile structured goal visibility', () => {
     sendRequest.mockImplementation(async () => ok({ models: [], current: {} }))
     await mount([goalRow(1, goal)])
     expect(hook).toHaveProperty('threadGoal', null)
+  })
+
+  it.each([
+    { kind: 'clear' },
+    { kind: 'status', status: 'paused' },
+    { kind: 'status', status: 'active' }
+  ] as const)('changes the host goal through the fenced mutation: %j', async (change) => {
+    sendRequest.mockImplementation(async (method) =>
+      method === 'agentSession.options'
+        ? ok({ models: [], current: {}, threadGoal: { current: goal } })
+        : mutationOk({ change: change.kind })
+    )
+    await mount()
+    await vi.waitFor(() => expect(hook?.threadGoal?.controls).toBeDefined())
+    const readsBefore = sendRequest.mock.calls.filter(
+      ([method]) => method === 'agentSession.options'
+    ).length
+    await act(async () => expect(await hook?.threadGoal?.controls?.change(change)).toBe(true))
+    const request = sendRequest.mock.calls.find(([method]) => method === 'agentSession.threadGoal')
+    expect(fieldsOf(request?.[1])).toMatchObject({
+      envelope: { sessionId: 'session-1', expectedRuntimeFence: 3 },
+      change
+    })
+    expect(hook?.threadGoal?.goal).toEqual(goal)
+    expect(
+      sendRequest.mock.calls.filter(([method]) => method === 'agentSession.options').length
+    ).toBeGreaterThan(readsBefore)
+  })
+
+  it('keeps reported-only goals readable without offering unsupported writes', async () => {
+    sendRequest.mockImplementation(async (method) =>
+      method === 'agentSession.options'
+        ? ok({ models: [], current: {}, reportedThreadGoal: { current: goal } })
+        : ok({})
+    )
+    await mount()
+    await vi.waitFor(() => expect(hook?.threadGoal?.goal).toEqual(goal))
+    expect(hook?.threadGoal?.controls).toBeUndefined()
+    expect(sendRequest.mock.calls.some(([method]) => method === 'agentSession.threadGoal')).toBe(
+      false
+    )
+  })
+
+  it('blocks repeated taps, reports unknown delivery, and never replays a goal change', async () => {
+    let finish: ((value: ReturnType<typeof ok>) => void) | undefined
+    sendRequest.mockImplementation(async (method) =>
+      method === 'agentSession.options'
+        ? ok({ models: [], current: {}, threadGoal: { current: goal } })
+        : method === 'agentSession.threadGoal'
+          ? new Promise((resolve) => {
+              finish = resolve
+            })
+          : ok({})
+    )
+    await mount()
+    await vi.waitFor(() => expect(hook?.threadGoal?.controls).toBeDefined())
+    let first: Promise<boolean> | undefined
+    await act(async () => {
+      first = hook?.threadGoal?.controls?.change({ kind: 'clear' })
+      expect(await hook?.threadGoal?.controls?.change({ kind: 'clear' })).toBe(false)
+    })
+    expect(hook?.threadGoal?.controls?.pending).toBe(true)
+    await act(async () =>
+      finish?.({ id: 'goal', ok: false, error: { code: 'transport_timeout', message: 'timeout' } })
+    )
+    expect(await first).toBe(false)
+    expect(onSendError).toHaveBeenCalledWith("Orca couldn't confirm what happened. Check the chat.")
+    expect(hook?.threadGoal?.goal).toEqual(goal)
+    expect(hook?.threadGoal?.controls?.pending).toBe(false)
+    expect(
+      sendRequest.mock.calls.filter(([method]) => method === 'agentSession.threadGoal')
+    ).toHaveLength(1)
+  })
+
+  it('rejects a retained action after host or connection cutover', async () => {
+    sendRequest.mockImplementation(async (method) =>
+      method === 'agentSession.options'
+        ? ok({ models: [], current: {}, threadGoal: { current: goal } })
+        : ok({})
+    )
+    await mount()
+    await vi.waitFor(() => expect(hook?.threadGoal?.controls).toBeDefined())
+    const retained = hook?.threadGoal?.controls?.change
+    await act(async () => renderer?.update(createElement(Harness, { connected: false })))
+    expect(hook?.threadGoal?.controls?.disabled).toBe(true)
+    await act(async () => expect(await retained?.({ kind: 'clear' })).toBe(false))
+    await act(async () => renderer?.update(createElement(Harness, { sourceIdentity: 'host-b' })))
+    await act(async () => expect(await retained?.({ kind: 'clear' })).toBe(false))
+    expect(sendRequest.mock.calls.some(([method]) => method === 'agentSession.threadGoal')).toBe(
+      false
+    )
+  })
+
+  it('refreshes an acknowledged clear without reviving an older journal goal', async () => {
+    let cleared = false
+    sendRequest.mockImplementation(async (method) => {
+      if (method === 'agentSession.options') {
+        return ok({
+          models: [],
+          current: {},
+          threadGoal: {
+            current: cleared ? null : goal,
+            source: { epoch: 'epoch-1', sequence: cleared ? 2 : 1, revision: 1 }
+          }
+        })
+      }
+      if (method === 'agentSession.threadGoal') {
+        cleared = true
+        return mutationOk({ change: 'clear' })
+      }
+      return ok({})
+    })
+    await mount([goalRow(1, goal)])
+    await vi.waitFor(() => expect(hook?.threadGoal?.controls).toBeDefined())
+    await act(async () =>
+      expect(await hook?.threadGoal?.controls?.change({ kind: 'clear' })).toBe(true)
+    )
+    expect(hook?.threadGoal).toBeNull()
+    expect(hook?.session.threadGoal).toBeNull()
+  })
+
+  it('does not settle an old-host write into the replacement session', async () => {
+    let finish: ((value: ReturnType<typeof ok>) => void) | undefined
+    sendRequest.mockImplementation(async (method) =>
+      method === 'agentSession.options'
+        ? ok({ models: [], current: {}, threadGoal: { current: goal } })
+        : method === 'agentSession.threadGoal'
+          ? new Promise((resolve) => {
+              finish = resolve
+            })
+          : ok({})
+    )
+    await mount()
+    await vi.waitFor(() => expect(hook?.threadGoal?.controls).toBeDefined())
+    let pending: Promise<boolean> | undefined
+    await act(async () => {
+      pending = hook?.threadGoal?.controls?.change({ kind: 'clear' })
+    })
+    await act(async () => renderer?.update(createElement(Harness, { sourceIdentity: 'host-b' })))
+    await vi.waitFor(() => expect(hook?.threadGoal?.controls).toBeDefined())
+    expect(hook?.threadGoal?.controls?.pending).toBe(false)
+    const readsBefore = sendRequest.mock.calls.filter(
+      ([method]) => method === 'agentSession.options'
+    ).length
+    await act(async () => finish?.(mutationOk({ change: 'clear' })))
+    expect(await pending).toBe(false)
+    expect(hook?.threadGoal?.goal).toEqual(goal)
+    expect(onSendError).not.toHaveBeenCalled()
+    expect(
+      sendRequest.mock.calls.filter(([method]) => method === 'agentSession.options')
+    ).toHaveLength(readsBefore)
   })
 })

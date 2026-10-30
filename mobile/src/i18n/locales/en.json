@@ -1284,7 +1284,10 @@
         "blocked": "Goal blocked",
         "limited": "Goal limited",
         "expand": "Show full goal",
-        "collapse": "Hide full goal"
+        "collapse": "Hide full goal",
+        "clear": "Clear goal",
+        "pause": "Pause goal",
+        "resume": "Resume goal"
       }
     }
   },

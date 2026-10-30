@@ -37,6 +37,7 @@ import {
   structuredOptionPickBlockingId
 } from '../../../src/shared/structured-agent-session-option-pick-book'
 import { useMobileStructuredOptionSurface } from './use-mobile-structured-option-surface'
+import { useMobileStructuredThreadGoalControls } from './use-mobile-structured-thread-goal-controls'
 
 const NO_COMMANDS: readonly AgentSessionConversationCommand[] = []
 
@@ -49,6 +50,7 @@ export function useMobileStructuredAgentOptions(args: {
   fence: number | null
   mutate: StructuredAgentSessionMutate
   optionStamp?: string
+  goalActions?: { enabled: boolean; onSendError: (message: string) => void }
   turnId: string | null
   hostSupport: Pick<
     StructuredAgentSessionHostSupport,
@@ -76,6 +78,8 @@ export function useMobileStructuredAgentOptions(args: {
     conversationSupport,
     imageSupport,
     threadGoalReport,
+    threadGoalHostChanges,
+    rereadThreadGoal,
     awaitingOptions,
     writes,
     readRef,
@@ -270,8 +274,20 @@ export function useMobileStructuredAgentOptions(args: {
       lockSnapshot: (snapshot) => lockSnapshotRef.current(snapshot)
     })
 
+  const threadGoalControls = useMobileStructuredThreadGoalControls({
+    sessionKey: args.sessionKey ?? sessionId ?? '',
+    client,
+    fence,
+    enabled: args.goalActions?.enabled === true,
+    supported: threadGoalHostChanges,
+    mutate,
+    reread: rereadThreadGoal,
+    onSendError: args.goalActions?.onSendError ?? (() => {})
+  })
+
   return {
     threadGoalReport,
+    threadGoalControls,
     optionPickerRequest,
     conversationCommands:
       conversationSupport?.sessionId === sessionId ? conversationSupport.commands : NO_COMMANDS,
