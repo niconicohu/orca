@@ -16,6 +16,12 @@ import { loadMainLayoutModel } from '@/runtime/main-loaded-layout-frames.test-fi
 import { endLayoutFramePositions } from '@/runtime/layout-frame-position'
 import { openWorkspaceLayoutFrameSync } from '@/runtime/workspace-layout-frame-sync'
 import { openStructuredAgentSessionProvisionalTab } from '@/lib/structured-agent-session-launch-surface'
+import {
+  writeStructuredAgentLaunchRecord,
+  deleteStructuredAgentLaunchRecord,
+  resetStructuredAgentLaunchPersistenceForTests
+} from '@/lib/agent-session/launch/structured-agent-session-launch-persistence'
+import { notifyStructuredLaunchListeners } from '@/lib/agent-session/launch/structured-agent-session-launch-registry'
 import { useSideChatPane } from './use-side-chat-pane'
 
 vi.mock('../../../../shared/layout-owner-switch', () => ({ ORCA_LAYOUT_OWNER_IS_MAIN: true }))
@@ -57,6 +63,7 @@ const groupOf = (sessionId: string) =>
   workspaceTabs().find((tab) => tab.entityId === sessionId)?.groupId
 
 beforeEach(async () => {
+  resetStructuredAgentLaunchPersistenceForTests()
   layoutApplyTestTransport.reset()
   const session = addWorkspace(
     addWorkspace(emptySession(), FOLDER_KEY, [
@@ -169,5 +176,38 @@ it('collects existing and future forks through main-owned frames, then leaves ne
   )
   await act(settle)
   await vi.waitFor(() => expect(groupOf('codex_three')).toBe(groupOf('codex_one')))
+  expect(layoutApplyTestTransport.sentOfType('splitGroup')).toHaveLength(1)
+})
+
+it('keeps an unconfirmed fork at its create address until publication, then groups it', async () => {
+  for (const sessionId of ['codex_one', 'codex_two']) {
+    writeStructuredAgentLaunchRecord({
+      sessionId,
+      agent: 'codex',
+      executionHostId: 'local',
+      lifecycle: 'pending',
+      clientOperationId: `create-${sessionId}`,
+      payloadFingerprint: 'a'.repeat(64),
+      expectedRuntimeFence: null,
+      sideChatOf: 'codex_parent',
+      surfaceAddress: { worktreeId: FOLDER_KEY, precedingTabIds: ['parent'] }
+    })
+  }
+  useAppStore.setState((state) => ({
+    settings: { ...state.settings!, nativeChatSideChatPane: true }
+  }))
+  renderHook(() => useSideChatPane(FOLDER_KEY, true))
+  await act(settle)
+  expect(layoutApplyTestTransport.sentOfType('splitGroup')).toHaveLength(0)
+  expect(groupOf('codex_one')).toBe(groupOf('codex_parent'))
+  act(() => {
+    for (const id of ['codex_one', 'codex_two']) {
+      deleteStructuredAgentLaunchRecord(id)
+    }
+    notifyStructuredLaunchListeners()
+  })
+  await act(settle)
+  await vi.waitFor(() => expect(groupOf('codex_one')).not.toBe(groupOf('codex_parent')))
+  expect(groupOf('codex_two')).toBe(groupOf('codex_one'))
   expect(layoutApplyTestTransport.sentOfType('splitGroup')).toHaveLength(1)
 })

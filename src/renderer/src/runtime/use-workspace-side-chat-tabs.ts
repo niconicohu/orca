@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
+import {
+  getStructuredAgentSessionLaunchLifecycle,
+  subscribeStructuredAgentLaunchStatus
+} from '@/lib/agent-session/launch/structured-agent-session-launch-registry'
 import { useShallow } from 'zustand/react/shallow'
 import { structuredChatTabIsSideChat } from './structured-chat-tab-side-chat'
 import {
@@ -11,7 +15,10 @@ import type { Tab } from '../../../shared/tab-types'
 
 const EMPTY_TABS: Tab[] = []
 
-export function useWorkspaceSideChatTabs(worktreeId: string): ReadonlySet<string> {
+export function useWorkspaceSideChatTabs(
+  worktreeId: string,
+  publishedOnly = false
+): ReadonlySet<string> {
   const tabs = useAppStore((state) => state.unifiedTabsByWorktree[worktreeId] ?? EMPTY_TABS)
   const owners = useAppStore(
     useShallow((state) => [
@@ -39,7 +46,10 @@ export function useWorkspaceSideChatTabs(worktreeId: string): ReadonlySet<string
   }, [feeds])
   const subscribe = useMemo(
     () => (changed: () => void) => {
-      const releases = feeds.map((feed) => feed.subscribe(changed))
+      const releases = [
+        ...feeds.map((feed) => feed.subscribe(changed)),
+        subscribeStructuredAgentLaunchStatus(changed)
+      ]
       return () => releases.forEach((release) => release())
     },
     [feeds]
@@ -49,7 +59,11 @@ export function useWorkspaceSideChatTabs(worktreeId: string): ReadonlySet<string
       .filter(
         (tab) =>
           tab.contentType === 'agent-session' &&
-          structuredChatTabIsSideChat(useAppStore.getState(), tab)
+          structuredChatTabIsSideChat(useAppStore.getState(), tab) &&
+          (!publishedOnly ||
+            [null, 'published'].includes(
+              getStructuredAgentSessionLaunchLifecycle(worktreeId, tab.entityId)
+            ))
       )
       .map((tab) => tab.id)
       .join('\n')

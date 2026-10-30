@@ -15,10 +15,14 @@ export function sideChatPanePlacement(
   tabs: readonly Tab[],
   groups: readonly TabGroup[],
   sideChatTabIds: ReadonlySet<string>,
-  splitDirection: 'right' | 'down'
+  splitDirection: 'right' | 'down',
+  movableTabIds: ReadonlySet<string> = sideChatTabIds
 ): TabDrop | null {
-  const destination = sideChatOnlyGroup(groups, sideChatTabIds)
-  const tab = tabs.find((tab) => sideChatTabIds.has(tab.id) && tab.groupId !== destination?.id)
+  const destination = sideChatOnlyGroup(
+    groups.filter((group) => group.tabOrder.some((id) => movableTabIds.has(id))),
+    sideChatTabIds
+  )
+  const tab = tabs.find((tab) => movableTabIds.has(tab.id) && tab.groupId !== destination?.id)
   if (!tab) {
     return null
   }
