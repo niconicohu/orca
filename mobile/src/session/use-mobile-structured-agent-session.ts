@@ -225,6 +225,7 @@ export function useMobileStructuredAgentSession(
   )
   const queued = useMobileStructuredQueuedMessageControls({
     ...args,
+    appendComposerText: args.appendComposerText,
     sessionKey,
     agentName: agent ? (tuiAgentDisplayName(agent) ?? agent) : undefined,
     journalItems: state.items,
@@ -238,8 +239,7 @@ export function useMobileStructuredAgentSession(
     editCapable: hostSupport ? hostSupport.queuedMessageEdit === true : null,
     chatActive: enabled,
     enabled: enabled && connected,
-    mutate,
-    ...(args.onActionResolved ? { onActionResolved: args.onActionResolved } : {})
+    mutate
   })
   // Stop preserves host-held cards under queue pause; only a later user action resumes them.
   const requestCancel = useCallback(
