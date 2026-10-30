@@ -1,22 +1,29 @@
-import { useState } from 'react'
 import { defineFixture } from '../../component-fixtures/component-fixture'
-import { getDefaultSettings } from '../../../../shared/constants'
+import { useAppStore } from '@/store'
 import { ChatBehaviorSetting } from './ChatBehaviorSetting'
 
-function ChatBehaviorPreview(): React.JSX.Element {
-  const [settings, setSettings] = useState(() => ({
-    ...getDefaultSettings('/workspace'),
-    nativeChatSideChatPane: true
-  }))
-  return (
+function ChatBehaviorPreview(): React.JSX.Element | null {
+  const settings = useAppStore((state) => state.settings)
+  return settings ? (
     <div className="bg-background p-4 text-foreground">
       <ChatBehaviorSetting
         settings={settings}
-        updateSettings={(updates) => setSettings((current) => ({ ...current, ...updates }))}
+        updateSettings={(updates) =>
+          useAppStore.setState((state) => ({
+            settings: state.settings ? { ...state.settings, ...updates } : null
+          }))
+        }
         forceVisible
       />
     </div>
-  )
+  ) : null
 }
 
-export const sideChatPane = defineFixture({ width: 640, render: () => <ChatBehaviorPreview /> })
+export const sideChatPane = defineFixture({
+  width: 640,
+  setup: () =>
+    useAppStore.setState((state) => ({
+      settings: state.settings ? { ...state.settings, nativeChatSideChatPane: true } : null
+    })),
+  render: () => <ChatBehaviorPreview />
+})
