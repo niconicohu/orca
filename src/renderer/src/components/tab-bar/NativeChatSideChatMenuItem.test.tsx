@@ -2,14 +2,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { toast } from 'sonner'
-import type { ReactNode } from 'react'
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { NativeChatSideChatMenuItem } from './NativeChatSideChatMenuItem'
 
 type MenuState = { unifiedTabsByWorktree: { workspace: { id: string }[] } }
 
-const mocks = vi.hoisted(() => ({ open: vi.fn() }))
+const mocks = vi.hoisted(() => ({ open: vi.fn(), readOnlySupported: true }))
 vi.mock('@/runtime/structured-agent-session-host-capability', () => ({
-  useStructuredAgentSessionHostCapability: () => true
+  useStructuredAgentSessionHostCapability: () => mocks.readOnlySupported
 }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 vi.mock('@/store', () => ({
@@ -25,16 +25,30 @@ vi.mock('@/runtime/structured-agent-session-owner', () => ({
 vi.mock('../native-chat/use-native-chat-side-chat', () => ({
   useNativeChatSideChat: () => mocks.open
 }))
-vi.mock('@/components/ui/dropdown-menu', () => ({
-  DropdownMenuSub: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuSubContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuSubTrigger: ({ children }: { children: ReactNode }) => <span>{children}</span>,
-  DropdownMenuItem: ({ children, onSelect }: { children: ReactNode; onSelect: () => void }) => (
-    <button onClick={onSelect}>{children}</button>
-  )
-}))
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  mocks.readOnlySupported = true
+})
 afterEach(cleanup)
+
+async function openSideChatMenu(onComplete?: () => void) {
+  render(
+    <ContextMenu>
+      <ContextMenuTrigger>Chat tab</ContextMenuTrigger>
+      <ContextMenuContent>
+        <NativeChatSideChatMenuItem
+          tab={{ id: 'parent-tab', worktreeId: 'workspace' }}
+          nativeChat={{ sessionId: 'parent-session', agent: 'codex' }}
+          onComplete={onComplete}
+        />
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+  fireEvent.contextMenu(screen.getByText('Chat tab'), { clientX: 40, clientY: 20 })
+  await screen.findByRole('menu')
+  fireEvent.keyDown(screen.getByRole('menuitem', { name: 'New side chat' }), { key: 'ArrowRight' })
+  await screen.findByRole('menuitem', { name: 'Read only' })
+}
 
 it.each(['refused', 'rejected'] as const)(
   'reports a %s side-chat menu action visibly',
@@ -45,14 +59,8 @@ it.each(['refused', 'rejected'] as const)(
       mocks.open.mockRejectedValue(new Error('private transport details'))
     }
     const onComplete = vi.fn()
-    render(
-      <NativeChatSideChatMenuItem
-        tab={{ id: 'parent-tab', worktreeId: 'workspace' }}
-        nativeChat={{ sessionId: 'parent-session', agent: 'codex' }}
-        onComplete={onComplete}
-      />
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Use main chat permissions' }))
+    await openSideChatMenu(onComplete)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Use main chat permissions' }))
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledExactlyOnceWith('Could not open a side chat.')
     )
@@ -64,13 +72,8 @@ it.each(['Read only', 'Use main chat permissions'] as const)(
   'opens %s with its selected policy',
   async (label) => {
     mocks.open.mockResolvedValue(true)
-    render(
-      <NativeChatSideChatMenuItem
-        tab={{ id: 'parent-tab', worktreeId: 'workspace' }}
-        nativeChat={{ sessionId: 'parent-session', agent: 'codex' }}
-      />
-    )
-    fireEvent.click(screen.getByRole('button', { name: label }))
+    await openSideChatMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: label }))
     await waitFor(() =>
       expect(mocks.open).toHaveBeenCalledExactlyOnceWith(
         '',
@@ -80,3 +83,15 @@ it.each(['Read only', 'Use main chat permissions'] as const)(
     )
   }
 )
+
+it('keeps read-only unavailable on older hosts while inherited permissions remain usable', async () => {
+  mocks.readOnlySupported = false
+  mocks.open.mockResolvedValue(true)
+  await openSideChatMenu()
+  const readOnly = screen.getByRole('menuitem', { name: 'Read only' })
+  expect(readOnly.getAttribute('aria-disabled')).toBe('true')
+  fireEvent.click(readOnly)
+  expect(mocks.open).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Use main chat permissions' }))
+  await waitFor(() => expect(mocks.open).toHaveBeenCalledExactlyOnceWith('', [], 'inherit'))
+})
