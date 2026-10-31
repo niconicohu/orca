@@ -18,15 +18,15 @@ export function sideChatPanePlacement(
   splitDirection: 'right' | 'down',
   movableTabIds: ReadonlySet<string> = sideChatTabIds
 ): TabDrop | null {
-  const destination = sideChatOnlyGroup(
-    groups.filter((group) => group.tabOrder.some((id) => movableTabIds.has(id))),
-    sideChatTabIds
-  )
+  const destination = sideChatOnlyGroup(groups, sideChatTabIds)
   const tab = tabs.find((tab) => movableTabIds.has(tab.id) && tab.groupId !== destination?.id)
   if (!tab) {
     return null
   }
   if (destination) {
+    if (!destination.tabOrder.some((id) => movableTabIds.has(id))) {
+      return null
+    }
     return { kind: 'move', tabId: tab.id, groupId: destination.id, index: 0 }
   }
   const source = groups.find((group) => group.id === tab.groupId)

@@ -24,6 +24,7 @@ import {
 } from '@/lib/agent-session/launch/structured-agent-session-launch-persistence'
 import { notifyStructuredLaunchListeners } from '@/lib/agent-session/launch/structured-agent-session-launch-registry'
 import { useSideChatPane } from './use-side-chat-pane'
+import { sideChatPanePlacement } from './side-chat-pane-placement'
 import { openNativeChatSideChat } from '@/lib/open-native-chat-side-chat'
 import type * as LaunchPlan from '@/lib/agent-session-launch-plan'
 
@@ -368,4 +369,25 @@ it('removes an unused prepared split when the launch cannot start, and preserves
   expect(useAppStore.getState().groupsByWorktree[GIT_KEY]!.map((group) => group.tabOrder)).toEqual([
     ['other-tab', 'structured-agent-session-codex_new_1']
   ])
+})
+
+it('waits for an existing pending side-chat pane instead of splitting another one', () => {
+  const state = useAppStore.getState()
+  const tab = state.getTab('other-tab')!
+  const group = state.groupsByWorktree[GIT_KEY]![0]!
+  const tabs = [
+    { ...tab, id: 'older', groupId: 'source' },
+    { ...tab, id: 'pending', groupId: 'btw' }
+  ]
+  const groups = [
+    { ...group, id: 'source', tabOrder: ['parent', 'older'] },
+    { ...group, id: 'btw', tabOrder: ['pending'] }
+  ]
+  const sideIds = new Set(['older', 'pending'])
+  expect(sideChatPanePlacement(tabs, groups, sideIds, 'right', new Set(['older']))).toBeNull()
+  expect(sideChatPanePlacement(tabs, groups, sideIds, 'right', sideIds)).toMatchObject({
+    kind: 'move',
+    tabId: 'older',
+    groupId: 'btw'
+  })
 })
