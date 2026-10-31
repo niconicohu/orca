@@ -42,7 +42,7 @@ test('chat body weight snaps to three distinct steps while headings, bold and co
   try {
     await orcaPage.evaluate(async () => {
       await window.__store!.getState().updateSettings({
-        experimentalNativeChat: true,
+        agentDefaultSurface: 'chat',
         uiLanguage: 'en',
         nativeChatAppearance: undefined
       })
