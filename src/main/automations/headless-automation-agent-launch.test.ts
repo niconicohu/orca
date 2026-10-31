@@ -1,3 +1,4 @@
+import { EVERY_AGENT_CHAT } from '../../shared/native-chat/every-agent-chat.test-fixture'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AutomationRun } from '../../shared/automations-types'
 import { launchHeadlessAutomationAgent } from './headless-automation-agent-launch'
@@ -14,7 +15,7 @@ beforeEach(() => {
   deliverTerminalAgentLaunchPrompt.mockResolvedValue(true)
 })
 
-const CHAT_DEFAULT_ON = { experimentalNativeChat: true }
+const CHAT_DEFAULT_ON = { nativeChatProviders: EVERY_AGENT_CHAT }
 
 function harness(options: { startupTerminal?: Record<string, unknown> | null } = {}) {
   const runtime = {
@@ -68,7 +69,12 @@ function automation(overrides: Record<string, unknown>) {
   }
 }
 
-const RUN = { id: 'run-1', title: 'Nightly', scheduledFor: Date.UTC(2026, 9, 9, 3) }
+const RUN = {
+  id: 'run-1',
+  title: 'Nightly',
+  scheduledFor: Date.UTC(2026, 9, 9, 3),
+  trigger: 'scheduled' as const
+}
 const TARGET = { ok: true, repo: { id: 'repo-1', path: '/repo', displayName: 'repo' } }
 
 function previousRun(overrides: Partial<AutomationRun> = {}): AutomationRun {
@@ -100,7 +106,8 @@ function previousRun(overrides: Partial<AutomationRun> = {}): AutomationRun {
 function launch(
   runtime: ReturnType<typeof harness>,
   overrides: Record<string, unknown>,
-  runs: AutomationRun[] = []
+  runs: AutomationRun[] = [],
+  run: typeof RUN | (Omit<typeof RUN, 'trigger'> & { trigger: 'manual' }) = RUN
 ) {
   return launchHeadlessAutomationAgent(
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the launch reads only the members faked in harness().
@@ -108,7 +115,7 @@ function launch(
     {
       // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only these automation fields are read.
       automation: automation(overrides) as never,
-      run: RUN,
+      run,
       // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only the repo is read.
       target: TARGET as never,
       runs
@@ -117,6 +124,20 @@ function launch(
 }
 
 describe('headless automation agent launch', () => {
+  // E9: the runtime holds a background start on a stopped WSL distro; only Run now names the user.
+  it("starts Run now as the user's act, and a scheduled run as background work", async () => {
+    const scheduled = harness()
+    await launch(scheduled, {})
+    expect(scheduled.launchAgentTerminal.mock.calls[0]?.[1]).not.toHaveProperty('wslUserAct')
+
+    const manual = harness()
+    await launch(manual, {}, [], { ...RUN, trigger: 'manual' })
+    expect(manual.launchAgentTerminal).toHaveBeenCalledWith(
+      'id:wt-1',
+      expect.objectContaining({ wslUserAct: true })
+    )
+  })
+
   it('starts a post-start agent bare and delivers its prompt once, after the terminal is recorded', async () => {
     const runtime = harness()
     let finishDelivery: (delivered: boolean) => void = () => {}
@@ -132,10 +153,14 @@ describe('headless automation agent launch', () => {
       expect.objectContaining({ agent: 'aider', prompt: '' })
     )
     expect(runtime.deliverStartupFollowup).toHaveBeenCalledTimes(1)
-    expect(runtime.deliverStartupFollowup).toHaveBeenCalledWith('term_existing', {
-      agent: 'aider',
-      prompt: 'fix the flaky test'
-    })
+    expect(runtime.deliverStartupFollowup).toHaveBeenCalledWith(
+      'term_existing',
+      {
+        agent: 'aider',
+        prompt: 'fix the flaky test'
+      },
+      { terminalCreation: await runtime.launchAgentTerminal.mock.results[0].value }
+    )
     finishDelivery(true)
   })
 
