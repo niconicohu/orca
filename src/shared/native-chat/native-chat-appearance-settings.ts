@@ -16,6 +16,8 @@ export type NativeChatAppearanceSettings = {
 }
 
 export type NativeChatGlobalSettings = {
+  /** Client layout preference: collect workspace side chats in one ordinary split group. */
+  nativeChatSideChatPane?: boolean
   nativeChatAppearance?: NativeChatAppearanceSettings
   /** Off keeps chats unnamed without running a naming agent. Absent means on. */
   nativeChatAutoName?: boolean

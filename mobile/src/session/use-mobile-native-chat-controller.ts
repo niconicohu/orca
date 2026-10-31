@@ -1,4 +1,5 @@
 import type { StructuredAgentSessionComposerOptions } from '../../../src/shared/structured-agent-session-composer'
+import { asyncQuestionSourceScope } from '../../../src/shared/native-chat/input/native-chat-ask'
 import { useLayoutEffect, useRef, type MutableRefObject } from 'react'
 import type { RpcClient } from '../transport/rpc-client'
 import type { ConnectionState } from '../transport/types'
@@ -136,6 +137,14 @@ export function useMobileNativeChatController(args: {
     scopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),
     sessionId: activeChatSessionId,
     streamIdentity,
+    asyncSourceScope: activeChatStructured
+      ? structuredNativeChat.asyncQuestionSourceScope
+      : asyncQuestionSourceScope({
+          kind: 'transcript',
+          agent: activeChatAgent,
+          sessionId: activeChatSessionId,
+          transcriptPath: activeChatResolution?.transcriptPath ?? null
+        }),
     visible: showNativeChat,
     terminal: bridgePromptWrites,
     onSendResolved

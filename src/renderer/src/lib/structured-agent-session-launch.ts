@@ -119,6 +119,10 @@ function adoptPairedHostSeed(
   state: StructuredLaunchState,
   seedOptions: StructuredLaunchState['selection']['seed']
 ): void {
+  // The support answer is a fresh seed; continuation baseline belongs to actual host create.
+  if (state.intent.params.resumeFrom) {
+    seedOptions = undefined
+  }
   const { seedPending, ...selection } = state.selection
   if (!seedPending && JSON.stringify(seedOptions) === JSON.stringify(state.intent.seedOptions)) {
     return
@@ -161,7 +165,6 @@ function restartStructuredLaunchState(state: StructuredLaunchState): void {
 
 function joinStructuredLaunchState(
   existing: StructuredLaunchState,
-  agent: TuiAgent,
   options: StructuredAgentLaunchOptions
 ): StructuredLaunchStateResult | undefined {
   // A re-delivery of the same action shares the text it staged, so it is sent once.
@@ -179,7 +182,7 @@ function joinStructuredLaunchState(
     releaseStructuredLaunchSource(existing)
   }
   if (!retrying && !repeat) {
-    launchDraft.seedStructuredAgentLaunchDraft(existing.intent.sessionId, agent, joined)
+    launchDraft.seedStructuredAgentLaunchDraft(existing, joined)
   }
   // A re-delivery waits on the text its action staged, if any, and never stages its own.
   const { prompt: _retryPrompt, ...joinedWithoutPrompt } = joined
@@ -202,7 +205,7 @@ function structuredAgentLaunchState(
 ): StructuredLaunchStateResult {
   const identity = structuredLaunchIdentity(worktreeId, agent, options)
   const existing = getJoinableStructuredLaunchState(identity, options.requestId)
-  const joined = existing && joinStructuredLaunchState(existing, agent, options)
+  const joined = existing && joinStructuredLaunchState(existing, options)
   if (joined) {
     return joined
   }
@@ -223,7 +226,6 @@ function structuredAgentLaunchState(
   const stagedPrompt = text
     ? stageStructuredLaunchPrompt(intent.sessionId, text, launchPromptOptions(options))
     : null
-  launchDraft.seedStructuredAgentLaunchDraft(intent.sessionId, agent, options)
   const callers = createStructuredLaunchCallerGroup({
     kind: 'first',
     requestId: options.requestId,
@@ -240,6 +242,7 @@ function structuredAgentLaunchState(
     callers,
     selection: initialStructuredLaunchSelection(intent)
   }
+  launchDraft.seedStructuredAgentLaunchDraft(state, options)
   state.onHostSeed = (seedOptions) => adoptPairedHostSeed(state, seedOptions)
   callers.onSettled = () => maybeCleanupLaunchState(state)
   structuredLaunchSelectionController(state)
@@ -272,7 +275,6 @@ export function cancelStructuredAgentLaunch(worktreeId: string, sessionId: strin
     useAppStore.getState()
   )
   discardStructuredAgentSessionChatSends(state.intent.sessionId)
-  launchDraft.clearStructuredAgentLaunchDraft(state.intent.sessionId)
   abandonStructuredAgentSessionLaunchIntent(state.intent)
   notifyStructuredLaunchListeners()
   return true

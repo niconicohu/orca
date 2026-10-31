@@ -35,7 +35,7 @@ export const mobileSessionFrameStyles = themedStyleSheet(() => ({
   headerButton: {
     width: 36,
     height: 36,
-    borderRadius: radii.button,
+    borderRadius: radii.control,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: spacing.xs
@@ -170,7 +170,7 @@ export const mobileSessionFrameStyles = themedStyleSheet(() => ({
     backgroundColor: colors.bgRaised,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
-    borderRadius: radii.row,
+    borderRadius: radii.control,
     paddingHorizontal: spacing.xs,
     color: colors.textSecondary,
     fontWeight: '500',

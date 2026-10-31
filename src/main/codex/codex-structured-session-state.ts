@@ -1,3 +1,4 @@
+import type { CodexRenameInvocationDeps } from './codex-provider-session-rename'
 import type { CodexAppliedSettings } from './codex-structured-applied-settings'
 import type { StructuredAgentSessionChildWorkProducer } from '../native-chat/agent-session-wire/structured-agent-session-subagent-rows'
 import type { StructuredAgentSessionLogger } from '../native-chat/agent-session-wire/structured-agent-session-logger'
@@ -9,7 +10,6 @@ import type {
 } from '../../shared/agent-session-journal-types'
 import { randomUUID } from 'node:crypto'
 import type { AgentJournalDispatchRejection } from '../../shared/agent-session-failure-words'
-import { cancelProcessAcquisition } from '@orca/process-host/cancel-process-acquisition'
 import type { CodexAppServerConnection } from './app-server/codex-app-server-connection-types'
 import type { openCodexAppServerConnection } from './codex-app-server-connection'
 import { CodexAcquisitionWindow } from './codex-structured-acquisition-window'
@@ -98,6 +98,7 @@ export type CodexStructuredSessionEvent =
   | { type: 'ended'; sessionId: string; reason: string; observedAt?: number }
 
 export type CodexStructuredSessionAdapterDeps = {
+  renameInvocation?: CodexRenameInvocationDeps
   resolveAccountKind?: (home: string) => AgentSessionAccountKind | undefined
   atRestCommands?: StructuredAgentSessionAtRestCommands
   resolveLaunch: (input: StructuredLaunchRequest) => Promise<CodexStructuredLaunch>
@@ -321,25 +322,4 @@ export class CodexAcquisitionRegistry {
   }
 }
 
-export async function cancelCodexAcquisitionAttempt(
-  attempt: CodexAcquisitionAttempt | undefined,
-  requestedClose = true
-): Promise<boolean> {
-  if (!attempt) {
-    return true
-  }
-  const closed = await cancelProcessAcquisition({
-    cancel: () => {
-      attempt.cancelled = true
-      attempt.requestedClose = requestedClose
-    },
-    connection: () => attempt.window.connection,
-    exitProven: () => attempt.exitProven,
-    finished: attempt.finished
-  })
-  if (closed) {
-    attempt.exitProven = true
-    attempt.dispose?.()
-  }
-  return closed
-}
+export { cancelCodexAcquisitionAttempt } from './codex-structured-acquisition-lifecycle'

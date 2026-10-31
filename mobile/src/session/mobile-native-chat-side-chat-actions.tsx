@@ -1,8 +1,6 @@
-import { getMobileNativeChatCliForkActions } from './mobile-native-chat-cli-fork'
 import { translate } from '../i18n/mobile-i18n'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { agentChatPermissionModes } from '../../../src/shared/agent-chat-permission-mode'
-import { useState } from 'react'
 import { ActionSheetModal } from '../components/ActionSheetModal'
 import { CornerDownRight, Eye, GitFork } from 'lucide-react-native'
 import type { ActionSheetAction } from '../components/ActionSheetModal'
@@ -74,52 +72,5 @@ export function MobileSideChatPermissionSheet({
         }
       ]}
     />
-  )
-}
-
-export function MobileNativeChatTabActionSheet({
-  controller,
-  source,
-  onClose,
-  actions,
-  workspaceOnPairedHost
-}: {
-  controller: Pick<MobileSessionController, 'agentSessionHostSupport' | 'handleOpenSideChat'> &
-    Parameters<typeof getMobileNativeChatCliForkActions>[0]['controller']
-  source: Parameters<MobileSessionController['handleOpenSideChat']>[0] | null
-  onClose: () => void
-  actions: ActionSheetAction[]
-  workspaceOnPairedHost: boolean
-}) {
-  const t = useMobileTranslation()
-  const [permissionSource, setPermissionSource] = useState<typeof source>(null)
-  return (
-    <>
-      <ActionSheetModal
-        visible={source != null}
-        title={source?.title || t('session.sheets.chat', 'Chat')}
-        onClose={onClose}
-        actions={[
-          ...getMobileSideChatActions({
-            controller,
-            tab: source,
-            onChoosePermission: setPermissionSource,
-            onDismiss: onClose
-          }),
-          ...getMobileNativeChatCliForkActions({
-            controller,
-            tab: source,
-            workspaceOnPairedHost,
-            onDismiss: onClose
-          }),
-          ...actions
-        ]}
-      />
-      <MobileSideChatPermissionSheet
-        controller={controller}
-        source={permissionSource}
-        onClose={() => setPermissionSource(null)}
-      />
-    </>
   )
 }

@@ -1,3 +1,4 @@
+import { asyncQuestionSourceScope as questionSourceScope } from '../../../src/shared/native-chat/input/native-chat-ask'
 import { useCallback, useMemo, useRef } from 'react'
 import { encodeNativeChatTranscriptIdentity } from '../../../src/shared/native-chat/transcript/native-chat-transcript-retention'
 import { projectStructuredAgentSessionMessages } from '../../../src/shared/structured-agent-session-message-projection'
@@ -66,9 +67,6 @@ export function useMobileStructuredAgentSession(
   const queueCapable = hostSupport?.queuedMessages === true
   const commandsWait = queueCapable && hostSupport?.queuedCommands === true
   const queueFollowUps = useMobileNativeChatQueueFollowUps(client, connected && enabled, sessionId)
-  const promptCancelSupported = hostSupport?.promptCancel ?? null
-  const hostAnswersRepeatedStops = hostSupport?.quietRepeatedStop ?? null
-  const hostStopsConversation = hostSupport?.conversationStop ?? null
   const sessionKey = encodeNativeChatTranscriptIdentity([sourceIdentity, agent, sessionId])
   const commandPendingRef = useRef(false)
   // Legacy hosts must join repeated Stop while the first turn cancel remains pending.
@@ -176,7 +174,7 @@ export function useMobileStructuredAgentSession(
     sessionKey,
     turnId,
     isWorking,
-    stopsConversation: hostStopsConversation === true
+    stopsConversation: hostSupport?.conversationStop === true
   })
   const turnIndicator = useMobileStructuredTurnIndicator({
     state,
@@ -210,7 +208,7 @@ export function useMobileStructuredAgentSession(
     sendSelection: options.sendSelection,
     takesSkills: hostSupport?.sendSkills === true
   })
-  const { items, currentRequests, actionablePromptIds, status } = state
+  const { items, currentRequests, actionablePromptIds, status, epoch } = state
   // Prefer host actionability: ended-agent prompts must receive no answer.
   const [approvalPrompt, questionPrompt] = useMemo(() => {
     const prompts = { items, currentRequests, actionablePromptIds }
@@ -248,22 +246,22 @@ export function useMobileStructuredAgentSession(
       requestMobileStructuredAgentSessionCancel({
         client,
         enabled,
-        hostAnswersRepeatedStops,
-        hostStopsConversation,
+        hostAnswersRepeatedStops: hostSupport?.quietRepeatedStop ?? null,
+        hostStopsConversation: hostSupport?.conversationStop ?? null,
         inFlight: inFlightStopsRef.current,
         onSendError,
         prompt,
-        promptCancelSupported,
+        promptCancelSupported: hostSupport?.promptCancel ?? null,
         sessionId,
         stateRef
       }),
     [
       client,
       enabled,
-      hostAnswersRepeatedStops,
-      hostStopsConversation,
+      hostSupport?.quietRepeatedStop ?? null,
+      hostSupport?.conversationStop ?? null,
       onSendError,
-      promptCancelSupported,
+      hostSupport?.promptCancel ?? null,
       sessionId,
       stateRef
     ]
@@ -277,6 +275,7 @@ export function useMobileStructuredAgentSession(
   return {
     ...options,
     visualSource,
+    asyncQuestionSourceScope: questionSourceScope({ kind: 'journal', agent, sessionId, epoch }),
     imagePreviewsByMessageId: sends.imagePreviewsByMessageId,
     session: {
       messages,
