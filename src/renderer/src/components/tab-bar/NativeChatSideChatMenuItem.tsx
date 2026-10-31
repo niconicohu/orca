@@ -4,11 +4,11 @@ import { AGENT_SESSION_SIDE_CHAT_READ_ONLY_CAPABILITY } from '../../../../shared
 import { useStructuredAgentSessionHostCapability } from '@/runtime/structured-agent-session-host-capability'
 import { CornerDownRight, Eye, GitFork } from 'lucide-react'
 import {
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent
-} from '@/components/ui/dropdown-menu'
+  ContextMenuItem,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent
+} from '@/components/ui/context-menu'
 import { useAppStore } from '@/store'
 import type { structuredAgentSessionTargetForTab } from '@/runtime/structured-agent-session-owner'
 import { useNativeChatSideChat } from '../native-chat/use-native-chat-side-chat'
@@ -72,13 +72,13 @@ function SideChatItem({
       .catch(reportFailure)
   }
   return open ? (
-    <DropdownMenuSub>
-      <DropdownMenuSubTrigger>
+    <ContextMenuSub>
+      <ContextMenuSubTrigger>
         <CornerDownRight />
         {translate('components.native-chat.sideChat.new', 'New side chat')}
-      </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent>
-        <DropdownMenuItem
+      </ContextMenuSubTrigger>
+      <ContextMenuSubContent>
+        <ContextMenuItem
           disabled={
             !readOnlySupported ||
             !agentChatPermissionModes(nativeChat.agent ?? '')?.modes.includes('read-only')
@@ -87,15 +87,15 @@ function SideChatItem({
         >
           <Eye />
           {translate('components.native-chat.composer.permissionReadOnly', 'Read only')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => choose('inherit')}>
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => choose('inherit')}>
           <GitFork />
           {translate(
             'components.native-chat.sideChat.inheritPermissions',
             'Use main chat permissions'
           )}
-        </DropdownMenuItem>
-      </DropdownMenuSubContent>
-    </DropdownMenuSub>
+        </ContextMenuItem>
+      </ContextMenuSubContent>
+    </ContextMenuSub>
   ) : null
 }
