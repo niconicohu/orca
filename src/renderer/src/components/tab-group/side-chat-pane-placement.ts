@@ -27,7 +27,7 @@ export function sideChatPanePlacement(
     return null
   }
   if (destination) {
-    return { kind: 'move', tabId: tab.id, groupId: destination.id }
+    return { kind: 'move', tabId: tab.id, groupId: destination.id, index: 0 }
   }
   const source = groups.find((group) => group.id === tab.groupId)
   return source && source.tabOrder.length > 1

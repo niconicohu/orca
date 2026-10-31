@@ -14,6 +14,7 @@ import {
   supportsStructuredAgentSessionSideChat,
   supportsStructuredAgentSessionReadOnlySideChat
 } from '@/runtime/structured-agent-session-client'
+import { prepareSideChatPane } from './side-chat-launch-placement'
 import { isTuiAgent } from '../../../shared/tui-agent-config'
 import {
   captureWebSessionIntentOwner,
@@ -137,6 +138,7 @@ async function launchNativeChatSideChat(
     plan,
     hooks: { beforeCreate: isCurrent },
     afterTabId: source.tabId,
+    prepareTab: () => (isCurrent() ? prepareSideChatPane(source.worktreeId, source.tabId) : null),
     beforeOpen: isCurrent
   })
   if (!launch) {

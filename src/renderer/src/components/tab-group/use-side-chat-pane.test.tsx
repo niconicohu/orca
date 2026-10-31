@@ -17,14 +17,21 @@ import { endLayoutFramePositions } from '@/runtime/layout-frame-position'
 import { openWorkspaceLayoutFrameSync } from '@/runtime/workspace-layout-frame-sync'
 import { openStructuredAgentSessionProvisionalTab } from '@/lib/structured-agent-session-launch-surface'
 import {
+  readStructuredAgentLaunchRecord,
   writeStructuredAgentLaunchRecord,
   deleteStructuredAgentLaunchRecord,
   resetStructuredAgentLaunchPersistenceForTests
 } from '@/lib/agent-session/launch/structured-agent-session-launch-persistence'
 import { notifyStructuredLaunchListeners } from '@/lib/agent-session/launch/structured-agent-session-launch-registry'
 import { useSideChatPane } from './use-side-chat-pane'
+import { openNativeChatSideChat } from '@/lib/open-native-chat-side-chat'
+import type * as LaunchPlan from '@/lib/agent-session-launch-plan'
 
-vi.mock('../../../../shared/layout-owner-switch', () => ({ ORCA_LAYOUT_OWNER_IS_MAIN: true }))
+vi.mock('../../../../shared/layout-owner-switch', () => ({
+  get ORCA_LAYOUT_OWNER_IS_MAIN() {
+    return launches.layoutOwnerIsMain
+  }
+}))
 vi.mock('@/runtime/runtime-rpc-client', async (original) =>
   (
     await import('@/runtime/layout-apply-test-transport.test-fixture')
@@ -55,6 +62,47 @@ const feed = vi.hoisted(() => ({
       ['codex_three', { sideChatOf: 'codex_parent' }]
     ])
 }))
+const launches = vi.hoisted(() => ({ count: 0, fail: false, layoutOwnerIsMain: true }))
+vi.mock('@/runtime/structured-agent-session-client', async (original) => ({
+  ...(await original<object>()),
+  supportsStructuredAgentSessionSideChat: async () => true
+}))
+vi.mock('@/lib/structured-agent-session-host-admission', async (original) => ({
+  ...(await original<object>()),
+  admitStructuredLaunchOnHost: async () => ({ kind: 'admitted' })
+}))
+vi.mock('@/lib/agent-session-launch-plan', async (original) => {
+  const actual = await original<typeof LaunchPlan>()
+  return {
+    ...actual,
+    adoptAgentSessionLaunchVerdict: (verdict: LaunchPlan.AgentSessionLaunchVerdict) => ({
+      ...actual.adoptAgentSessionLaunchVerdict(verdict),
+      begin: (_hooks: unknown, target?: LaunchPlan.AgentSessionLaunchTarget) => {
+        if (launches.fail) {
+          return null
+        }
+        const sessionId = `codex_new_${++launches.count}`
+        writeStructuredAgentLaunchRecord({
+          sessionId,
+          agent: 'codex',
+          executionHostId: 'local',
+          lifecycle: 'pending',
+          clientOperationId: sessionId,
+          payloadFingerprint: 'a'.repeat(64),
+          expectedRuntimeFence: null,
+          sideChatOf: verdict.sideChatOf,
+          surfaceAddress: target?.surfaceAddress
+        })
+        return {
+          sessionId,
+          executionHostId: 'local',
+          cancel: () => {},
+          settlement: Promise.resolve({ kind: 'structured', sessionId, fence: 0 })
+        }
+      }
+    })
+  }
+})
 createStoreSessionMockApi()
 let close = () => {}
 const settle = () => layoutApplyTestTransport.settle()
@@ -63,6 +111,9 @@ const groupOf = (sessionId: string) =>
   workspaceTabs().find((tab) => tab.entityId === sessionId)?.groupId
 
 beforeEach(async () => {
+  launches.count = 0
+  launches.fail = false
+  launches.layoutOwnerIsMain = true
   resetStructuredAgentLaunchPersistenceForTests()
   layoutApplyTestTransport.reset()
   const session = addWorkspace(
@@ -210,4 +261,111 @@ it('keeps an unconfirmed fork at its create address until publication, then grou
   await vi.waitFor(() => expect(groupOf('codex_one')).not.toBe(groupOf('codex_parent')))
   expect(groupOf('codex_two')).toBe(groupOf('codex_one'))
   expect(layoutApplyTestTransport.sentOfType('splitGroup')).toHaveLength(1)
+})
+
+it.each([true, false])(
+  'opens forks directly in the pane at the left before publication (main owner: %s)',
+  async (mainOwner) => {
+    launches.layoutOwnerIsMain = mainOwner
+    useAppStore.setState((state) => ({
+      settings: { ...state.settings!, nativeChatSideChatPane: true }
+    }))
+    const sourceGroup = useAppStore.getState().getTab('other-tab')!.groupId
+    const observedGroups: string[] = []
+    const stop = useAppStore.subscribe((state) => {
+      const tab = state.unifiedTabsByWorktree[GIT_KEY]?.find(
+        (tab) => tab.entityId === 'codex_new_1'
+      )
+      if (tab) {
+        observedGroups.push(tab.groupId)
+      }
+    })
+    try {
+      const source = { tabId: 'other-tab', worktreeId: GIT_KEY, sessionId: 'other_session' }
+      await expect(openNativeChatSideChat(source)).resolves.toBe(true)
+      await act(settle)
+      const first = useAppStore
+        .getState()
+        .unifiedTabsByWorktree[GIT_KEY]!.find((tab) => tab.entityId === 'codex_new_1')!
+      expect(observedGroups.length).toBeGreaterThan(0)
+      expect(observedGroups).not.toContain(sourceGroup)
+      expect(first.groupId).not.toBe(sourceGroup)
+      expect(readStructuredAgentLaunchRecord(first.entityId)?.surfaceAddress).toEqual({
+        worktreeId: GIT_KEY,
+        targetGroupId: first.groupId,
+        precedingTabIds: []
+      })
+      await expect(
+        openNativeChatSideChat({
+          tabId: first.id,
+          worktreeId: GIT_KEY,
+          sessionId: first.entityId
+        })
+      ).resolves.toBe(true)
+      await act(settle)
+      const second = useAppStore
+        .getState()
+        .unifiedTabsByWorktree[GIT_KEY]!.find((tab) => tab.entityId === 'codex_new_2')!
+      expect(second.groupId).toBe(first.groupId)
+      expect(
+        useAppStore
+          .getState()
+          .groupsByWorktree[GIT_KEY]!.find((group) => group.id === first.groupId)!.tabOrder
+      ).toEqual([second.id, first.id])
+      expect(layoutApplyTestTransport.sentOfType('splitGroup')).toHaveLength(0)
+      expect(layoutApplyTestTransport.sentOfType('openAgentSessionTab')).toMatchObject(
+        mainOwner
+          ? [
+              { split: { besideGroupId: sourceGroup, direction: 'down' } },
+              { groupId: first.groupId, index: 0 }
+            ]
+          : []
+      )
+    } finally {
+      stop()
+    }
+  }
+)
+
+it('reuses a pending pane while two independent opens await layout frames', async () => {
+  useAppStore.setState((state) => ({
+    settings: { ...state.settings!, nativeChatSideChatPane: true }
+  }))
+  layoutApplyTestTransport.answerWith('pending')
+  const source = { tabId: 'other-tab', worktreeId: GIT_KEY, sessionId: 'other_session' }
+  await expect(
+    Promise.all([openNativeChatSideChat(source, 'one'), openNativeChatSideChat(source, 'two')])
+  ).resolves.toEqual([true, true])
+  const opens = layoutApplyTestTransport.sentOfType('openAgentSessionTab')
+  expect(opens).toHaveLength(2)
+  expect(opens[0]!.groupId).toBe(opens[1]!.groupId)
+  expect(useAppStore.getState().groupsByWorktree[GIT_KEY]).toHaveLength(2)
+  expect(useAppStore.getState().unifiedTabsByWorktree[GIT_KEY]).toHaveLength(1)
+  layoutApplyTestTransport.answerWith('apply')
+  layoutApplyTestTransport.answerPending()
+  await act(settle)
+  expect(
+    useAppStore
+      .getState()
+      .groupsByWorktree[GIT_KEY]!.find((group) => group.id === opens[0]!.groupId)!.tabOrder
+  ).toEqual([opens[1]!.tabId, opens[0]!.tabId])
+})
+
+it('removes an unused prepared split when the launch cannot start, and preserves source placement when off', async () => {
+  useAppStore.setState((state) => ({
+    settings: { ...state.settings!, nativeChatSideChatPane: true }
+  }))
+  launches.fail = true
+  const source = { tabId: 'other-tab', worktreeId: GIT_KEY, sessionId: 'other_session' }
+  await expect(openNativeChatSideChat(source)).resolves.toBe(false)
+  expect(useAppStore.getState().groupsByWorktree[GIT_KEY]).toHaveLength(1)
+  launches.fail = false
+  useAppStore.setState((state) => ({
+    settings: { ...state.settings!, nativeChatSideChatPane: false }
+  }))
+  await expect(openNativeChatSideChat(source)).resolves.toBe(true)
+  await act(settle)
+  expect(useAppStore.getState().groupsByWorktree[GIT_KEY]!.map((group) => group.tabOrder)).toEqual([
+    ['other-tab', 'structured-agent-session-codex_new_1']
+  ])
 })
