@@ -1,8 +1,8 @@
+import type { MobileNativeChatThreadGoal } from './use-mobile-native-chat-session'
 import { useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { BottomDrawer } from '../components/BottomDrawer'
 import { ChevronDown, ChevronUp, Goal, Pause, Play, Trash2 } from 'lucide-react-native'
-import type { AgentJournalThreadGoal } from '../../../src/shared/agent-session-journal-types'
 import {
   agentSessionThreadGoalElapsedSeconds,
   agentSessionThreadGoalStatusChange
@@ -18,13 +18,6 @@ import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { colors, radii, spacing, typography } from '../theme/mobile-theme'
 import { themedStyleSheet } from '../theme/themed-styles'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
-
-export type MobileNativeChatThreadGoal = {
-  goal: AgentJournalThreadGoal
-  runningTurn: { startedAt: number | null } | null
-  hostClockOffsetMs: number
-  controls?: MobileThreadGoalControls
-}
 
 export function MobileNativeChatThreadGoalBanner({
   goal,

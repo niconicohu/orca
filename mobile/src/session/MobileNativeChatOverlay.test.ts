@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { MobileNativeChatOverlay } from './MobileNativeChatOverlay'
 import type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
-import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
+import type { MobileNativeChatThreadGoal } from './use-mobile-native-chat-session'
 import type { MobileImageSource } from '../platform/media-picker-contract'
 import { findByHostType } from '../test-support/react-test-renderer-host-nodes'
 

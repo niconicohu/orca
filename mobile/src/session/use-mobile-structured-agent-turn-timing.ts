@@ -10,7 +10,7 @@ import {
   agentSessionThreadGoalFromReport,
   isAgentSessionThreadGoalOpen
 } from '../../../src/shared/agent-session-thread-goal'
-import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
+import type { MobileNativeChatThreadGoal } from './use-mobile-native-chat-session'
 import type { NativeChatTurnJournal } from '../../../src/shared/native-chat-turn-membership'
 import type { StructuredAgentHostClock } from '../../../src/shared/structured-agent-session-reducer'
 import { selectStructuredAgentTurnBars } from '../../../src/shared/structured-agent-session-turn-timing'

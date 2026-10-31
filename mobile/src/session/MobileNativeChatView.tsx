@@ -66,10 +66,8 @@ import { MobileNativeChatRowList } from './native-chat/transcript/MobileNativeCh
 import { useMobileNativeChatRowRenderer } from './native-chat/transcript/use-mobile-native-chat-row-renderer'
 import type { MobileNativeChatStatus } from './use-mobile-native-chat-session'
 import type { OlderPagePhase } from './use-mobile-older-page-loader'
-import {
-  MobileNativeChatThreadGoalBanner,
-  type MobileNativeChatThreadGoal
-} from './MobileNativeChatThreadGoalBanner'
+import { MobileNativeChatThreadGoalBanner } from './MobileNativeChatThreadGoalBanner'
+import type { MobileNativeChatThreadGoal } from './use-mobile-native-chat-session'
 
 export type MobileNativeChatInputLockReason = 'disconnected' | 'waiting'
 
