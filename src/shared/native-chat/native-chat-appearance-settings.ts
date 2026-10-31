@@ -1,10 +1,12 @@
-import type { TuiAgent } from '../tui-agent'
+import type { NativeChatProviderChoices } from './native-chat-providers'
 
 export type NativeChatAppearanceSettings = {
   /** Absent follows the IDE font. */
   fontFamily?: string
   /** Chat text size in px, 12–20; absent = 14. */
   fontSize?: number
+  /** Message body weight: 300, 400 or 500; absent = 400. */
+  fontWeight?: number
   /** Code text size in px, 10–18; absent = 12. */
   codeFontSize?: number
   /** Transcript and composer width; absent = comfortable (46rem). */
@@ -15,14 +17,20 @@ export type NativeChatAppearanceSettings = {
   matchTerminalInterface?: boolean
 }
 
+export type AgentDefaultSurface = 'chat' | 'terminal'
+
 export type NativeChatGlobalSettings = {
+  /** Unlisted agents follow this default; absent means terminal. */
+  agentDefaultSurface?: AgentDefaultSurface
   nativeChatAppearance?: NativeChatAppearanceSettings
   /** Off keeps chats unnamed without running a naming agent. Absent means on. */
   nativeChatAutoName?: boolean
-  /** Explicit chat provider choices; unlisted agents retain the chat launch default. */
-  nativeChatProviders?: Partial<Record<TuiAgent, boolean>>
+  /** Explicit per-agent overrides of the default surface. */
+  nativeChatProviders?: NativeChatProviderChoices
 }
 
+export const DEFAULT_NATIVE_CHAT_FONT_WEIGHT = 400
+export const NATIVE_CHAT_FONT_WEIGHTS = [300, 400, 500] as const
 export const DEFAULT_NATIVE_CHAT_FONT_SIZE = 14
 export const DEFAULT_NATIVE_CHAT_CODE_FONT_SIZE = 12
 export const DEFAULT_NATIVE_CHAT_CONTRAST = 100
@@ -42,6 +50,10 @@ export function normalizeNativeChatAppearanceSettings(
   const fontFamily =
     'fontFamily' in value && typeof value.fontFamily === 'string' ? value.fontFamily.trim() : ''
   const fontSize = normalizeSize('fontSize' in value ? value.fontSize : undefined, 12, 20, 14)
+  const fontWeight =
+    Math.round(
+      normalizeSize('fontWeight' in value ? value.fontWeight : undefined, 300, 500, 400) / 100
+    ) * 100
   const codeFontSize = normalizeSize(
     'codeFontSize' in value ? value.codeFontSize : undefined,
     10,
@@ -60,6 +72,7 @@ export function normalizeNativeChatAppearanceSettings(
           ![
             'fontFamily',
             'fontSize',
+            'fontWeight',
             'codeFontSize',
             'width',
             'contrast',
@@ -69,6 +82,7 @@ export function normalizeNativeChatAppearanceSettings(
     ),
     ...(fontFamily ? { fontFamily } : {}),
     ...(fontSize !== DEFAULT_NATIVE_CHAT_FONT_SIZE ? { fontSize } : {}),
+    ...(fontWeight !== DEFAULT_NATIVE_CHAT_FONT_WEIGHT ? { fontWeight } : {}),
     ...(codeFontSize !== DEFAULT_NATIVE_CHAT_CODE_FONT_SIZE ? { codeFontSize } : {}),
     ...(width ? { width } : {}),
     ...(contrast !== DEFAULT_NATIVE_CHAT_CONTRAST ? { contrast } : {}),
@@ -84,6 +98,7 @@ export function resolveNativeChatAppearanceSettings(
   return {
     fontFamily: normalized?.fontFamily ?? '',
     fontSize: normalized?.fontSize ?? DEFAULT_NATIVE_CHAT_FONT_SIZE,
+    fontWeight: normalized?.fontWeight ?? DEFAULT_NATIVE_CHAT_FONT_WEIGHT,
     codeFontSize: normalized?.codeFontSize ?? DEFAULT_NATIVE_CHAT_CODE_FONT_SIZE,
     width: normalized?.width ?? 'comfortable',
     contrast: normalized?.contrast ?? DEFAULT_NATIVE_CHAT_CONTRAST,
@@ -101,6 +116,7 @@ export function resetNativeChatAppearanceSettings(
           ![
             'fontFamily',
             'fontSize',
+            'fontWeight',
             'codeFontSize',
             'width',
             'contrast',
