@@ -56,6 +56,7 @@ import { setLocalPtyProvider } from './provider/registry'
 import { _resetHiddenRendererPtyDeliveryGateForTest } from './delivery/pty-hidden-delivery-gate'
 import { __resetShellStartupEnvCache } from '../../pty/shell-startup-env'
 import { _resetWslCachesForTests } from '../../wsl'
+import * as loginShellEnvironment from '../../startup/login-shell-environment'
 
 export type PtyIpcTestWebContents = {
   id: number
@@ -107,8 +108,13 @@ export function createPtyIpcSuiteEnvironment(): PtyIpcSuiteEnvironment {
     }
   }
   const envScope = createPtyIpcProcessEnvScope()
+  let restoreLoginShellEnvironment: (() => void) | undefined
 
   beforeEach(() => {
+    const loginEnvironmentSpy = vi
+      .spyOn(loginShellEnvironment, 'resolveLoginShellEnvironment')
+      .mockResolvedValue({})
+    restoreLoginShellEnvironment = () => loginEnvironmentSpy.mockRestore()
     // Capture registrations through the injected host port.
     setPtyHostBindings({ ipc: testPtyIpcSurface() })
     // Back AppEnvironment with the mutable Electron mock so mid-test isPackaged changes remain visible.
@@ -280,6 +286,8 @@ export function createPtyIpcSuiteEnvironment(): PtyIpcSuiteEnvironment {
   })
 
   afterEach(() => {
+    restoreLoginShellEnvironment?.()
+    restoreLoginShellEnvironment = undefined
     _resetLocalPtyProviderStateForTest()
     _resetWslCachesForTests()
     vi.useRealTimers()
