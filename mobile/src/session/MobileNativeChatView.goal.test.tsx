@@ -8,7 +8,7 @@ import {
   hostType
 } from './MobileNativeChatView.harness.test-fixture'
 import { activateMobileUiLocale } from '../i18n/mobile-i18n'
-import type { MobileNativeChatThreadGoal } from './MobileNativeChatThreadGoalBanner'
+import type { MobileNativeChatThreadGoal } from './use-mobile-native-chat-session'
 
 vi.mock('../hooks/use-now', () => ({ useNow: () => 200_000 }))
 vi.mock('../platform/media-picker', () => ({
