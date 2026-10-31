@@ -12,6 +12,8 @@ import type { AgentSessionRecord } from '../../shared/agent-session-record'
 import type { AgentSessionProviderHandleLink } from '../../shared/agent-session-provider-handle'
 import { LOCAL_EXECUTION_HOST_ID } from '../../shared/execution-host'
 import { codexProviderHandle } from '../../shared/agent-session-provider-handle-encoding'
+import { openCodexThread } from './codex-structured-thread-open'
+import { CodexAppServerRequestError } from './app-server/codex-app-server-request-error'
 import {
   LEGACY_NATIVE_CHAT_VISUALS_DIR_ENV,
   NATIVE_CHAT_SCRATCH_DIR_ENV
@@ -414,5 +416,52 @@ it.each(['fork', 'resume', 'clear'] as const)(
     expect(launch.resumeThreadId).toBe(mode === 'resume' ? 'child-thread' : null)
     expect(launch.forkThreadId).toBe(mode === 'fork' ? 'parent-thread' : undefined)
     expect(launch.supersedeIfUnsaved).toBeUndefined()
+  }
+)
+
+it.each(['created', 'resumed', 'adopted'] as const)(
+  'recovers a cleared side chat without a rollout only for a %s handle',
+  async (origin) => {
+    const launch = await resolverFor(
+      record({
+        sideChat: { sourceSessionId: 'codex_parent_123', sourceProviderSessionId: 'parent-thread' },
+        providerContextBoundary: { operationId: 'clear', afterFence: 2, clearedAt: 100 },
+        providerHandleChain: [
+          {
+            linkId: 'cleared-child',
+            handle: codexProviderHandle('cleared-thread'),
+            origin,
+            mintedAtFence: 3,
+            observedAt: 101
+          }
+        ]
+      })
+    )({ identity: IDENTITY })
+    const noRollout = new CodexAppServerRequestError(
+      'thread/resume',
+      -32600,
+      'codex app-server thread/resume failed: no rollout found for thread id cleared-thread'
+    )
+    const request = vi.fn(async (method: string) => {
+      if (method === 'thread/resume') {
+        throw noRollout
+      }
+      return { thread: { id: 'replacement-thread' } }
+    })
+    const opened = openCodexThread({ request }, { ...launch, cwd: '/repos/workspace-1' }, 2_000)
+    if (origin === 'created') {
+      await expect(opened).resolves.toMatchObject({
+        threadId: 'replacement-thread',
+        supersededThreadId: 'cleared-thread'
+      })
+      expect(request.mock.calls.map(([method]) => method)).toEqual([
+        'thread/resume',
+        'thread/start'
+      ])
+    } else {
+      await expect(opened).rejects.toBe(noRollout)
+      expect(request).toHaveBeenCalledOnce()
+    }
+    expect(launch.forkThreadId).toBeUndefined()
   }
 )
