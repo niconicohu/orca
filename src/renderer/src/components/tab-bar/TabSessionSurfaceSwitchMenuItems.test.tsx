@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => {
   return {
     ...state,
     pending: false,
+    sideChatSource: false,
+    openSideChat: vi.fn(async () => true),
     pendingListeners: new Set<() => void>(),
     runNativeChatCliFork: vi.fn(),
     runCliChatResume: vi.fn(async () => {}),
@@ -35,9 +37,24 @@ vi.mock('./native-chat-cli-fork-run', () => ({
 
 vi.mock('@/store', () => ({
   useAppStore: Object.assign(
-    (selector: (state: Record<string, unknown>) => unknown) => selector({ settings: null }),
+    (selector: (state: Record<string, unknown>) => unknown) =>
+      selector({
+        settings: null,
+        unifiedTabsByWorktree: mocks.sideChatSource ? { 'wt-1': [{ id: 'tab-1' }] } : {}
+      }),
     { getState: () => ({}) }
   )
+}))
+
+vi.mock('@/runtime/structured-agent-session-owner', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  structuredAgentSessionOwnerForTab: () => 'local'
+}))
+vi.mock('@/runtime/structured-agent-session-host-capability', () => ({
+  useStructuredAgentSessionHostCapability: () => true
+}))
+vi.mock('../native-chat/use-native-chat-side-chat', () => ({
+  useNativeChatSideChat: () => (mocks.sideChatSource ? mocks.openSideChat : null)
 }))
 
 vi.mock('./tab-session-history-switch', async (importOriginal) => ({
@@ -62,6 +79,8 @@ beforeEach(() => {
   mocks.subject = null
   mocks.cliSource = null
   mocks.pending = false
+  mocks.sideChatSource = false
+  mocks.openSideChat.mockClear()
   mocks.runNativeChatCliFork.mockReset()
   mocks.runCliChatResume.mockClear()
   mocks.listSessions.mockReset()
@@ -73,9 +92,18 @@ beforeEach(() => {
   })
 })
 
-afterEach(cleanup)
+afterEach(() => {
+  vi.useFakeTimers()
+  try {
+    cleanup()
+    // Finish Radix's deferred unmount focus before the next menu mounts.
+    act(() => vi.runOnlyPendingTimers())
+  } finally {
+    vi.useRealTimers()
+  }
+})
 
-function renderItemsNow(structuredSessionId?: string): void {
+function renderItemsNow(structuredSessionId?: string, agent = 'claude'): void {
   render(
     <TooltipProvider>
       <ContextMenu>
@@ -83,15 +111,14 @@ function renderItemsNow(structuredSessionId?: string): void {
         <ContextMenuContent>
           <TabSessionSurfaceSwitchMenuItems
             tab={{ id: 'tab-1', worktreeId: 'wt-1' }}
-            nativeChat={
-              structuredSessionId ? { sessionId: structuredSessionId, agent: 'claude' } : undefined
-            }
+            nativeChat={structuredSessionId ? { sessionId: structuredSessionId, agent } : undefined}
             leadingSeparator
           />
         </ContextMenuContent>
       </ContextMenu>
     </TooltipProvider>
   )
+  fireEvent.pointerDown(screen.getByText('Open'), { button: 2, pointerType: 'mouse' })
   fireEvent.contextMenu(screen.getByText('Open'), { button: 2, clientX: 16, clientY: 8 })
 }
 
@@ -152,4 +179,14 @@ it('keeps an accepted native action visible with shared disabled spinner feedbac
   expect(item.getAttribute('aria-busy')).toBe('true')
   expect(item.getAttribute('data-disabled')).not.toBeNull()
   expect(item.querySelector('.animate-spin')).not.toBeNull()
+})
+
+it('opens the Codex tab side-chat submenu inside the real context menu', async () => {
+  mocks.sideChatSource = true
+  renderItemsNow('orca-chat-1', 'codex')
+  await screen.findByRole('menu')
+  fireEvent.keyDown(screen.getByRole('menuitem', { name: 'New side chat' }), { key: 'ArrowRight' })
+  expect(await screen.findByRole('menuitem', { name: 'Read only' })).toBeDefined()
+  expect(screen.getByRole('menuitem', { name: 'Use main chat permissions' })).toBeDefined()
+  expect(mocks.openSideChat).not.toHaveBeenCalled()
 })

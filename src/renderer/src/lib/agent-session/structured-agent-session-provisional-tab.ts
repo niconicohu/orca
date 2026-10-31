@@ -67,6 +67,12 @@ function launchHooks(args: ProvisionalLaunchArgs): StructuredAgentLaunchHooks {
   return args.activate === false ? { ...args.hooks, activate: false } : args.hooks
 }
 
+export type PreparedProvisionalTab = {
+  targetGroupId: string
+  index?: number
+  release: () => void
+}
+
 export type ProvisionalLaunchArgs = {
   plan: AgentSessionLaunchPlan
   hooks: StructuredAgentLaunchHooks
@@ -74,6 +80,9 @@ export type ProvisionalLaunchArgs = {
   target?: AgentSessionLaunchTarget
   targetGroupId?: string
   afterTabId?: string
+  index?: number
+  /** Resolve against the current layout after host admission, before creating the launch. */
+  prepareTab?: () => PreparedProvisionalTab | null | undefined
   activate?: boolean
   /** Identity-only resumes publish on commit; unknown outcomes keep their recovery tab. */
   deferPublication?: true
@@ -188,6 +197,49 @@ export function beginStructuredAgentSessionProvisionalLaunch(
 function beginLocalProvisionalLaunch(
   args: ProvisionalLaunchArgs
 ): LocalProvisionalLaunch | (StructuredAgentLaunchHandle & { tab: null }) | null {
+  const placement = args.prepareTab?.()
+  if (placement === null) {
+    return null
+  }
+  try {
+    const worktreeId = args.target?.worktreeId ?? args.plan.worktreeId
+    if (placement && worktreeId) {
+      const address = captureStructuredLaunchSurfaceAddress(worktreeId, placement.targetGroupId)
+      args = {
+        ...args,
+        targetGroupId: placement.targetGroupId,
+        afterTabId: undefined,
+        index: placement.index,
+        target: {
+          ...args.target,
+          surfaceAddress: {
+            ...address,
+            precedingTabIds: address.precedingTabIds.slice(
+              0,
+              placement.index === undefined ? undefined : Math.max(0, placement.index)
+            )
+          }
+        }
+      }
+    }
+    const launch = beginPreparedProvisionalLaunch(args)
+    if (placement) {
+      if (launch?.tab) {
+        afterPendingTab(launch.tab.id, placement.release)
+      } else {
+        placement.release()
+      }
+    }
+    return launch
+  } catch (error) {
+    placement?.release()
+    throw error
+  }
+}
+
+function beginPreparedProvisionalLaunch(
+  args: ProvisionalLaunchArgs
+): LocalProvisionalLaunch | (StructuredAgentLaunchHandle & { tab: null }) | null {
   if (args.deferPublication) {
     return beginDeferredPublication(args)
   }
@@ -219,6 +271,7 @@ function beginLocalProvisionalLaunch(
       agent: args.plan.agent,
       ...(args.targetGroupId ? { targetGroupId: args.targetGroupId } : {}),
       ...(args.afterTabId ? { afterTabId: args.afterTabId } : {}),
+      ...(args.index !== undefined ? { index: args.index } : {}),
       ...(args.activate !== undefined ? { activate: args.activate } : {})
     })
     afterPendingTab(tab.id, (shown) => {
