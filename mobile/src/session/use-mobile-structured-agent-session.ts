@@ -40,7 +40,10 @@ import {
   requestMobileStructuredAgentSessionCancel
 } from './mobile-structured-agent-session-cancel'
 import { useMobileStructuredAgentMutate } from './use-mobile-structured-agent-mutation'
-import { useMobileStructuredSendWithOutcome } from './use-mobile-structured-send-with-outcome'
+import {
+  useMobileStructuredComposerOptions,
+  useMobileStructuredSendWithOutcome
+} from './use-mobile-structured-send-with-outcome'
 import { useMobileStructuredQueuedMessageControls } from './use-mobile-structured-queued-message-controls'
 import { useMobileStructuredBackgroundTasks } from './use-mobile-structured-background-tasks'
 import { useMobileStructuredSends } from './use-mobile-structured-sends'
@@ -67,9 +70,6 @@ export function useMobileStructuredAgentSession(
   const queueCapable = hostSupport?.queuedMessages === true
   const commandsWait = queueCapable && hostSupport?.queuedCommands === true
   const queueFollowUps = useMobileNativeChatQueueFollowUps(client, connected && enabled, sessionId)
-  const promptCancelSupported = hostSupport?.promptCancel ?? null
-  const hostAnswersRepeatedStops = hostSupport?.quietRepeatedStop ?? null
-  const hostStopsConversation = hostSupport?.conversationStop ?? null
   const sessionKey = encodeNativeChatTranscriptIdentity([sourceIdentity, agent, sessionId])
   const commandPendingRef = useRef(false)
   // Legacy hosts must join repeated Stop while the first turn cancel remains pending.
@@ -104,15 +104,13 @@ export function useMobileStructuredAgentSession(
   })
   const { conversationCommands, invokeStructuredOption, optionSnapshot, setStructuredOption } =
     options
-  const sendController = useMemo(
-    () => ({
-      snapshot: optionSnapshot,
-      setOption: setStructuredOption,
-      invokeAction: invokeStructuredOption,
-      conversationCommands
-    }),
-    [conversationCommands, invokeStructuredOption, optionSnapshot, setStructuredOption]
-  )
+  const sendController = useMobileStructuredComposerOptions({
+    snapshot: optionSnapshot,
+    setOption: setStructuredOption,
+    invokeAction: invokeStructuredOption,
+    conversationCommands,
+    openSideChat: args.openSideChat
+  })
 
   const { respondPermission, respondQuestion } = useMobileStructuredPromptResponses({
     stateRef,
@@ -170,7 +168,7 @@ export function useMobileStructuredAgentSession(
     sessionKey,
     turnId,
     isWorking,
-    stopsConversation: hostStopsConversation === true
+    stopsConversation: hostSupport?.conversationStop === true
   })
   const turnIndicator = useMobileStructuredTurnIndicator({
     state,
@@ -242,22 +240,22 @@ export function useMobileStructuredAgentSession(
       requestMobileStructuredAgentSessionCancel({
         client,
         enabled,
-        hostAnswersRepeatedStops,
-        hostStopsConversation,
+        hostAnswersRepeatedStops: hostSupport?.quietRepeatedStop ?? null,
+        hostStopsConversation: hostSupport?.conversationStop ?? null,
         inFlight: inFlightStopsRef.current,
         onSendError,
         prompt,
-        promptCancelSupported,
+        promptCancelSupported: hostSupport?.promptCancel ?? null,
         sessionId,
         stateRef
       }),
     [
       client,
       enabled,
-      hostAnswersRepeatedStops,
-      hostStopsConversation,
+      hostSupport?.quietRepeatedStop ?? null,
+      hostSupport?.conversationStop ?? null,
       onSendError,
-      promptCancelSupported,
+      hostSupport?.promptCancel ?? null,
       sessionId,
       stateRef
     ]

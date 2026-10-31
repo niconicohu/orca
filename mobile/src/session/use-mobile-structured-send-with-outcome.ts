@@ -1,6 +1,6 @@
 import { selectAgentSessionCurrentRequests } from '../../../src/shared/agent-session-current-requests'
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { runningStructuredAgentSessionTurnId } from '../../../src/shared/structured-agent-session-live-turn'
 import { structuredSessionBackgroundTasksView } from '../../../src/shared/structured-session-background-tasks-view'
 import { agentSessionVisibleFailureFacts } from '../../../src/shared/agent-session-visible-failures'
@@ -32,6 +32,21 @@ import {
   actionableStructuredApproval,
   actionableStructuredQuestion
 } from './mobile-structured-actionable-prompt'
+
+type MobileStructuredComposerOptions = Pick<
+  StructuredAgentSessionComposerOptions,
+  'snapshot' | 'setOption' | 'invokeAction' | 'conversationCommands' | 'openSideChat'
+>
+
+export function useMobileStructuredComposerOptions(
+  options: MobileStructuredComposerOptions
+): MobileStructuredComposerOptions {
+  const { snapshot, setOption, invokeAction, conversationCommands, openSideChat } = options
+  return useMemo(
+    () => ({ snapshot, setOption, invokeAction, conversationCommands, openSideChat }),
+    [snapshot, setOption, invokeAction, conversationCommands, openSideChat]
+  )
+}
 
 export function mobileStructuredSendQueues(
   queueCapable: boolean,
@@ -71,7 +86,7 @@ export function useMobileStructuredSendWithOutcome(args: {
   sendsOut: MobileStructuredSendsOut
   controller: Pick<
     StructuredAgentSessionComposerOptions,
-    'snapshot' | 'setOption' | 'invokeAction' | 'conversationCommands'
+    'snapshot' | 'setOption' | 'invokeAction' | 'conversationCommands' | 'openSideChat'
   >
   sessionCommands?: readonly AgentSessionSlashCommand[]
   onSendError: MobileNativeChatSendErrorReporter
@@ -136,6 +151,7 @@ export function useMobileStructuredSendWithOutcome(args: {
       const sendAttachments = attachments ?? []
       const commandOutcome = await dispatchMobileStructuredCommand({
         text,
+        skills: pickedSkills,
         hasAttachments: Boolean(sendAttachments.length || images?.length),
         client,
         sessionId,
