@@ -5,7 +5,7 @@ import { computeAgentSessionPayloadFingerprint } from '../../../../shared/agent-
 import '../unused-default-rpc-methods.test-fixture'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { structuredAgentSessionCreateParams } from '../../../../shared/structured-agent-session-create'
-import { MOBILE_RUNTIME_CLIENT_CAPABILITIES } from '../../../../../mobile/src/transport/mobile-runtime-client-capabilities'
+import { MOBILE_RUNTIME_CLIENT_CAPABILITIES } from '../../../../shared/mobile-runtime-client-capabilities'
 import { codexProviderHandle } from '../../../../shared/agent-session-provider-handle-encoding'
 import { resolveStructuredSideChatSource } from '../../../native-chat/structured-side-chat-source'
 import {
