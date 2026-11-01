@@ -1,5 +1,5 @@
 import type { AgentJournalSkillRef } from './agent-session-journal-types'
-import { getTextDrivenNativeChatCommands } from './native-chat-agent-profiles'
+import { getTextDrivenNativeChatCommands } from './native-chat/native-chat-agent-profiles'
 import type { AgentType } from './agent-status-types'
 import type {
   SessionOptionDescriptor,
@@ -145,6 +145,18 @@ export function isStructuredAgentSessionComposerCommand(
     (command.name === 'btw'
       ? sideChat
       : structuredRecognizedCommands().some((entry) => entry.name === command.name))
+  )
+}
+
+/** Host actions send no message; /goal is an action only on hosts that set goals. */
+export function isStructuredAgentSessionHostCommand(
+  text: string,
+  hostSetsGoals: boolean,
+  sideChat = false
+): boolean {
+  return (
+    isStructuredAgentSessionComposerCommand(text, undefined, undefined, sideChat) ||
+    (hostSetsGoals && isStructuredAgentSessionGoalCommand(text))
   )
 }
 

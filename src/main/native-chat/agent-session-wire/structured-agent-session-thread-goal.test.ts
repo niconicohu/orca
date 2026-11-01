@@ -37,6 +37,7 @@ import { codexProviderHandle } from '../../../shared/agent-session-provider-hand
 import { readStructuredAgentSessionOptions } from './structured-agent-session-options-read'
 import type { StructuredAgentSessionMutationContext } from './structured-agent-session-host-mutations'
 import {
+  hostTestCatalogReadOperation,
   hostTestOptionsReadStore,
   hostTestRestingOptionsRecord
 } from './structured-agent-session-host-test-data'
@@ -781,7 +782,10 @@ it('reports the exact goal transition revision for independent options and histo
       adapter: {},
       agents: claudeAndCodexDeclared(),
       store: hostTestOptionsReadStore(() => record),
-      modelCatalog: { read: async () => ({ origin: 'unknown' }) }
+      modelCatalog: {
+        captureRead: hostTestCatalogReadOperation,
+        read: async () => ({ origin: 'unknown' })
+      }
     },
     serialize: (_id: string, task: () => Promise<unknown>) => task(),
     openConversation: async () => session,

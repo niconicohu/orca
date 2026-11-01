@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, Goal, Pause, Play, Trash2 } from 'lucide-react-
 import {
   agentSessionThreadGoalElapsedSeconds,
   agentSessionThreadGoalStatusChange
-} from '../../../src/shared/agent-session-thread-goal'
+} from '../../../src/shared/agent-session/agent-session-thread-goal'
 import type { MobileThreadGoalControls } from './use-mobile-structured-thread-goal-controls'
 import {
   NATIVE_CHAT_THREAD_GOAL_COPY as copy,

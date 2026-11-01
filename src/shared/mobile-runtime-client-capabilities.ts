@@ -23,6 +23,7 @@ import {
 import { AGENT_SESSION_OPTIONAL_MODEL_CLIENT_CAPABILITY } from './agent-session-optional-model-capability'
 import { remoteRuntimeClientCapabilities } from './remote-runtime/remote-runtime-client-capabilities'
 import { AGENT_SESSION_CREATE_MESSAGE_RUNTIME_CAPABILITY } from './agent-session-create-capabilities'
+import { COMPRESSED_FRAMES_CLIENT_CAPABILITY } from './paired-e2ee-compressed-frame'
 
 export const MOBILE_RUNTIME_CLIENT_CAPABILITIES = remoteRuntimeClientCapabilities([
   AGENT_SESSION_COMMANDS_ON_REQUEST_CAPABILITY,
@@ -50,5 +51,6 @@ export const MOBILE_RUNTIME_CLIENT_CAPABILITIES = remoteRuntimeClientCapabilitie
   // Native chat offers no Stop for a turn the host restored but could not confirm.
   AGENT_STATUS_RESTORED_UNCONFIRMED_RUNTIME_CAPABILITY,
   AGENT_SESSION_CREATE_MESSAGE_RUNTIME_CAPABILITY,
-  AGENT_SESSION_QUEUED_IMAGE_CARDS_CLIENT_CAPABILITY
+  AGENT_SESSION_QUEUED_IMAGE_CARDS_CLIENT_CAPABILITY,
+  COMPRESSED_FRAMES_CLIENT_CAPABILITY
 ])

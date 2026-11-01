@@ -17,7 +17,6 @@ import type { PtyProviderBufferSnapshot } from '../providers/pty-provider-contra
 import type { RetainedTailRedrawCursor } from './terminal-tail-redraw-buffer'
 import type { TerminalTailWaitState } from './terminal-wait-tail-state'
 import type { TerminalCommandPaint } from './terminal-command-paint'
-import type { CliWriterConversation } from './structured-agent-cli-writers'
 import type { PtyShellOwnershipMirror } from './pty-shell-ownership-mirror'
 import type { TerminalExitCause } from '../../shared/terminal-exit-cause'
 import type { AgentSessionOwnerBinding } from '../../shared/agent-session-host-authority'
@@ -34,6 +33,12 @@ type RuntimeTerminalTailState = {
   preview: string
   waitBlockedAt: number | null
   tailWaitState?: TerminalTailWaitState
+}
+
+export type PtyHandleReplacementFence = {
+  incarnationId: PtyIncarnationId
+  staleHandles: Set<string>
+  pendingRegistration: boolean
 }
 
 export type PtyRegistrationClaim = {
@@ -85,11 +90,6 @@ export type RuntimePtyWorktreeRecord = RuntimeTerminalTailState & {
   /** Identify flagged unmanaged --command panes before foreground reads; null for adopted/restored panes. */
   launchCommandAgent: TuiAgent | null
   agentSessionOwners: AgentSessionOwnerBinding[]
-  /** Conversations the `incarnationId` execution reported; a later row can't hide them. In memory only. */
-  cliConversations?: {
-    incarnationId: PtyIncarnationId | null
-    byKey: Map<string, CliWriterConversation>
-  }
   foregroundAgent: TerminalAgent | null
   connected: boolean
   disconnectedAt: number | null

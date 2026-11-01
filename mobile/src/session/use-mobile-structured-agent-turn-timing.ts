@@ -9,7 +9,7 @@ import type { AgentSessionOptionsResult } from '../../../src/shared/agent-sessio
 import {
   agentSessionThreadGoalFromReport,
   isAgentSessionThreadGoalOpen
-} from '../../../src/shared/agent-session-thread-goal'
+} from '../../../src/shared/agent-session/agent-session-thread-goal'
 import type { MobileNativeChatThreadGoal } from './use-mobile-native-chat-session'
 import type { NativeChatTurnJournal } from '../../../src/shared/native-chat-turn-membership'
 import type { StructuredAgentHostClock } from '../../../src/shared/structured-agent-session-reducer'
