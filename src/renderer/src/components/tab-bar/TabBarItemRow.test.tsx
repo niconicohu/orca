@@ -22,7 +22,7 @@ import { useTabBarItemActions } from './use-tab-bar-item-actions'
 import type {
   AgentSessionStatusSummary,
   AgentSessionConversationName
-} from '../../../../shared/agent-session-wire'
+} from '../../../../shared/agent-session/agent-session-wire'
 import type * as StatusFeedModule from '@/runtime/structured-agent-session-status-feed'
 
 const sideStatus = vi.hoisted(() => ({

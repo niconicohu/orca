@@ -1,18 +1,18 @@
+import { lockedStructuredAgentSessionOptionSnapshot } from '../../../src/shared/agent-session/options/structured-agent-session-option-snapshot'
 import type { AgentSessionConversationCommand } from '../../../src/shared/agent-session/agent-session-conversation-command'
 import { useMobileStructuredOptionState } from './use-mobile-structured-option-state'
 import { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
-import { isAgentSessionHandleProvider } from '../../../src/shared/agent-session-provider-handle'
-import { structuredAgentSessionSeedCatalog } from '../../../src/shared/structured-agent-session-seed-catalog'
-import type { AgentSessionOptionResult } from '../../../src/shared/agent-session-wire'
-import { lockedStructuredAgentSessionOptionSnapshot } from '../../../src/shared/structured-agent-session-options'
+import { isAgentSessionHandleProvider } from '../../../src/shared/agent-session/lifecycle/agent-session-provider-handle'
+import { structuredAgentSessionSeedCatalog } from '../../../src/shared/agent-session/options/structured-agent-session-seed-catalog'
+import type { AgentSessionOptionResult } from '../../../src/shared/agent-session/agent-session-wire'
 import {
   structuredAgentSessionOptionView,
   structuredAgentSessionSendSelection,
   structuredAgentSessionMessageSelection,
   structuredAgentSessionShownSnapshot
-} from '../../../src/shared/structured-agent-session-option-view'
+} from '../../../src/shared/agent-session/options/structured-agent-session-option-view'
 import { agentChatPermissionModes } from '../../../src/shared/agent-chat-permission-mode'
-import { legacyHostPermissionDescriptor } from '../../../src/shared/structured-agent-session-permission-option'
+import { legacyHostPermissionDescriptor } from '../../../src/shared/agent-session/options/structured-agent-session-permission-option'
 import type { RpcClient } from '../transport/rpc-client'
 import type { StructuredAgentSessionHostSupport } from './mobile-structured-agent-session-host-support'
 import type { StructuredAgentSessionMutate } from './mobile-structured-agent-session-rpc'
@@ -21,7 +21,7 @@ import { mobileCreatedStructuredSession } from './mobile-created-structured-sess
 import {
   acceptedStructuredSessionSelectionOutcome,
   createStructuredAgentSessionOptionsWriteOwner
-} from '../../../src/shared/structured-agent-session-options-write-owner'
+} from '../../../src/shared/agent-session/options/structured-agent-session-options-write-owner'
 import { useMobileStructuredOptionSurface } from './use-mobile-structured-option-surface'
 import { useMobileStructuredThreadGoalControls } from './use-mobile-structured-thread-goal-controls'
 
@@ -60,7 +60,7 @@ export function useMobileStructuredAgentOptions(args: {
   )
   // An options answer made before the account's listing landed listed none of it.
   const {
-    projectPermission,
+    projectRuntimeReports,
     optionState,
     optionStateRef,
     activeOptionRecordRef,
@@ -70,7 +70,6 @@ export function useMobileStructuredAgentOptions(args: {
     imageSupport,
     threadGoalReport,
     threadGoalHostChanges,
-    awaitingOptions,
     receiveCatalog,
     isCurrentContext,
     controller,
@@ -113,19 +112,9 @@ export function useMobileStructuredAgentOptions(args: {
     imageSupport?.sessionId === sessionId &&
     !imageSupport.statesPermissionMode &&
     optionState.permissionMode === null
-  const interactionReadyRef = useRef(!awaitingOptions)
-  const lockSnapshotRef = useRef(
-    (snapshot: ReturnType<typeof structuredAgentSessionShownSnapshot>) => snapshot
-  )
-  const lockSnapshot = (snapshot: ReturnType<typeof structuredAgentSessionShownSnapshot>) =>
-    awaitingOptions ? lockedStructuredAgentSessionOptionSnapshot(snapshot) : snapshot
-  useLayoutEffect(() => {
-    interactionReadyRef.current = !awaitingOptions
-    lockSnapshotRef.current = lockSnapshot
-  })
   const readOptionState = useCallback(
     () =>
-      projectPermission({
+      projectRuntimeReports({
         ...structuredAgentSessionOptionView(
           optionStateRef.current,
           undefined,
@@ -133,15 +122,18 @@ export function useMobileStructuredAgentOptions(args: {
         ),
         permissionOwnSupported: hostSupport ? hostSupport.permissionOwn === true : null
       }),
-    [controller, projectPermission, hostSupport?.permissionOwn]
+    [controller, projectRuntimeReports, hostSupport?.permissionOwn]
   )
-  const shown = lockSnapshot(structuredAgentSessionShownSnapshot(readOptionState()))
-  const optionSnapshot = legacyHostPermissions
-    ? [...shown, legacyHostPermissionDescriptor()]
-    : shown
+  const acceptsPicks = !!client && !!sessionId && enabled && fence !== null
+  const readOptionSnapshot = useCallback(() => {
+    const shown = structuredAgentSessionShownSnapshot(readOptionState())
+    const snapshot = legacyHostPermissions ? [...shown, legacyHostPermissionDescriptor()] : shown
+    return acceptsPicks ? snapshot : lockedStructuredAgentSessionOptionSnapshot(snapshot)
+  }, [acceptsPicks, legacyHostPermissions, readOptionState])
+  const optionSnapshot = readOptionSnapshot()
 
   const readWriteContext = () => {
-    const currentState = projectPermission({
+    const currentState = projectRuntimeReports({
       ...optionStateRef.current,
       permissionOwnSupported: hostSupport ? hostSupport.permissionOwn === true : null
     })
@@ -150,8 +142,8 @@ export function useMobileStructuredAgentOptions(args: {
       controller,
       record: optionStateRef.current.record,
       view,
-      snapshot: lockSnapshotRef.current(structuredAgentSessionShownSnapshot(view)),
-      ready: !awaitingOptions && !!client && !!sessionId && interactionReadyRef.current,
+      snapshot: readOptionSnapshot(),
+      ready: acceptsPicks,
       providerStarting,
       isCurrentContext,
       flush: (isCurrent: () => boolean) => {
@@ -205,9 +197,8 @@ export function useMobileStructuredAgentOptions(args: {
     useMobileStructuredOptionSurface({
       optionSnapshot,
       demandModelCatalog,
-      lockSnapshot: (snapshot) => lockSnapshotRef.current(snapshot),
       setStructuredOption,
-      readOptionState
+      readOptionSnapshot
     })
 
   const threadGoalControls = useMobileStructuredThreadGoalControls({
@@ -227,6 +218,8 @@ export function useMobileStructuredAgentOptions(args: {
     optionPickerRequest,
     conversationCommands:
       conversationSupport?.sessionId === sessionId ? conversationSupport.commands : NO_COMMANDS,
+    compactInstructions:
+      conversationSupport?.sessionId === sessionId && conversationSupport.compactInstructions,
     acceptsImages:
       (imageSupport?.sessionId === sessionId ? imageSupport.acceptsImages : undefined) ??
       (agent !== null && isAgentSessionHandleProvider(agent)),

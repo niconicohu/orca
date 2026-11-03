@@ -1,18 +1,18 @@
 import type { SideChatPermission } from '../../../src/shared/agent-session-side-chat'
-import type { AgentJournalSkillRef } from '../../../src/shared/agent-session-journal-types'
-import type { StructuredAgentId } from '../../../src/shared/agent-session-provider-handle'
+import type { AgentJournalSkillRef } from '../../../src/shared/agent-session/journal/agent-session-journal-types'
+import type { StructuredAgentId } from '../../../src/shared/agent-session/lifecycle/agent-session-provider-handle'
 import type {
   AgentSessionAttachResult,
   AgentSessionMutationResult
-} from '../../../src/shared/agent-session-wire'
-import { isDefinitiveAgentSessionCreateRefusal } from '../../../src/shared/agent-session-definitive-refusal'
+} from '../../../src/shared/agent-session/agent-session-wire'
+import { isDefinitiveAgentSessionCreateRefusal } from '../../../src/shared/agent-session/failures/agent-session-definitive-refusal'
 import {
   createStructuredAgentSessionId,
   structuredAgentSessionCreateParams,
   type StructuredAgentSessionCreateParams
-} from '../../../src/shared/structured-agent-session-create'
+} from '../../../src/shared/agent-session/structured-agent-session-create'
 import { formatAgentTypeLabel } from '../../../src/shared/agent-type-label'
-import { structuredAgentSessionSendBody } from '../../../src/shared/structured-agent-session-send-mutation'
+import { structuredAgentSessionSendBody } from '../../../src/shared/agent-session/requests/structured-agent-session-send-mutation'
 import { structuredSessionOperationId } from './structured-session-operation-id'
 import { hasRuntimeRpcErrorCode } from '../../../src/shared/runtime-rpc-error-code'
 import type { RpcClient } from '../transport/rpc-client'

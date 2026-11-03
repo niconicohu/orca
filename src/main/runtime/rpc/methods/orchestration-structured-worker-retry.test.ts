@@ -68,7 +68,7 @@ async function createWorker() {
     publishStructuredAgentSessionTab: async () => {},
     getNestedWorkerMaxDepth: () => 2,
     getTerminalOrchestrationCliCommand: () => 'orca',
-    orchestrationSenderNames: { nameOf: () => 'Coordinator' },
+    orchestrationSenderNames: { snapshotOf: () => ({ name: 'Coordinator', agent: null }) },
     captureStructuredAgentSessionPresentation: (id: string) => ({
       raw: { worktreeId: 'workspace-1', tabId: `agent-session:${id}` },
       saved: []
@@ -86,8 +86,7 @@ async function createWorker() {
     runtime,
     worktreeId: 'wt-7',
     agent: 'codex',
-    dispatchId: 'dispatch-retry',
-    onJournalActivity: () => {}
+    dispatchId: 'dispatch-retry'
   })
   const deliverPreamble = () =>
     deliverWorkerDispatchPreamble({

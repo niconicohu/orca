@@ -1,27 +1,27 @@
-import { selectAgentSessionCurrentRequests } from '../../../src/shared/agent-session-current-requests'
+import { selectAgentSessionCurrentRequests } from '../../../src/shared/agent-session/requests/agent-session-current-requests'
 
 import { useCallback, useMemo } from 'react'
-import { runningStructuredAgentSessionTurnId } from '../../../src/shared/structured-agent-session-live-turn'
+import { runningStructuredAgentSessionTurnId } from '../../../src/shared/agent-session/view/structured-agent-session-live-turn'
 import { mobileStructuredAgentSessionWorking } from './mobile-structured-agent-session-working'
 import { structuredSessionBackgroundTasksView } from '../../../src/shared/structured-session-background-tasks-view'
-import { agentSessionVisibleFailureFacts } from '../../../src/shared/agent-session-visible-failures'
+import { agentSessionVisibleFailureFacts } from '../../../src/shared/agent-session/failures/agent-session-visible-failures'
 import { tuiAgentDisplayName } from '../../../src/shared/tui-agent-display-names'
-import { pendingPromptsAllUnanswerableHere } from '../../../src/shared/agent-session-approval-subject'
+import { pendingPromptsAllUnanswerableHere } from '../../../src/shared/agent-session/agent-session-approval-subject'
 import {
   SkillRefLimitError,
   structuredAgentSessionSendBody,
   type StructuredAgentSessionAttachment,
   type StructuredAgentSessionSendControl
-} from '../../../src/shared/structured-agent-session-send-mutation'
-import type { AgentJournalSkillRef } from '../../../src/shared/agent-session-journal-types'
+} from '../../../src/shared/agent-session/requests/structured-agent-session-send-mutation'
+import type { AgentJournalSkillRef } from '../../../src/shared/agent-session/journal/agent-session-journal-types'
 import { MAX_SKILL_REFS } from '../../../src/shared/rpc-contract/structured-agent-session-message-params'
-import type { StructuredAgentSessionComposerOptions } from '../../../src/shared/structured-agent-session-composer'
-import type { AgentSessionSlashCommand } from '../../../src/shared/agent-session-wire'
-import type { StructuredAgentSessionState } from '../../../src/shared/structured-agent-session-reducer'
+import type { StructuredAgentSessionComposerOptions } from '../../../src/shared/agent-session/view/structured-agent-session-composer'
+import type { AgentSessionSlashCommand } from '../../../src/shared/agent-session/agent-session-wire'
+import type { StructuredAgentSessionState } from '../../../src/shared/agent-session/structured-agent-session-reducer'
 import {
   structuredAgentSessionFollowUpsQueue,
   structuredAgentSessionQueueEnabled
-} from '../../../src/shared/structured-agent-session-queued-cards'
+} from '../../../src/shared/agent-session/view/structured-agent-session-queued-cards'
 import type { RpcClient } from '../transport/rpc-client'
 import type {
   MobileNativeChatSendIntent,
@@ -42,16 +42,35 @@ import {
 
 type MobileStructuredComposerOptions = Pick<
   StructuredAgentSessionComposerOptions,
-  'snapshot' | 'setOption' | 'invokeAction' | 'conversationCommands' | 'openSideChat'
+  | 'snapshot'
+  | 'setOption'
+  | 'invokeAction'
+  | 'conversationCommands'
+  | 'compactInstructions'
+  | 'openSideChat'
 >
 
 export function useMobileStructuredComposerOptions(
   options: MobileStructuredComposerOptions
 ): MobileStructuredComposerOptions {
-  const { snapshot, setOption, invokeAction, conversationCommands, openSideChat } = options
+  const {
+    snapshot,
+    setOption,
+    invokeAction,
+    conversationCommands,
+    compactInstructions,
+    openSideChat
+  } = options
   return useMemo(
-    () => ({ snapshot, setOption, invokeAction, conversationCommands, openSideChat }),
-    [snapshot, setOption, invokeAction, conversationCommands, openSideChat]
+    () => ({
+      snapshot,
+      setOption,
+      invokeAction,
+      conversationCommands,
+      compactInstructions,
+      openSideChat
+    }),
+    [snapshot, setOption, invokeAction, conversationCommands, compactInstructions, openSideChat]
   )
 }
 
@@ -97,7 +116,12 @@ export function useMobileStructuredSendWithOutcome(args: {
   sendsOut: MobileStructuredSendsOut
   controller: Pick<
     StructuredAgentSessionComposerOptions,
-    'snapshot' | 'setOption' | 'invokeAction' | 'conversationCommands' | 'openSideChat'
+    | 'snapshot'
+    | 'setOption'
+    | 'invokeAction'
+    | 'conversationCommands'
+    | 'compactInstructions'
+    | 'openSideChat'
   >
   sessionCommands?: readonly AgentSessionSlashCommand[]
   onSendError: MobileNativeChatSendErrorReporter

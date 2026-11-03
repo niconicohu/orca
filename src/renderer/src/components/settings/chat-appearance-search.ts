@@ -56,7 +56,7 @@ const getChatAppearanceCatalog = createLocalizedCatalog(
           'Font used for messages, activity, and the message box.'
         ),
         keywords: [
-          ...translateSearchKeyword('settings.appearance.chat.title', 'Chat'),
+          ...translateSearchKeyword('settings.appearance.chat.title', 'Chat UI'),
           ...translateSearchKeyword('settings.appearance.chat.fontFamily', 'Font family'),
           ...translateSearchKeyword('settings.appearance.chat.fontKeywordTypeface', 'typeface'),
           ...translateSearchKeyword('settings.appearance.chat.fontKeywordTypography', 'typography')
@@ -65,7 +65,7 @@ const getChatAppearanceCatalog = createLocalizedCatalog(
       textSize: {
         targetSectionId: 'chat-text-size',
         title: translate('settings.appearance.chat.textSize', 'Text size'),
-        keywords: [translate('settings.appearance.chat.title', 'Chat')]
+        keywords: [translate('settings.appearance.chat.title', 'Chat UI')]
       },
       textWeight: {
         targetSectionId: 'chat-text-weight',
@@ -86,7 +86,7 @@ const getChatAppearanceCatalog = createLocalizedCatalog(
           'settings.appearance.chat.codeTextSizeDescription',
           'Code blocks, inline code, commands and tool output.'
         ),
-        keywords: [translate('settings.appearance.chat.title', 'Chat')]
+        keywords: [translate('settings.appearance.chat.title', 'Chat UI')]
       },
       width: {
         targetSectionId: 'chat-width',
@@ -96,7 +96,7 @@ const getChatAppearanceCatalog = createLocalizedCatalog(
           'How wide messages and the message box can grow in a wide pane.'
         ),
         keywords: [
-          translate('settings.appearance.chat.title', 'Chat'),
+          translate('settings.appearance.chat.title', 'Chat UI'),
           ...getChatWidthOptions().map((option) => option.label)
         ]
       },

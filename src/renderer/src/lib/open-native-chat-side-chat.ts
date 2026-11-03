@@ -1,6 +1,6 @@
 import { agentChatPermissionModes } from '../../../shared/agent-chat-permission-mode'
-import { structuredAgentSessionSendBody } from '../../../shared/structured-agent-session-send-mutation'
-import type { AgentJournalSkillRef } from '../../../shared/agent-session-journal-types'
+import { structuredAgentSessionSendBody } from '../../../shared/agent-session/requests/structured-agent-session-send-mutation'
+import type { AgentJournalSkillRef } from '../../../shared/agent-session/journal/agent-session-journal-types'
 import { useAppStore } from '@/store'
 import { newAgentLaunchRequestId } from './agent-launch-request-id'
 import { adoptAgentSessionLaunchVerdict } from './agent-session-launch-plan'

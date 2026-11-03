@@ -1,12 +1,12 @@
+import { refuse } from '../../../../shared/agent-session/failures/agent-session-wire-refusals'
 import type { StructuredSessionSurface } from '../../agent-session/structured-agent-session-close'
-import { structuredAgentSessionTabId } from '../../../../shared/structured-agent-session-projection'
+import { structuredAgentSessionTabId } from '../../../../shared/agent-session/view/structured-agent-session-projection'
 import {
-  refuse,
   type AgentSessionAttachResult,
   type AgentSessionMutationResult,
   agentSessionSendSubmission
-} from '../../../../shared/agent-session-wire'
-import { structuredAgentSessionMessageSendMutation } from '../../../../shared/structured-agent-session-send-mutation'
+} from '../../../../shared/agent-session/agent-session-wire'
+import { structuredAgentSessionMessageSendMutation } from '../../../../shared/agent-session/requests/structured-agent-session-send-mutation'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import type { StructuredAgentSessionCaller } from '../../../native-chat/agent-session-wire/structured-agent-session-host-types'
 import type { PreparedStructuredAgentSessionCreate } from './structured-agent-session-create'

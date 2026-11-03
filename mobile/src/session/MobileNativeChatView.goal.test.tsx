@@ -6,9 +6,9 @@ import {
   root,
   update,
   hostType
-} from './MobileNativeChatView.harness.test-fixture'
+} from './native-chat/MobileNativeChatView.harness.test-fixture'
 import { activateMobileUiLocale } from '../i18n/mobile-i18n'
-import type { MobileNativeChatThreadGoal } from './use-mobile-native-chat-session'
+import type { MobileNativeChatThreadGoal } from './native-chat/use-mobile-native-chat-session'
 
 vi.mock('../hooks/use-now', () => ({ useNow: () => 200_000 }))
 vi.mock('../platform/media-picker', () => ({
@@ -25,7 +25,8 @@ vi.mock('../platform/media-picker', () => ({
   })
 }))
 vi.mock('react-native', async () => {
-  const { reactNativeStub } = await import('./MobileNativeChatView.render-stubs.test-fixture')
+  const { reactNativeStub } =
+    await import('./native-chat/MobileNativeChatView.render-stubs.test-fixture')
   return {
     ...(await reactNativeStub()),
     useWindowDimensions: () => ({ width: 800, height: 360 })
@@ -35,7 +36,8 @@ vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 })
 }))
 vi.mock('react-native-gesture-handler', async () => {
-  const { gestureHandlerStub } = await import('./MobileNativeChatView.render-stubs.test-fixture')
+  const { gestureHandlerStub } =
+    await import('./native-chat/MobileNativeChatView.render-stubs.test-fixture')
   return gestureHandlerStub()
 })
 vi.mock('lucide-react-native', () => ({
@@ -68,7 +70,8 @@ vi.mock('./native-chat/input/MobileNativeChatPromptCard', () => ({
   MobileNativeChatPromptCard: 'PromptCard'
 }))
 vi.mock('./native-chat/composer/MobileNativeChatComposer', async () => {
-  const { composerStub } = await import('./MobileNativeChatView.render-stubs.test-fixture')
+  const { composerStub } =
+    await import('./native-chat/MobileNativeChatView.render-stubs.test-fixture')
   return composerStub()
 })
 

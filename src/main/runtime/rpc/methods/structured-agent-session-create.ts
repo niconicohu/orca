@@ -5,13 +5,13 @@ import { seededPermissionMode } from '../../../../shared/native-chat/input/nativ
 
 import { assertAgentPromptRequestActive } from '../../orca-runtime-core'
 import { AGENT_CHAT_PERMISSION_MODE_OPTION_ID } from '../../../../shared/agent-chat-permission-mode'
-import { AgentSessionRefusalError } from '../../../../shared/agent-session-wire-refusals'
-import { computeAgentSessionPayloadFingerprint } from '../../../../shared/agent-session-mutation-envelope'
+import { AgentSessionRefusalError } from '../../../../shared/agent-session/failures/agent-session-wire-refusals'
+import { computeAgentSessionPayloadFingerprint } from '../../../../shared/agent-session/lifecycle/agent-session-mutation-envelope'
 import type {
   AgentSessionAttachResult,
   AgentSessionMutationEnvelope,
   AgentSessionMutationResult
-} from '../../../../shared/agent-session-wire'
+} from '../../../../shared/agent-session/agent-session-wire'
 import {
   attachFingerprintFields,
   type AgentSessionAttachParams
@@ -21,7 +21,7 @@ import type { StructuredAgentSessionCaller } from '../../../native-chat/agent-se
 import type {
   StructuredAgentSessionResumeSource,
   StructuredAgentSessionFirstMessage
-} from '../../../../shared/structured-agent-session-create'
+} from '../../../../shared/agent-session/structured-agent-session-create'
 import { structuredAgentSessionOptionOverridesRefusal } from '../../../native-chat/agent-session-wire/structured-agent-session-options-read'
 import type { StructuredAgentSessionCreateOptions } from '../../../native-chat/agent-session-wire/structured-agent-session-create'
 import type { OrcaRuntimeService } from '../../orca-runtime'
@@ -29,7 +29,7 @@ import {
   captureStructuredAgentCliSource,
   type StructuredAgentCliSourceEvidence
 } from '../../../native-chat/structured-agent-cli-source'
-import type { StructuredAgentId } from '../../../../shared/agent-session-provider-handle'
+import type { StructuredAgentId } from '../../../../shared/agent-session/lifecycle/agent-session-provider-handle'
 import { resolveUncommittedStructuredCreate } from './structured-agent-session-precommit-refusal'
 
 export type PreparedStructuredAgentSessionCreate = {

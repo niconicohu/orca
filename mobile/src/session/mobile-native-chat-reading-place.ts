@@ -1,9 +1,9 @@
 import type { MobileNativeChatRowKeys } from './native-chat/transcript/mobile-native-chat-row-keys'
 import {
   mobileNativeChatReadingParts,
-  mobileNativeChatScrollRootKey,
-  type MobileNativeChatScrollRoots
-} from './mobile-native-chat-scroll-roots'
+  mobileNativeChatScrollRootKey
+} from './native-chat/transcript/mobile-native-chat-scroll-root-handle'
+import type { MobileNativeChatScrollRoots } from './native-chat/transcript/mobile-native-chat-scroll-roots'
 
 type Box = { top: number; bottom: number }
 
@@ -248,3 +248,10 @@ export function mobileNativeChatUndrawnHeight(
   }
   return height
 }
+
+type Listen = (type: string, listener: () => void, options: AddEventListenerOptions) => void
+export type MobileNativeChatEventScroller = MobileNativeChatScrollNode & {
+  addEventListener: Listen
+  removeEventListener: Listen
+}
+export type ReadMobileNativeChatEventScroller = () => MobileNativeChatEventScroller | null

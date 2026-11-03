@@ -3,7 +3,7 @@ import type {
   AgentSessionThreadGoalChange,
   AgentSessionThreadGoalResult
 } from '../../../src/shared/agent-session/agent-session-thread-goal-wire'
-import { agentSessionWriteNoticeParts } from '../../../src/shared/agent-session-refusal-notice'
+import { agentSessionWriteNoticeParts } from '../../../src/shared/agent-session/failures/agent-session-refusal-notice'
 import { mobileAgentSessionWriteNoticeText } from './agent-session-write-notice-copy'
 import type { RpcClient } from '../transport/rpc-client'
 import type { MobileStructuredAgentMutate } from './use-mobile-structured-agent-mutation'

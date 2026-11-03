@@ -56,10 +56,10 @@ import { useNativeChatMessageListHandle } from './use-native-chat-reveal-latest'
 import type {
   AgentJournalRenderItem,
   AgentJournalSubmission
-} from '../../../../shared/agent-session-journal-types'
-import type { AgentSessionLatestTurn } from '../../../../shared/agent-session-wire'
-import { isStructuredAgentSessionThinking } from '../../../../shared/structured-agent-session-live-turn'
-import type { NativeChatSettledTurns } from '../../../../shared/native-chat-turn-status'
+} from '../../../../shared/agent-session/journal/agent-session-journal-types'
+import type { AgentSessionLatestTurn } from '../../../../shared/agent-session/agent-session-wire'
+import { isStructuredAgentSessionThinking } from '../../../../shared/agent-session/view/structured-agent-session-live-turn'
+import type { NativeChatSettledTurns } from '../../../../shared/native-chat/transcript/native-chat-turn-status'
 import type { NativeChatDiffReveal, NativeChatDiffTarget } from './native-chat-turn-diffs'
 import { useNativeChatTurnDiffs } from './use-native-chat-turn-diffs'
 import { transcriptTailRow } from './native-chat-transcript-tail-row'
@@ -89,10 +89,12 @@ export function NativeChatMessageList({
   awaitingInput = null,
   turnActivity,
   stopping = false,
-  runtimeContext
+  runtimeContext,
+  structuredAttachments = false
 }: {
   ref?: Parameters<typeof useNativeChatMessageListHandle>[0]
   session: NativeChatLiveSession
+  structuredAttachments?: boolean
   journalItems?: readonly AgentJournalRenderItem[]
   /** With the items, what places each row in its turn (structured lane). */
   journalSubmissions?: readonly AgentJournalSubmission[]
@@ -339,6 +341,7 @@ export function NativeChatMessageList({
   const rowContext = useNativeChatTranscriptRowContext({
     agent: session.agent,
     hostWork,
+    structuredAttachments,
     expandSignal,
     revealedDiff,
     taskListPredecessors,
@@ -355,7 +358,7 @@ export function NativeChatMessageList({
 
   return (
     <NativeChatDisclosureContext.Provider value={disclosures}>
-      <div className="relative flex min-h-0 flex-1 flex-col bg-chat-canvas">
+      <div className="relative flex min-h-0 flex-1 flex-col bg-chat-pane">
         <div className="relative min-h-0 flex-1">
           <div
             ref={scrollRef}

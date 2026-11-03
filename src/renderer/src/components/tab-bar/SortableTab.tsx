@@ -2,7 +2,7 @@ import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useCallback, useEffect } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { X, Minimize2, Pin } from 'lucide-react'
-import { SideChatTabBadge } from './SideChatTabBadge'
+import { SideChatTabBadge, sideChatTabLabel } from './SideChatTabBadge'
 import { stripLeadingAgentTitleDecoration } from '../../../../shared/agent-title-decoration'
 import { getAgentLabel } from '@/lib/agent-catalog'
 import { basename } from '@/lib/path'
@@ -196,9 +196,7 @@ export default function SortableTab({
   })
   const handleMenuOpenChange = useTabContextMenuOpening(setMenuOpen, retirePendingActivation)
   const slotProps = useTabStripSlotProps(tab.id, isActive)
-  const sideChatLabel = nativeChat?.sideChat
-    ? translate('components.native-chat.sideChat.title', 'Side chat')
-    : undefined
+  const sideChatLabel = sideChatTabLabel(nativeChat?.sideChat)
   const tabTitle = tab.customTitle ?? tab.title
   const tabRoot = (
     <div
@@ -213,7 +211,7 @@ export default function SortableTab({
       data-agent-activity-status={activityStatus}
       {...attributes}
       {...dragListeners}
-      className={`group relative flex min-w-0 overflow-hidden items-center h-full px-1.5 text-xs cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none ${getTabStripBorderClasses(hasTabsToRight, { includeTopBorder: includeTopTabBorder })} ${getDropIndicatorClasses(dropIndicator ?? null)} ${getTabRootStateClasses(isActive)}`}
+      className={`w-full group relative flex min-w-0 overflow-hidden items-center h-full px-1.5 text-xs cursor-pointer select-none outline-none focus:outline-none focus-visible:outline-none ${getTabStripBorderClasses(hasTabsToRight, { includeTopBorder: includeTopTabBorder })} ${getDropIndicatorClasses(dropIndicator ?? null)} ${getTabRootStateClasses(isActive)}`}
       onDoubleClick={(e) => {
         if (isEditing) {
           return
@@ -267,6 +265,7 @@ export default function SortableTab({
       {isEditing ? (
         <Input
           ref={setRenameInputElement}
+          density="compact"
           data-tab-rename-input="true"
           value={renameValue}
           aria-label={translate(

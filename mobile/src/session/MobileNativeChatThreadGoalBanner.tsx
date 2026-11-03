@@ -1,7 +1,7 @@
-import type { MobileNativeChatThreadGoal } from './use-mobile-native-chat-session'
+import type { MobileNativeChatThreadGoal } from './native-chat/use-mobile-native-chat-session'
 import { useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
-import { BottomDrawer } from '../components/BottomDrawer'
+import { BottomDrawer } from '../components/bottom-drawer/BottomDrawer'
 import { ChevronDown, ChevronUp, Goal, Pause, Play, Trash2 } from 'lucide-react-native'
 import {
   agentSessionThreadGoalElapsedSeconds,
@@ -12,7 +12,7 @@ import {
   NATIVE_CHAT_THREAD_GOAL_COPY as copy,
   nativeChatThreadGoalStatusKey
 } from '../../../src/shared/native-chat-thread-goal-copy'
-import { formatNativeChatDuration } from '../../../src/shared/native-chat-turn-status'
+import { formatNativeChatDuration } from '../../../src/shared/native-chat/transcript/native-chat-turn-status'
 import { useNow } from '../hooks/use-now'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { colors, radii, spacing, typography } from '../theme/mobile-theme'

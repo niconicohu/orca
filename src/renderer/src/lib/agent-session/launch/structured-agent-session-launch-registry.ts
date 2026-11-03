@@ -1,29 +1,30 @@
 import { launchStateLifecycle } from '../../structured-agent-session-launch-lifecycle'
-export { launchStateLifecycle } from '../../structured-agent-session-launch-lifecycle'
 import { forgetStructuredSessionSelection } from '../../structured-agent-session-selection-controller'
 import { useSyncExternalStore } from 'react'
-import type { StructuredLaunchFailure } from '../../structured-agent-session-launch-failure'
+import type { StructuredLaunchFailure } from './structured-agent-session-launch-failure'
 import type { ExecutionHostId } from '../../../../../shared/execution-host'
 import type { StructuredLaunchRecoveryState } from './structured-agent-session-launch-recovery'
-import type { StructuredLaunchSelection } from '../../structured-agent-session-launch-options'
+import type { StructuredLaunchSelection } from './structured-agent-session-launch-options'
 import type {
   StructuredAgentLaunchOptions,
   StructuredLaunchCallerGroup
-} from '../../structured-agent-session-launch-callers'
+} from './structured-agent-session-launch-callers'
 import {
   deleteStructuredAgentLaunchRecord,
   hasStructuredAgentLaunchCancellationTombstonePersisted,
   readStructuredAgentLaunchRecord,
   writeStructuredAgentLaunchRecord
 } from './structured-agent-session-launch-persistence'
-import type { StructuredAgentLaunchPersistedRecord } from './structured-agent-session-launch-record'
-import { structuredAgentLaunchRecordFor } from './structured-agent-session-launch-record'
+import {
+  type StructuredAgentLaunchPersistedRecord,
+  structuredAgentLaunchRecordFor
+} from './structured-agent-session-launch-record'
 import {
   resetStructuredAgentLaunchCancellationForTests,
   retireAbsentStructuredAgentLaunchCancellations,
   retireStructuredAgentLaunchCancellation
 } from '../../launch-cancel-tombstones-compat/structured-agent-session-launch-cancellation'
-import { resetStructuredAgentLocalLaunchCancelsForTests } from '../../structured-agent-session-local-launch-cancel'
+import { resetStructuredAgentLocalLaunchCancelsForTests } from './structured-agent-session-local-launch-cancel'
 
 export type StructuredLaunchState = StructuredLaunchRecoveryState & {
   identity: string
@@ -224,8 +225,3 @@ export function retireAbsentStructuredAgentSessionLaunchCancellationTombstones(
   }
   return changed
 }
-
-export {
-  markStructuredAgentSessionLaunchCancelled,
-  markStructuredAgentSessionLaunchCancelledSilently
-} from './structured-agent-session-launch-cancel'
