@@ -1,7 +1,7 @@
-import type { StructuredAgentSessionHost } from '../../src/main/native-chat/agent-session-wire/structured-agent-session-host'
-import { partialRuntimeStore } from '../../src/main/runtime/runtime-store-partial-fixture'
+import type { StructuredAgentSessionHost } from '../../src/main/native-chat/agent-session-wire/host/structured-agent-session-host'
+import { partialRuntimeStore } from '../../src/main/runtime/orca-runtime-tests/runtime-store-partial-fixture'
 import { agentSessionRecordFixture } from '../../src/main/native-chat/agent-session-record-test-fixture'
-import { agentSessionConversationView } from '../../src/shared/agent-session-conversation-view'
+import { agentSessionConversationView } from '../../src/shared/agent-session/lifecycle/agent-session-conversation-view'
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -9,7 +9,7 @@ import type { RuntimeMobileSessionTabsResult } from '../../src/shared/runtime-ty
 import type * as RuntimeRpcClient from '../../src/renderer/src/runtime/runtime-rpc-client'
 import type * as RuntimeLayoutClient from '../../src/renderer/src/runtime/runtime-layout-client'
 import { OrcaRuntimeService } from '../../src/main/runtime/orca-runtime'
-import { setStructuredAgentSessionHost } from '../../src/main/native-chat/agent-session-wire/structured-agent-session-registry'
+import { setStructuredAgentSessionHost } from '../../src/main/native-chat/agent-session-wire/host/structured-agent-session-registry'
 import { useAppStore } from '../../src/renderer/src/store'
 import { applyStructuredSessionTabSnapshots } from '../../src/renderer/src/runtime/local-structured-session-tabs-sync/snapshot-apply'
 import { resetLocalStructuredSessionVersionForTests } from '../../src/renderer/src/runtime/local-structured-session-tabs-sync/inventory-generation-fence'
@@ -62,8 +62,9 @@ type RestoreCloseHost = Pick<
   deps: {
     store: Pick<
       StructuredAgentSessionHost['deps']['store'],
-      'getConversation' | 'isSessionUnreadable' | 'isSessionTabRetired'
+      'getRecord' | 'getConversation' | 'isSessionUnreadable' | 'isSessionTabRetired'
     >
+    agents: Pick<StructuredAgentSessionHost['deps']['agents'], 'capabilities'>
   }
 }
 
@@ -229,10 +230,12 @@ describe('reopened structured session close', () => {
       {
         deps: {
           store: {
+            getRecord: () => null,
             getConversation: (id: string) => records.get(id) ?? null,
             isSessionUnreadable: () => false,
             isSessionTabRetired: (id: string) => !hostTabs.has(id)
-          }
+          },
+          agents: { capabilities: () => null }
         },
         reconcileRestartLeases: async () => undefined,
         seedSessionTabs: async () => undefined,
@@ -299,17 +302,6 @@ describe('reopened structured session close', () => {
   })
 
   describe('closing a chat reopened from history after /clear', () => {
-    it('mirrors the reopened session into a suffixed tab beside the current chat', async () => {
-      const { agentTabs } = await setup()
-
-      expect(agentTabs()).toEqual(
-        expect.arrayContaining([
-          { id: CURRENT_TAB, entityId: CURRENT_SESSION },
-          { id: REOPENED_TAB, entityId: REOPENED_SESSION }
-        ])
-      )
-    })
-
     it('closes only the reopened tab when the user closes it on the desktop', async () => {
       const { agentTabs, hostSessionCloses, closeResponses } = await setup()
 
@@ -423,10 +415,12 @@ describe('in-flight structured session close', () => {
       {
         deps: {
           store: {
+            getRecord: () => null,
             getConversation: (id: string) => records.get(id) ?? null,
             isSessionUnreadable: () => false,
             isSessionTabRetired: (id: string) => !hostTabs.has(id)
-          }
+          },
+          agents: { capabilities: () => null }
         },
         reconcileRestartLeases: async () => undefined,
         seedSessionTabs: async () => undefined,

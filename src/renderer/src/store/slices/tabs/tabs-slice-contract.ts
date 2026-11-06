@@ -6,7 +6,7 @@ import type {
   TabGroup,
   TabGroupLayoutNode
 } from '../../../../../shared/tab-types'
-import type { WorkspaceSessionState } from '../../../../../shared/workspace-session-state-types'
+import type { WorkspaceSessionState } from '../../../../../shared/workspace-session/workspace-session-state-types'
 import type { WorkspaceSessionHydrationOptions } from '@/lib/workspace-session-hydration-keys'
 
 export type TabSplitDirection = 'left' | 'right' | 'up' | 'down'
@@ -53,10 +53,13 @@ export type TabsSlice = {
         split: TabSplitTarget
         /** Client-local unified tab id to insert after; an explicit targetGroupId still wins. */
         afterTabId: string
+        index: number
         activate: boolean
         /** false selects an activated tab without stamping its focus time (the group history still updates). */
         recordFocus: boolean
         recordInteraction: boolean
+        /** With activate false: still the tab its pane shows, without becoming the active pane. */
+        showInGroup: boolean
       }
     >
   ) => Tab

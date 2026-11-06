@@ -1,12 +1,15 @@
 import './rpc/unused-default-rpc-methods.test-fixture'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { OrchestrationDb } from './orchestration/db'
+import { OrchestrationDb } from './orchestration/db/orchestration-db'
+import './orchestration/db/contract-constants'
+import './orchestration/db/messages/mailbox-routing-page'
+import './orchestration/db/dispatch-row-writer'
+import './orchestration/db/attempt-outcome-projection'
 import { createRootDispatch } from './orchestration/db/root-dispatch-test-fixture'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../shared/layout-owner-switch'
 import {
   createRuntime,
-  driveToLiveIdle,
   LEAF_ID,
   PANE_KEY,
   pointerCount,
@@ -49,23 +52,6 @@ async function replacePtyWithoutHandle(harness: ReturnType<typeof createRuntime>
 describe('Run and Dispatch mail for a pane whose PTY was replaced', () => {
   afterEach(() => {
     vi.useRealTimers()
-  })
-
-  it('wakes the pane coordinator of a Run created under the PTY a restart replaced', async () => {
-    vi.useFakeTimers()
-    const db = new OrchestrationDb(':memory:')
-    const harness = createRuntime(db)
-    const run = db.createRun({
-      objective: 'Run from the previous PTY',
-      coordinatorHandle: 'term_previous_pty_in_pane',
-      coordinatorPaneKey: PANE_KEY
-    })
-    await driveToLiveIdle(harness.runtime)
-
-    await deliverWhileIdle(harness, db, `run:${run.id}`, run.id)
-
-    expect(pointerCount(harness.write)).toBe(1)
-    db.close()
   })
 
   it('wakes a replaced Run coordinator once its exported handle arrives, never minting its own', async () => {

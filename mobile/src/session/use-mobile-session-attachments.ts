@@ -110,12 +110,16 @@ export function useMobileSessionAttachments(scope: MobileSessionAccessorySelecti
       onError: triggerError
     })
   const nativeChatStructuredComposer = useMobileNativeChatStructuredComposer({
+    sideChat: nativeChatController.openSideChat !== undefined,
     structured: structuredNativeChat,
     sessionCommands: nativeChatController.nativeChatSessionCommands,
     acceptsFiles: agentSessionHostSupport?.phoneAttachments === true,
     conversationCommands:
       nativeChatController.nativeChatSessionOptions?.controller.conversationCommands,
-    files: nativeChatFiles
+    compactInstructions:
+      nativeChatController.nativeChatSessionOptions?.controller.compactInstructions,
+    files: nativeChatFiles,
+    threadGoal: nativeChatController.nativeChatThreadGoal
   })
 
   useEffect(() => {

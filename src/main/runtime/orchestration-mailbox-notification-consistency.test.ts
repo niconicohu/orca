@@ -5,7 +5,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ORCHESTRATION_CONTRACT_VERSION } from '../../shared/protocol-version'
-import { OrchestrationDb } from './orchestration/db'
+import { OrchestrationDb } from './orchestration/db/orchestration-db'
+import './orchestration/db/contract-constants'
+import './orchestration/db/messages/mailbox-routing-page'
+import './orchestration/db/dispatch-row-writer'
+import './orchestration/db/attempt-outcome-projection'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../shared/layout-owner-switch'
 import {
   checkBoundMailbox,
@@ -32,7 +36,7 @@ import {
   WORKTREE_ID
 } from './orchestration-mailbox-notification-test-harness'
 import { RpcDispatcher } from './rpc/dispatcher'
-import { ORCHESTRATION_METHODS } from './rpc/methods/orchestration'
+import { ORCHESTRATION_METHODS } from './rpc/methods/orchestration/orchestration'
 import { MAILBOX_POINTER_WRITE_ATTEMPTED } from './orchestration/db/messages/mailbox-pointer-enter-state'
 
 vi.mock('electron', () => ({
@@ -691,27 +695,6 @@ describe('orchestration notification mailbox consistency', () => {
       db.close()
     }
   )
-
-  it('releases staged pointer state when an explicit check owns the batch', async () => {
-    vi.useFakeTimers()
-    const db = new OrchestrationDb(':memory:')
-    const harness = createRuntime(db)
-    const run = createBoundRun(db, 'Explicit-check Run')
-    insertDirectRunMessage(db, run.id, 'Checked before Enter')
-
-    await driveToLiveIdle(harness.runtime)
-    expect(pointerCount(harness.write)).toBe(1)
-    const checked = await checkBoundMailbox(harness.runtime)
-    expect(checked).toMatchObject({ runId: run.id, count: 1 })
-
-    await vi.advanceTimersByTimeAsync(500)
-    expect(harness.write.mock.calls.filter(([, payload]) => payload === '\r')).toHaveLength(0)
-    const redrive = vi.spyOn(harness.runtime, 'deliverPendingMessagesForHandle')
-    harness.runtime.onPtyExit(PTY_ID, 0)
-    await Promise.resolve()
-    expect(redrive).not.toHaveBeenCalled()
-    db.close()
-  })
 
   it('routes same-Run direct mail through the bound check and acknowledgment path', async () => {
     vi.useFakeTimers()

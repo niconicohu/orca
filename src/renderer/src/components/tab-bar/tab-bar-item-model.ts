@@ -5,9 +5,9 @@ import {
 } from '@/runtime/structured-chat-tab-name'
 import type { AppState } from '@/store/types'
 import type { BrowserTab as BrowserTabState } from '../../../../shared/browser-workspace-types'
-import type { GitFileStatus } from '../../../../shared/git-status-types'
+import type { GitFileStatus } from '../../../../shared/git/status/git-status-types'
 import type { Tab, WorkspaceVisibleTabType } from '../../../../shared/tab-types'
-import type { TerminalTab } from '../../../../shared/terminal-tab-types'
+import type { TerminalTab } from '../../../../shared/workspace-layout/terminal-tab-types'
 import { resolveTerminalTabTitle } from '../../../../shared/tab-title-resolution'
 import type { OpenFile } from '../../store/slices/editor'
 import { normalizeRelativePath } from '@/lib/path'
@@ -113,6 +113,9 @@ export function getTabLayoutSignature(
   }
   if (item.type === 'editor') {
     return `${item.type}:${item.id}:${item.isPinned}:${item.data.isDirty}:${item.data.isPreview}:${item.data.externalMutation ?? ''}:${status ?? ''}:${label}`
+  }
+  if (item.type === 'agent-session') {
+    return `${item.type}:${item.id}:${item.isPinned}:${!!item.data.sideChatOf}:${label}`
   }
   return `${item.type}:${item.id}:${item.isPinned}:${label}`
 }

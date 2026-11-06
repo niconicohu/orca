@@ -1,5 +1,5 @@
-import type { MobileTerminalTheme } from '../terminal/terminal-webview-contract'
-import type { AgentStatusEntry } from '../../../src/shared/agent-status-types'
+import type { RuntimeMobileTerminalTheme as MobileTerminalTheme } from '../../../src/shared/runtime-types'
+import type { AgentStatusEntry } from '../../../src/shared/agent-status/contracts/agent-status-types'
 import type { BrowserLoadError } from '../../../src/shared/browser-workspace-types'
 import { browserLoadErrorsEqual } from '../../../src/shared/browser-load-failure'
 import { translate } from '../i18n/mobile-i18n'
@@ -73,6 +73,8 @@ type MobileSessionTabLike =
     }
   | {
       type: 'agent-session'
+      sideChatOf?: string
+      sideChatSupported?: boolean
       id: string
       title?: string
       sessionId?: string
@@ -191,6 +193,8 @@ function mobileSessionTabEqual(
         b.type === 'agent-session' &&
         a.sessionId === b.sessionId &&
         a.agent === b.agent &&
+        a.sideChatOf === b.sideChatOf &&
+        a.sideChatSupported === b.sideChatSupported &&
         JSON.stringify(a.chatStatus ?? null) === JSON.stringify(b.chatStatus ?? null)
       )
   }

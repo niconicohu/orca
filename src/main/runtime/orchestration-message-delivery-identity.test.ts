@@ -7,11 +7,15 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ORCHESTRATION_CONTRACT_VERSION } from '../../shared/protocol-version'
 import { OrcaRuntimeService } from './orca-runtime'
-import { OrchestrationDb } from './orchestration/db'
+import { OrchestrationDb } from './orchestration/db/orchestration-db'
+import './orchestration/db/contract-constants'
+import './orchestration/db/messages/mailbox-routing-page'
+import './orchestration/db/dispatch-row-writer'
+import './orchestration/db/attempt-outcome-projection'
 import { RpcDispatcher } from './rpc/dispatcher'
-import { ORCHESTRATION_METHODS } from './rpc/methods/orchestration'
-import { STATUS_METHODS } from './rpc/methods/status'
-import { OrcaRuntimeRpcServer } from './runtime-rpc'
+import { ORCHESTRATION_METHODS } from './rpc/methods/orchestration/orchestration'
+import { STATUS_METHODS } from './rpc/methods/host-management/status'
+import { OrcaRuntimeRpcServer } from './rpc/server/runtime-rpc'
 
 vi.mock('electron', () => ({
   app: { getPath: vi.fn(() => tmpdir()), isPackaged: false },
@@ -151,7 +155,9 @@ async function runBuiltCli(
   userDataPath: string,
   args: string[]
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-  const child = spawn(process.execPath, [CLI_PATH, ...args], {
+  // These tests read the full receipt, not the concise agent view.
+  const fullArgs = args[0] === 'orchestration' ? [...args, '--full'] : args
+  const child = spawn(process.execPath, [CLI_PATH, ...fullArgs], {
     env: {
       ...process.env,
       ORCA_USER_DATA_PATH: userDataPath,

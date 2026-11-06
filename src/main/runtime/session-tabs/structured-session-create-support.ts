@@ -1,32 +1,35 @@
+import { resolveStructuredAgentSessionForkIntent } from '../../native-chat/agent-session-wire/acquisition/structured-agent-session-fork'
 import {
   captureStructuredAgentCliSource,
   structuredAgentCliSourceFromEvidence
 } from '../../native-chat/structured-agent-cli-source'
 import type { OrcaRuntimeWithRestoreStructuredAgentSessionTabsOnce as RestoreStructuredAgentSessionTabsOnceMethods } from './structured-session-tab-restoration'
-import { agentSessionRefusalError } from '../../../shared/agent-session-wire-refusals'
+import { agentSessionRefusalError } from '../../../shared/agent-session/failures/agent-session-wire-refusals'
 import { StructuredSessionWorkspaceScope } from './structured-session-workspace-scope'
-import { getStructuredAgentSessionHost } from '../../native-chat/agent-session-wire/structured-agent-session-registry'
+import { getStructuredAgentSessionHost } from '../../native-chat/agent-session-wire/host/structured-agent-session-registry'
 import {
   resolveCommittedStructuredAgentSessionAdoptionIntent,
   requireUnownedStructuredAgentSessionAdoption,
   resolveStructuredAgentSessionAdoptionForCreate,
   structuredAgentSessionAdoptAttach,
   type StructuredAgentSessionCreateIntentInput
-} from '../structured-agent-session-create-adoption'
-import type { AgentSessionAttachParams } from '../../native-chat/agent-session-wire/structured-agent-session-attach'
+} from '../agent-session/structured-agent-session-create-adoption'
+import type { AgentSessionAttachParams } from '../../native-chat/agent-session-wire/acquisition/structured-agent-session-attach'
 import {
   resolveHostStructuredAgentCreateSupport,
   resolveHostStructuredAgentLaunchEnvironment
-} from '../structured-agent-launch-support'
-import { structuredAgentRuntimeMetadata } from '../structured-agent-runtime-metadata'
-import { structuredAgentChatProgramNeedsInstall } from '../structured-agent-availability'
+} from '../agent-session/launch/structured-agent-launch-support'
+import { structuredAgentRuntimeMetadata } from '../agent-session/installation/structured-agent-runtime-metadata'
+import { structuredAgentChatProgramNeedsInstall } from '../agent-session/launch/structured-agent-availability'
 import { structuredLaunchSeedOptions } from '../../../shared/native-chat/input/native-chat-session-option-defaults'
-import { hasPersistedStructuredAgentSessionStore as hasPersistedStructuredAgentSessionStoreOnDisk } from '../structured-agent-session-runtime'
-import { ensureStructuredAgentSessionHostUnlessRefused } from '../structured-agent-session-host-refusal'
+import { hasPersistedStructuredAgentSessionStore as hasPersistedStructuredAgentSessionStoreOnDisk } from '../agent-session/records/agent-session-record-store-slot'
+import { ensureStructuredAgentSessionHostUnlessRefused } from '../agent-session/structured-agent-session-host-refusal'
 import { getProfileUserDataPath } from '../../orca-profiles/profile-storage-paths'
 import { isFloatingWorkspaceSelector } from '../../../shared/floating-workspace-worktree'
-import type { AgentSessionAccountHome } from '../../../shared/agent-session-account-home'
-import type { StructuredAgentId } from '../../../shared/agent-session-provider-handle'
+import { structuredSideChatCreateIntent } from '../../native-chat/structured-side-chat-source'
+import type { AgentSessionAccountHome } from '../../../shared/agent-session/lifecycle/agent-session-account-home'
+import type { StructuredAgentId } from '../../../shared/agent-session/lifecycle/agent-session-provider-handle'
+import type { StructuredAgentCreateSupportReply } from '../../../shared/agent-session/structured-agent-create-support-reply'
 
 export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport extends StructuredSessionWorkspaceScope {
   protected abstract restoreStructuredAgentSessionTabsOnce(
@@ -42,7 +45,7 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
     worktreeSelector: string,
     agent: StructuredAgentId,
     options?: { requireInstalledChatProgram?: boolean }
-  ): Promise<{ supported: boolean; reason?: 'agent' | 'remote' | 'wsl' | 'chat-program' }> {
+  ): Promise<StructuredAgentCreateSupportReply> {
     const support = await resolveHostStructuredAgentCreateSupport({
       agent,
       worktreeSelector,
@@ -80,8 +83,16 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
   async resolveStructuredAgentSessionCreateIntent(
     input: StructuredAgentSessionCreateIntentInput
   ): Promise<AgentSessionAttachParams & { hostLaunchDirectory?: string }> {
+    // A side chat follows its source identity and pinned folder, not mutable new-chat defaults.
+    if (input.sideChatOf) {
+      return structuredSideChatCreateIntent({
+        ...input,
+        host: getStructuredAgentSessionHost(),
+        location: await this.resolveStructuredAgentSessionLocation(input.worktree)
+      })
+    }
     if (input.resumeFrom) {
-      const { providerSessionId, cliSource } = input.resumeFrom
+      const { providerSessionId } = input.resumeFrom
       try {
         requireUnownedStructuredAgentSessionAdoption({
           host: getStructuredAgentSessionHost(),
@@ -91,11 +102,7 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
         })
       } catch (ownerConflict) {
         // Refuse transfer from a live terminal or the chat's first send starts a second writer.
-        await this.assertStructuredAdoptionTerminalWritersExited(
-          input.agent,
-          providerSessionId,
-          cliSource
-        )
+        await this.assertStructuredAdoptionTerminalWritersExited(input.agent, providerSessionId)
         throw ownerConflict
       }
     }
@@ -111,6 +118,15 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
     const hostLaunchDirectory = isFloatingWorkspaceSelector(input.worktree)
       ? (await this.resolveRuntimeFileTarget(input.worktree)).worktree.path
       : undefined
+    if (input.forkFrom) {
+      const resolved = await resolveStructuredAgentSessionForkIntent({
+        ...input,
+        forkFrom: input.forkFrom,
+        host: getStructuredAgentSessionHost(),
+        location: await this.resolveStructuredAgentSessionLocation(input.worktree)
+      })
+      return hostLaunchDirectory ? { ...resolved, hostLaunchDirectory } : resolved
+    }
     const resolveAccountHome = this.structuredAgentAccountHomeResolver(
       input.agent,
       input.worktree,
@@ -192,8 +208,7 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
     if (resumeFrom) {
       await this.assertStructuredAdoptionTerminalWritersExited(
         input.agent,
-        resumeFrom.providerSessionId,
-        resumeFrom.cliSource
+        resumeFrom.providerSessionId
       )
     }
     const workspaceCwd = resumeFrom
@@ -249,7 +264,8 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
                 : {}),
               transcriptPath: adoption.transcriptPath,
               providerSessionId: input.resumeFrom.providerSessionId,
-              workspaceCwd
+              workspaceCwd,
+              conversationName: adoption.conversationName
             })
           }
         : {}),
@@ -262,7 +278,10 @@ export abstract class OrcaRuntimeWithGetStructuredAgentSessionCreateSupport exte
       this.restoreStructuredAgentSessionTabsOnce().then(
         () => {
           // Only host answers finalize restoration; without one, retry so journals opened later can publish.
-          if (this.structuredAgentSessionInventoryUnverifiable) {
+          if (
+            this.structuredAgentSessionInventoryUnverifiable ||
+            !getStructuredAgentSessionHost()
+          ) {
             this.structuredAgentSessionTabRestorePromise = null
           }
         },

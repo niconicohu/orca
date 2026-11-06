@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
-import { clearHostAgentMenuSettingsForTests } from '@/components/settings/use-host-agent-launch-preferences'
+import { clearHostAgentMenuSettingsForTests } from '@/runtime/agent-launch-settings/host-agent-launch-preferences-resource'
 import { resetHostStructuredAgentsForTests } from '@/runtime/host-structured-agents'
 import { replaceRuntimeEnvironmentRevisions } from '@/runtime/runtime-environment-revision'
 import { isWebRuntimeSessionActive } from '@/runtime/web-runtime-session-environment'
 import type * as TerminalOperation from '@/runtime/web-runtime-terminal-create-operation'
 import type * as WebEnvironment from '@/runtime/web-runtime-session-environment'
 import type * as RuntimeRpcClient from '@/runtime/runtime-rpc-client'
-import type { AgentLaunchChoices } from '../../src/shared/agent-launch-choices'
-import type { FolderWorkspace } from '../../src/shared/folder-workspace-types'
+import type { AgentLaunchChoices } from '../../src/shared/agent-launch/choices/agent-launch-choices'
+import type { FolderWorkspace } from '../../src/shared/folder-workspaces/folder-workspace-types'
 import type { ProjectGroup } from '../../src/shared/project-group-types'
 
 const mocks = vi.hoisted(() => ({
@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 const choices: AgentLaunchChoices = {}
+const nativeChatProviders: Record<string, boolean> = {}
 const folderWorkspaces: FolderWorkspace[] = []
 const projectGroups: ProjectGroup[] = []
 const hostStatuses = new Map<
@@ -42,7 +43,7 @@ export const store = {
     agentCmdOverrides: {} as Record<string, string>,
     agentDefaultArgs: {} as Record<string, string>,
     agentDefaultEnv: {} as Record<string, Record<string, string>>,
-    experimentalNativeChat: false,
+    nativeChatProviders,
     activeRuntimeEnvironmentId: 'web-runtime' as string | null
   },
   projects: [{ id: 'repo-1', localWindowsRuntimePreference: { kind: 'inherit-global' as const } }],
@@ -96,6 +97,10 @@ export const store = {
 
 vi.mock('@/runtime/runtime-rpc-client', () => ({
   runtimeEnvironmentSupportsCapability: mocks.capability,
+  runtimeEnvironmentSupportsCapabilities: async (
+    environmentId: string,
+    capabilities: Parameters<typeof RuntimeRpcClient.runtimeEnvironmentSupportsCapabilities>[1]
+  ) => Promise.all(capabilities.map((capability) => mocks.capability(environmentId, capability))),
   callRuntimeRpc: mocks.hostRpc
 }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => store } }))
@@ -155,7 +160,7 @@ beforeEach(() => {
     agentCmdOverrides: {},
     agentDefaultArgs: {},
     agentDefaultEnv: {},
-    experimentalNativeChat: false,
+    nativeChatProviders: {},
     activeRuntimeEnvironmentId: 'web-runtime'
   }
   store.runtimeStatusByEnvironmentId = new Map([

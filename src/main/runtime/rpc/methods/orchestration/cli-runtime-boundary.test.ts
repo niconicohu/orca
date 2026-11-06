@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RpcContext } from '../../core'
 import { createOrchestrationRpcHarness } from './rpc-test-harness'
-import type { OrchestrationDb } from '../../../orchestration/db'
+import type { OrchestrationDb } from '../../../orchestration/db/orchestration-db'
 
 type CliRuntimeClient = {
   isRemote?: boolean
@@ -136,7 +136,8 @@ describe('orchestration CLI/runtime boundary', () => {
       'term_worker',
       '--inject',
       '--return-preamble',
-      '--json'
+      '--json',
+      '--full'
     ])
     expect(output).toHaveBeenCalledOnce()
     const result = output.mock.calls[0][0].result

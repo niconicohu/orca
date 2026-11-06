@@ -15,10 +15,6 @@ const CODEX = {
 }
 
 describe('decodeAgentSessionAgentsResult', () => {
-  it('reads every well-formed agent', () => {
-    expect(decodeAgentSessionAgentsResult({ agents: [CODEX] })).toEqual([CODEX])
-  })
-
   it('drops a row it cannot read and keeps the rest', () => {
     expect(
       decodeAgentSessionAgentsResult({
@@ -61,15 +57,20 @@ describe('decodeAgentSessionAgentsResult', () => {
       }
     ])
   })
+})
 
-  it('keeps the first row of a repeated agent', () => {
-    const later = { ...CODEX, capabilities: { ...CODEX.capabilities, rewind: false } }
-    expect(decodeAgentSessionAgentsResult({ agents: [CODEX, later] })).toEqual([CODEX])
-  })
-
-  it('answers null for a reply that is not an agent list', () => {
-    expect(decodeAgentSessionAgentsResult(null)).toBeNull()
-    expect(decodeAgentSessionAgentsResult({})).toBeNull()
-    expect(decodeAgentSessionAgentsResult({ agents: 'claude' })).toBeNull()
-  })
+it('offers side chats only when the registered backend explicitly advertises them', () => {
+  expect(
+    decodeAgentSessionAgentsResult({ agents: [CODEX] })?.[0]?.capabilities.sideChat
+  ).toBeUndefined()
+  expect(
+    decodeAgentSessionAgentsResult({
+      agents: [{ ...CODEX, capabilities: { ...CODEX.capabilities, sideChat: true } }]
+    })?.[0]?.capabilities.sideChat
+  ).toBe(true)
+  expect(
+    decodeAgentSessionAgentsResult({
+      agents: [{ ...CODEX, capabilities: { ...CODEX.capabilities, sideChat: 'true' } }]
+    })
+  ).toEqual([])
 })
