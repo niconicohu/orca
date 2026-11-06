@@ -1,3 +1,16 @@
+.native-chat-markdown {
+  font-weight: var(--chat-font-weight);
+}
+
+/* Keep emphasis and code independent of the body weight. */
+.native-chat-markdown :is(strong, b) {
+  font-weight: var(--font-weight-bold);
+}
+
+.native-chat-markdown :is(code, pre) {
+  font-weight: var(--font-weight-normal);
+}
+
 /* Shared markdown also renders sidebar comments, so chat styling stays opt-in. */
 /* :where keeps this below the link-label rule, so bold link text takes the link color. */
 .native-chat-markdown :where(h1, h2, h3, h4, h5, h6, [role='heading'], strong) {
