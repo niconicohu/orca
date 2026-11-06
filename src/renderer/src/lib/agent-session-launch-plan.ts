@@ -54,6 +54,7 @@ export type AgentSessionLaunchVerdict = Pick<
   StructuredAgentLaunchOptions,
   'promptAttachments' | 'promptSkills' | 'preparePrompt'
 > & {
+  sideChatOf?: string
   route: AgentLaunchRoute
   requestedSurface?: AgentLaunchSurface
   requestId: AgentLaunchRequestId
@@ -105,6 +106,7 @@ function structuredLaunchOptions(verdict: AgentSessionLaunchVerdict): Structured
     ...(verdict.preparePrompt ? { preparePrompt: verdict.preparePrompt } : {}),
     ...(verdict.promptDelivery ? { promptDelivery: verdict.promptDelivery } : {}),
     ...(verdict.resumeFrom ? { resumeFrom: verdict.resumeFrom } : {}),
+    ...(verdict.sideChatOf ? { sideChatOf: verdict.sideChatOf } : {}),
     ...(verdict.onPromptDelivered ? { onPromptDelivered: verdict.onPromptDelivered } : {}),
     ...(verdict.promptKeptByCaller ? { promptKeptByCaller: true as const } : {}),
     ...(verdict.draftFromScope ? { draftFromScope: verdict.draftFromScope } : {}),

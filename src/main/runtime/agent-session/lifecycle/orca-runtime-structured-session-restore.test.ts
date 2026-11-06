@@ -109,7 +109,9 @@ describe('structured session cold restoration', () => {
     setStructuredAgentSessionHost({
       getSessionTabId: () => null,
       deps: {
+        agents: { capabilities: () => undefined },
         store: {
+          getRecord: () => null,
           getConversation: () => ({
             location: { workspaceId: 'workspace-1' },
             conversationName: name

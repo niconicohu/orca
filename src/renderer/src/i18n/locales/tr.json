@@ -20066,6 +20066,9 @@
         "hostUnavailable": "Ekin ana bilgisayarı kullanılamıyor. Yeniden bağlanıp tekrar deneyin.",
         "connectionChanged": "Bağlantı değişti. Bu eki kapatıp yeniden açın.",
         "readFailed": "Bu ek ana bilgisayarında okunamıyor. Yeniden bağlanıp tekrar deneyin. Dosya silinmiş veya değiştirilmiş olabilir."
+      },
+      "sideChat": {
+        "title": "Yan sohbet"
       }
     },
     "tab": {
@@ -20478,7 +20481,9 @@
         "idleStopSearchIdle": "idle",
         "idleStopSearchTimeout": "zaman aşımı",
         "idleStopSearchKeepAlive": "canlı tut",
-        "idleStopNever": "Asla"
+        "idleStopNever": "Asla",
+        "sideChatPaneTitle": "Yan sohbetleri tek bölmede grupla",
+        "sideChatPaneCopy": "Bu çalışma alanının yan sohbetlerini ortak bir bölmede toplar. Kapalıyken yenileri kaynak sekmenin yanında açılır; mevcut bölmeler korunur."
       }
     },
     "agentChildRow": {

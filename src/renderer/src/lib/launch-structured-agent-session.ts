@@ -98,7 +98,8 @@ export function createStructuredAgentSessionLaunchIntent(
   executionHostId?: ExecutionHostId,
   resumeFrom?: StructuredAgentSessionResumeSource,
   hostSeedOptions?: LaunchSeed,
-  activate = true
+  activate = true,
+  sideChatOf?: string
 ): StructuredAgentSessionLaunchIntent {
   const owner = structuredAgentSessionOwnerTarget(
     worktreeId,
@@ -120,7 +121,8 @@ export function createStructuredAgentSessionLaunchIntent(
     agent,
     sessionId,
     resumeFrom,
-    hostSeedOptions
+    hostSeedOptions,
+    sideChatOf
   )
 }
 
@@ -130,7 +132,8 @@ function buildStructuredAgentSessionLaunchIntent(
   agent: TuiAgent,
   sessionId: string,
   resumeFrom: StructuredAgentSessionResumeSource | undefined,
-  hostSeedOptions: LaunchSeed
+  hostSeedOptions: LaunchSeed,
+  sideChatOf?: string
 ): StructuredAgentSessionLaunchIntent {
   const state = useAppStore.getState()
   return {
@@ -144,6 +147,7 @@ function buildStructuredAgentSessionLaunchIntent(
       worktree: toRuntimeWorktreeSelector(worktreeId),
       agent,
       ...(resumeFrom ? { resumeFrom } : {}),
+      ...(sideChatOf ? { sideChatOf } : {}),
       randomUuid: createBrowserUuid
     }),
     ...launchSeedOptions(state, owner, agent, hostSeedOptions, resumeFrom)
@@ -175,7 +179,8 @@ export function retryStructuredAgentSessionLaunchIntent(
       intent.agent,
       intent.sessionId,
       intent.params.resumeFrom,
-      intent.seedOptions
+      intent.seedOptions,
+      intent.params.sideChatOf
     ),
     explicitLaunchOptions: intent.explicitLaunchOptions
   }
@@ -190,6 +195,7 @@ export function restoreStructuredAgentSessionLaunchIntent(args: {
   payloadFingerprint: string
   expectedRuntimeFence: number | null
   resumeFrom?: StructuredAgentSessionResumeSource
+  sideChatOf?: string
   /** A paired server's seed, kept with the launch so a reload shows what create runs. */
   explicitLaunchOptions?: Readonly<Record<string, string>>
   seedOptions?: Readonly<Record<string, string>>
@@ -217,6 +223,7 @@ export function restoreStructuredAgentSessionLaunchIntent(args: {
       worktree: toRuntimeWorktreeSelector(args.worktreeId),
       agent: args.agent,
       ...(args.resumeFrom ? { resumeFrom: args.resumeFrom } : {}),
+      ...(args.sideChatOf ? { sideChatOf: args.sideChatOf } : {}),
       ...(args.firstMessage ? { firstMessage: args.firstMessage } : {}),
       ...(args.optionsMode ? { optionsMode: args.optionsMode } : {}),
       ...(args.options ? { options: args.options } : {})

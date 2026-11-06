@@ -20000,7 +20000,9 @@
           "medium": "Med",
           "xhigh": "XHigh"
         },
-        "imageUnavailable": "Preview unavailable"
+        "imageUnavailable": "Preview unavailable",
+        "permissionReadOnly": "Read only",
+        "permissionReadOnlyDescription": "Uses a read-only sandbox without permission escalation"
       },
       "tool": {
         "exitCode": "exit {{value0}}",
@@ -20648,6 +20650,13 @@
           "noCredit": "No Codex reset credit is left on this account.",
           "alreadyRedeemed": "That reset credit was already used."
         }
+      },
+      "sideChat": {
+        "new": "New side chat",
+        "badge": "btw",
+        "failed": "Could not open a side chat.",
+        "inheritPermissions": "Use main chat permissions",
+        "title": "Side chat"
       }
     },
     "tab": {
@@ -21087,7 +21096,9 @@
         "idleStopSearchIdle": "idle",
         "idleStopSearchTimeout": "timeout",
         "idleStopSearchKeepAlive": "keep alive",
-        "idleStopNever": "Never"
+        "idleStopNever": "Never",
+        "sideChatPaneTitle": "Group side chats in one pane",
+        "sideChatPaneCopy": "Collect this workspace’s side chats in a shared split pane. When off, new side chats open beside their source tab; existing panes stay in place."
       }
     },
     "agentChildRow": {

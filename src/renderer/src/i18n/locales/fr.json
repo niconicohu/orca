@@ -20113,6 +20113,12 @@
         "hostUnavailable": "L’hôte de la pièce jointe est indisponible. Reconnectez-vous et réessayez.",
         "connectionChanged": "La connexion a changé. Fermez cette pièce jointe et rouvrez-la.",
         "readFailed": "Impossible de lire cette pièce jointe sur son hôte. Reconnectez-vous et réessayez. Le fichier a peut-être été supprimé ou modifié."
+      },
+      "sideChat": {
+        "new": "Nouvelle discussion annexe",
+        "badge": "btw",
+        "failed": "Impossible d’ouvrir une conversation parallèle.",
+        "title": "Discussion annexe"
       }
     },
     "tab": {
@@ -20606,7 +20612,9 @@
         "idleStopSearchIdle": "idle",
         "idleStopSearchTimeout": "délai",
         "idleStopSearchKeepAlive": "maintenir actif",
-        "idleStopNever": "Jamais"
+        "idleStopNever": "Jamais",
+        "sideChatPaneTitle": "Regrouper les discussions annexes dans un volet",
+        "sideChatPaneCopy": "Réunit les discussions annexes de cet espace de travail dans un volet partagé. Si désactivé, les nouvelles s’ouvrent à côté de leur onglet source ; les volets existants sont conservés."
       }
     },
     "agentChildRow": {

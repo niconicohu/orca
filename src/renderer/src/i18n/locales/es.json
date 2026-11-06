@@ -19892,6 +19892,12 @@
         "hostUnavailable": "El host del archivo adjunto no está disponible. Vuelve a conectarte y a intentarlo.",
         "connectionChanged": "La conexión cambió. Cierra este archivo adjunto y vuelve a abrirlo.",
         "readFailed": "No se pudo leer este archivo adjunto en su host. Vuelve a conectarte y a intentarlo. Es posible que el archivo se haya eliminado o modificado."
+      },
+      "sideChat": {
+        "new": "Nuevo chat paralelo",
+        "badge": "btw",
+        "failed": "No se pudo abrir una conversación paralela.",
+        "title": "Chat secundario"
       }
     },
     "tab": {
@@ -20276,7 +20282,9 @@
         "idleStopSearchIdle": "idle",
         "idleStopSearchTimeout": "tiempo de espera",
         "idleStopSearchKeepAlive": "mantener activo",
-        "idleStopNever": "Nunca"
+        "idleStopNever": "Nunca",
+        "sideChatPaneTitle": "Agrupar chats secundarios en un panel",
+        "sideChatPaneCopy": "Reúne los chats secundarios de este espacio de trabajo en un panel dividido. Al desactivarlo, los nuevos se abren junto a su pestaña de origen; los paneles existentes se conservan."
       },
       "TerminalInteraction": {
         "copyTrimsGutter": "Recortar margen al copiar",
