@@ -1,3 +1,7 @@
+import {
+  launchNewTabPromptThroughHost,
+  newTabPromptLaunchesThroughHost
+} from '@/lib/launch-agent-new-tab-host-route'
 import type { LaunchAgentInNewTabArgs } from '@/lib/launch-agent-in-new-tab-args'
 import { useAppStore } from '@/store'
 import { validateActionTerminalArgs } from './launch-work-item-direct-messages'
@@ -6,16 +10,12 @@ import { persistAgentLaunchTabOrder } from '@/lib/launch-agent-tab-order'
 import { tuiAgentToAgentKind } from '@/lib/telemetry'
 import { seedNativeChatLaunchDraftForAgentTab } from '@/lib/agent-launch-prompt-delivery'
 import { pasteAgentLaunchPromptOnceReady } from '@/lib/launch-agent-tab-prompt-paste'
-import {
-  launchNewTabPromptThroughHost,
-  newTabPromptLaunchesThroughHost
-} from '@/lib/launch-agent-new-tab-host-route'
 import { runtimeEnvironmentIdOrLocalUnlessTwin } from '@/lib/worktree-runtime-owner'
 import { isWebRuntimeSessionActive } from '@/runtime/web-runtime-session-environment'
 import { launchAgentInWebHostTab } from '@/lib/launch-agent-web-host-tab'
-import { resolveAgentStartupPlanInputs } from '../../../shared/agent-startup-plan-inputs'
-import { readAgentLaunchPreferencesForWorktree } from '@/components/settings/use-host-agent-launch-preferences'
-import { TUI_AGENT_CONFIG } from '../../../shared/tui-agent-config'
+import { resolveAgentStartupPlanInputs } from '../../../shared/agent-launch/startup/agent-startup-plan-inputs'
+import { readAgentLaunchPreferencesForWorktree } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
+import { TUI_AGENT_CONFIG } from '../../../shared/agent-launch/catalog/tui-agent-config'
 import { resolveAgentLaunchExecutionContext } from '@/lib/launch-agent-execution-context'
 import { launchStructuredAgentFromNewTab } from '@/lib/launch-agent-in-new-tab-structured-route'
 import { workspaceKindForWorktreeId } from '@/lib/agent-launch-route-input'
@@ -44,6 +44,13 @@ export function launchAgentInNewTabWithOutcome(
   args: LaunchAgentInNewTabArgs,
   notifyFailure = true
 ): AgentTabLaunchOutcome {
+  args = {
+    ...args,
+    ...(args.sessionOptions !== undefined ? { sessionOptions: { ...args.sessionOptions } } : {}),
+    ...(args.chatSessionOptions !== undefined
+      ? { chatSessionOptions: { ...args.chatSessionOptions } }
+      : {})
+  }
   const {
     agent,
     worktreeId,
@@ -79,12 +86,16 @@ export function launchAgentInNewTabWithOutcome(
   const route = routeNewTabLaunch(store, args, {
     agent,
     requestedSurface: args.requestedSurface,
+    preferredSurface: args.preferredSurface,
     selectedExecutionHostId: args.selectedExecutionHostId,
     workspace: { kind: workspaceKindForWorktreeId(worktreeId), worktreeId },
     prompt: trimmedPrompt,
     promptDelivery: routePromptDelivery,
     tuiCustomization: { cwd: initialCwd },
     ...(sessionOptions ? { launchOptions: sessionOptions } : {}),
+    ...(args.chatSessionOptions !== undefined
+      ? { chatLaunchOptions: args.chatSessionOptions }
+      : {}),
     onPromptDelivered,
     ...(args.promptKeptByCaller ? { promptKeptByCaller: true as const } : {})
   })
@@ -192,6 +203,7 @@ export function launchAgentInNewTabWithOutcome(
       ...(initialCwd?.trim() ? { cwd: initialCwd } : {}),
       launchSource: launchSource ?? 'tab_bar_quick_launch',
       quickCommandLabel,
+      ...(activate === false ? { activate: false } : {}),
       ...(pendingActivationSpawn ? { pendingActivationSpawn: true } : {}),
       pasteContent: pasteDraftAfterLaunch,
       submit: submitPastedPrompt,

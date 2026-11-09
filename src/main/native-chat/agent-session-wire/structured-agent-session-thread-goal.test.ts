@@ -3,18 +3,20 @@ import {
   sweepAgentSessionAttachments,
   UNCLAIMED_ATTACHMENT_MAX_AGE_MS
 } from '../agent-session-attachments/agent-session-attachment-sweep'
-import { AGENT_JOURNAL_THREAD_SCOPE } from '../../../shared/agent-session-journal-types'
+import {
+  AGENT_JOURNAL_THREAD_SCOPE,
+  type AgentJournalThreadGoal,
+  type AgentJournalMessageItem
+} from '../../../shared/agent-session/journal/agent-session-journal-types'
 import { randomUUID } from 'node:crypto'
 import { mkdir, mkdtemp, rm, writeFile, readFile, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {
-  AgentJournalThreadGoal,
   AgentJournalItemIdentity,
-  AgentJournalMessageItem,
   AgentSessionJournalIdentity
-} from '../../../shared/agent-session-journal-types'
+} from '../../../shared/agent-session/journal/agent-session-journal-identity'
 import type { AgentSessionJournal } from '../agent-session-journal/journal-store'
 import {
   closeTestJournalHostDatabase,
@@ -27,9 +29,19 @@ import { formatNativeChatFileReference } from '../../../shared/agent-image-paste
 import type { StructuredAgentSessionAdapter } from './structured-agent-session-adapter'
 import { performThreadGoalChange, threadGoalPlan } from './structured-agent-session-thread-goal'
 import type { AgentSessionTurnContext } from './structured-agent-session-turns'
-import { claudeAndCodexAgents } from './structured-agent-session-adapter-router-test-support'
+import {
+  claudeAndCodexAgents,
+  claudeAndCodexDeclared
+} from './structured-agent-session-adapter-router-test-support'
 import { createStructuredAgentSessionLogger } from './structured-agent-session-logger'
-import { codexProviderHandle } from '../../../shared/agent-session-provider-handle-encoding'
+import { codexProviderHandle } from '../../../shared/agent-session/lifecycle/agent-session-provider-handle-encoding'
+
+import { readStructuredAgentSessionOptions } from './structured-agent-session-options-read'
+import type { StructuredAgentSessionMutationContext } from './structured-agent-session-host-mutations'
+import {
+  hostTestOptionsReadStore,
+  hostTestRestingOptionsRecord
+} from './structured-agent-session-host-test-data'
 
 const IDENTITY: AgentSessionJournalIdentity = {
   sessionId: 'session-1',
@@ -759,3 +771,46 @@ it.each(['step', 'batch'] as const)(
     }
   }
 )
+
+it('reports the exact goal transition revision for independent options and history reads', async () => {
+  const journal = await openJournal()
+  await appendGoalRow(journal, {})
+  const session = { params: { provider: 'codex' }, journal }
+  const record = hostTestRestingOptionsRecord(IDENTITY.sessionId)
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only these option-reader context fields are used; the journal itself is real.
+  const context = {
+    deps: {
+      adapter: {},
+      agents: claudeAndCodexDeclared(),
+      store: hostTestOptionsReadStore(() => record)
+    },
+    serialize: (_id: string, task: () => Promise<unknown>) => task(),
+    openConversation: async () => session,
+    conversation: async () => session
+  } as unknown as StructuredAgentSessionMutationContext
+  for (const cleared of [false, true]) {
+    if (cleared) {
+      await journal.appendItem(
+        { provider: 'orca', clientMessageId: 'clear-watermark' },
+        {
+          kind: 'status',
+          text: 'Goal cleared',
+          threadGoal: { state: 'cleared' }
+        },
+        { fence: 1, turnScope: AGENT_JOURNAL_THREAD_SCOPE }
+      )
+    }
+    const latest = journal.snapshot().items.at(-1)!
+    const report = await readStructuredAgentSessionOptions(context, IDENTITY.sessionId, {
+      readsWithoutModel: true
+    })
+    expect.soft(report.threadGoal).toMatchObject({
+      current: cleared ? null : GOAL,
+      source: {
+        epoch: journal.cursor().epoch,
+        sequence: latest.sequence,
+        revision: latest.revision
+      }
+    })
+  }
+})

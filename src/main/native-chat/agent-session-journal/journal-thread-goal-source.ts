@@ -1,13 +1,14 @@
+import type { AgentJournalItemIdentity } from '../../../shared/agent-session/journal/agent-session-journal-identity'
 import type {
-  AgentJournalItemIdentity,
   AgentJournalRenderItem,
   AgentJournalThreadGoal
-} from '../../../shared/agent-session-journal-types'
-import { parseAgentJournalItemKey } from '../../../shared/agent-session-journal-item-key'
-import { currentAgentSessionThreadGoalSourceBySequence } from '../../../shared/agent-session-thread-goal'
+} from '../../../shared/agent-session/journal/agent-session-journal-types'
+import { parseAgentJournalItemKey } from '../../../shared/agent-session/journal/agent-session-journal-item-key'
+import { currentAgentSessionThreadGoalSourceBySequence } from '../../../shared/agent-session/agent-session-thread-goal'
 
 export type JournalThreadGoalSource = {
   goal: AgentJournalThreadGoal | null
+  transition?: Pick<AgentJournalRenderItem, 'sequence' | 'revision'>
   row: { identity: AgentJournalItemIdentity; text: string } | null
 }
 
@@ -19,6 +20,7 @@ export function journalThreadGoalSource(
   const identity = item ? parseAgentJournalItemKey(item.itemId) : null
   return {
     goal: source?.goal ?? null,
+    ...(item ? { transition: { sequence: item.sequence, revision: item.revision } } : {}),
     row:
       source?.goal && item?.body.kind === 'status' && identity
         ? { identity, text: item.body.text }

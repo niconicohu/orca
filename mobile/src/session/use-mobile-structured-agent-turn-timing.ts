@@ -2,12 +2,18 @@ import { useMemo, useState } from 'react'
 import type {
   AgentJournalRenderItem,
   AgentJournalSubmission
-} from '../../../src/shared/agent-session-journal-types'
-import type { NativeChatSettledTurns } from '../../../src/shared/native-chat-turn-status'
-import type { AgentSessionLatestTurn } from '../../../src/shared/agent-session-wire'
-import type { NativeChatTurnJournal } from '../../../src/shared/native-chat-turn-membership'
-import type { StructuredAgentHostClock } from '../../../src/shared/structured-agent-session-reducer'
-import { selectStructuredAgentTurnBars } from '../../../src/shared/structured-agent-session-turn-timing'
+} from '../../../src/shared/agent-session/journal/agent-session-journal-types'
+import type { NativeChatSettledTurns } from '../../../src/shared/native-chat/transcript/native-chat-turn-status'
+import type { AgentSessionLatestTurn } from '../../../src/shared/agent-session/agent-session-wire'
+import type { AgentSessionOptionsResult } from '../../../src/shared/agent-session/options/agent-session-options-result'
+import {
+  agentSessionThreadGoalFromReport,
+  isAgentSessionThreadGoalOpen
+} from '../../../src/shared/agent-session/agent-session-thread-goal'
+import type { MobileNativeChatThreadGoal } from './native-chat/use-mobile-native-chat-session'
+import type { NativeChatTurnJournal } from '../../../src/shared/native-chat/transcript/native-chat-turn-membership'
+import type { StructuredAgentHostClock } from '../../../src/shared/agent-session/structured-agent-session-reducer'
+import { selectStructuredAgentTurnBars } from '../../../src/shared/agent-session/view/structured-agent-session-turn-timing'
 import {
   stepStructuredAgentTurnClock,
   type StructuredAgentTurnClockLatch
@@ -16,23 +22,33 @@ import {
 // Use journal durations and latch the host-to-phone start conversion once per turn so counters remain skew-free.
 export function useMobileStructuredAgentTurnTiming(
   {
-    items,
+    items: journalItems,
     submissions,
     latestTurn,
     working,
-    hostClock
+    hostClock,
+    threadGoalReport,
+    connected = true,
+    epoch
   }: {
     items: readonly AgentJournalRenderItem[]
     submissions: readonly AgentJournalSubmission[]
     latestTurn?: AgentSessionLatestTurn | null
     working?: boolean
     hostClock?: StructuredAgentHostClock | null
+    threadGoalReport?:
+      | AgentSessionOptionsResult['threadGoal']
+      | AgentSessionOptionsResult['reportedThreadGoal']
+    connected?: boolean
+    epoch?: string | null
   },
-  turnId: string | null
+  turnId: string | null,
+  items: readonly AgentJournalRenderItem[] = journalItems
 ): {
   settledTurns: NativeChatSettledTurns
   turnJournal: NativeChatTurnJournal
   workingStartedAt: number | null
+  threadGoal: MobileNativeChatThreadGoal | null
 } {
   const { settledTurns, runningTiming } = useMemo(
     () => selectStructuredAgentTurnBars(items, submissions, turnId, latestTurn),
@@ -54,5 +70,20 @@ export function useMobileStructuredAgentTurnTiming(
   if (step.latch !== latch) {
     setLatch(step.latch)
   }
-  return { settledTurns, turnJournal, workingStartedAt: step.workingStartedAt }
+  const goal =
+    threadGoalReport === undefined
+      ? null
+      : agentSessionThreadGoalFromReport(journalItems, threadGoalReport, epoch)
+  const threadGoal =
+    goal !== null && isAgentSessionThreadGoalOpen(goal)
+      ? {
+          goal,
+          runningTurn:
+            connected && hostClock && working !== false && turnId !== null
+              ? { startedAt: runningTiming?.startedAt ?? null }
+              : null,
+          hostClockOffsetMs: hostClock ? hostClock.receivedAt - hostClock.hostNow : 0
+        }
+      : null
+  return { settledTurns, turnJournal, workingStartedAt: step.workingStartedAt, threadGoal }
 }
