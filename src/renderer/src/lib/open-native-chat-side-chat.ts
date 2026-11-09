@@ -2,25 +2,25 @@ import { agentChatPermissionModes } from '../../../shared/agent-launch/permissio
 import { structuredAgentSessionSendBody } from '../../../shared/agent-session/requests/structured-agent-session-send-mutation'
 import type { AgentJournalSkillRef } from '../../../shared/agent-session/journal/agent-session-journal-types'
 import { useAppStore } from '@/store'
-import { newAgentLaunchRequestId } from './agent-launch-request-id'
-import { adoptAgentSessionLaunchVerdict } from './agent-session-launch-plan'
+import { newAgentLaunchRequestId } from './agent-session/launch/routing/agent-launch-request-id'
+import { adoptAgentSessionLaunchVerdict } from './agent-session/launch/routing/agent-session-launch-plan'
 import { beginStructuredAgentSessionProvisionalLaunch } from './agent-session/structured-agent-session-provisional-tab'
 import {
   structuredAgentSessionOwnerForTab,
   structuredAgentSessionTargetForHost
-} from '@/runtime/structured-agent-session-owner'
+} from '@/runtime/native-chat/session-ownership/structured-agent-session-owner'
 import type { SideChatPermission } from '../../../shared/agent-session-side-chat'
+import { supportsStructuredAgentSessionCreateOptionsMode } from '@/runtime/native-chat/host-capabilities/structured-agent-session-host-support'
 import {
-  supportsStructuredAgentSessionCreateOptionsMode,
   supportsStructuredAgentSessionSideChat,
   supportsStructuredAgentSessionReadOnlySideChat
-} from '@/runtime/structured-agent-session-client'
+} from '@/runtime/native-chat/host-capabilities/structured-agent-session-side-chat-support'
 import { prepareSideChatPane } from './side-chat-launch-placement'
 import { isTuiAgent } from '../../../shared/agent-launch/catalog/tui-agent-config'
 import {
   captureWebSessionIntentOwner,
   matchesWebSessionIntentOwner
-} from '@/runtime/web-runtime-session-environment'
+} from '@/runtime/web-session-tabs-sync/identity/web-runtime-session-environment'
 
 type SideChatSource = { tabId: string; worktreeId: string; sessionId: string }
 const pending = new Map<string, Promise<boolean>>()

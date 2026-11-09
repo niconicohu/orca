@@ -33,13 +33,15 @@ vi.mock('../components/CustomKeyModal', () => ({ CustomKeyModal: () => null }))
 vi.mock('../components/MobileDictationSetupSheet', () => ({
   MobileDictationSetupSheet: () => null
 }))
-vi.mock('./MobileSessionTerminalLayoutSheet', () => ({
+vi.mock('../terminal/session/MobileSessionTerminalLayoutSheet', () => ({
   MobileSessionTerminalLayoutSheet: () => null
 }))
-vi.mock('./MobileTerminalRenameModal', () => ({ MobileTerminalRenameModal: () => null }))
-vi.mock('./QuickCommandsSheet', () => ({ QuickCommandsSheet: () => null }))
-vi.mock('./MobileBrowserTabActionSheet', () => ({ MobileBrowserTabActionSheet: () => null }))
-vi.mock('./mobile-terminal-action-sheet-actions', () => ({
+vi.mock('../terminal/session/MobileTerminalRenameModal', () => ({
+  MobileTerminalRenameModal: () => null
+}))
+vi.mock('../terminal/quick-commands/QuickCommandsSheet', () => ({ QuickCommandsSheet: () => null }))
+vi.mock('./tabs/MobileBrowserTabActionSheet', () => ({ MobileBrowserTabActionSheet: () => null }))
+vi.mock('../terminal/session/mobile-terminal-action-sheet-actions', () => ({
   getMobileTerminalActionSheetActions: () => []
 }))
 

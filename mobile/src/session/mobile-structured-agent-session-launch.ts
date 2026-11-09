@@ -1,11 +1,15 @@
-import type { SideChatPermission } from '../../../src/shared/agent-session-side-chat'
-import type { AgentJournalSkillRef } from '../../../src/shared/agent-session/journal/agent-session-journal-types'
+import { agentSessionForkSourceFailureWords } from '../../../src/shared/agent-session/failures/agent-session-failure-copy'
+import { sayMobileAgentSessionFailure } from './agent-session-failure-copy'
+import type { TuiAgent } from '../../../src/shared/agent-launch/catalog/tui-agent'
 import type { StructuredAgentId } from '../../../src/shared/agent-session/lifecycle/agent-session-provider-handle'
 import type {
   AgentSessionAttachResult,
   AgentSessionMutationResult
 } from '../../../src/shared/agent-session/agent-session-wire'
-import { isDefinitiveAgentSessionCreateRefusal } from '../../../src/shared/agent-session/failures/agent-session-definitive-refusal'
+import {
+  isDefinitiveAgentSessionCreateRefusal,
+  isAgentSessionForkSourceAdmissionRefusal
+} from '../../../src/shared/agent-session/failures/agent-session-definitive-refusal'
 import {
   createStructuredAgentSessionId,
   structuredAgentSessionCreateParams,
@@ -14,14 +18,12 @@ import {
 } from '../../../src/shared/agent-session/structured-agent-session-create'
 import type { StructuredAgentCreateSupportReply } from '../../../src/shared/agent-session/structured-agent-create-support-reply'
 import { formatAgentTypeLabel } from '../../../src/shared/agent-status/presentation/agent-type-label'
-import { structuredAgentSessionSendBody } from '../../../src/shared/agent-session/requests/structured-agent-session-send-mutation'
-import { structuredSessionOperationId } from './structured-session-operation-id'
 import { hasRuntimeRpcErrorCode } from '../../../src/shared/runtime-rpc-error-code'
-import type { RpcClient } from '../transport/rpc-client'
+import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import {
   structuredAgentSessionCreate,
   structuredAgentSupportProbe
-} from './mobile-session-launch-operations'
+} from './native-chat/agent-session/mobile-structured-create-operations'
 import { randomV4Uuid } from '../platform/random-v4-uuid'
 import { rememberMobileCreatedStructuredSession } from './mobile-created-structured-sessions'
 
@@ -41,21 +43,20 @@ export type MobileStructuredAgentLaunchResult =
   | { kind: 'failed'; message: string }
   | { kind: 'unknown'; message: string; sessionId?: string }
 
-const pendingSideChatCreates = new WeakMap<
-  RpcClient,
-  Map<string, StructuredAgentSessionCreateParams>
->()
-
-function sideChatOpeningMessage(
-  question: string | undefined,
-  skills: readonly AgentJournalSkillRef[]
-): StructuredAgentSessionCreateParams['firstMessage'] {
-  return question?.trim()
-    ? {
-        clientMessageId: structuredSessionOperationId(),
-        body: structuredAgentSessionSendBody(question, [], skills)
-      }
-    : undefined
+function createParamsFor(
+  agent: TuiAgent,
+  worktree: string,
+  forkFrom: StructuredAgentSessionForkSource | undefined,
+  tabPlacement: StructuredAgentSessionCreateParams['tabPlacement']
+): StructuredAgentSessionCreateParams {
+  return structuredAgentSessionCreateParams({
+    sessionId: createStructuredAgentSessionId(agent, randomV4Uuid),
+    worktree,
+    agent,
+    ...(forkFrom ? { forkFrom } : {}),
+    ...(tabPlacement ? { tabPlacement } : {}),
+    randomUuid: randomV4Uuid
+  })
 }
 
 function unknownCreateResult(
@@ -89,143 +90,72 @@ function classifyCreateRefusal(
 export async function createMobileStructuredAgentSession(
   client: RpcClient,
   worktreeId: string,
-  agent: StructuredAgentId,
-  sideChatOf?: string,
-  question?: string,
-  skills: readonly AgentJournalSkillRef[] = [],
-  permission: SideChatPermission = 'inherit'
-): Promise<MobileStructuredAgentLaunchResult> {
-  return launchMobileStructuredChat(client, worktreeId, agent, {
-    sideChatOf,
-    question,
-    skills,
-    permission
-  })
-}
-
-export function createMobileStructuredAgentSessionFork(
-  client: RpcClient,
-  worktreeId: string,
-  agent: StructuredAgentId,
-  forkFrom: StructuredAgentSessionForkSource,
+  agent: TuiAgent,
+  /** Sent only to a host advertising forks. */
+  forkFrom?: StructuredAgentSessionForkSource,
+  /** Sent only to a host advertising create placement; the replay keeps it. */
   tabPlacement?: StructuredAgentSessionCreateParams['tabPlacement']
 ): Promise<MobileStructuredAgentLaunchResult> {
-  return launchMobileStructuredChat(client, worktreeId, agent, { forkFrom, tabPlacement })
-}
-
-async function launchMobileStructuredChat(
-  client: RpcClient,
-  worktreeId: string,
-  agent: StructuredAgentId,
-  options: {
-    sideChatOf?: string
-    question?: string
-    skills?: readonly AgentJournalSkillRef[]
-    permission?: SideChatPermission
-    forkFrom?: StructuredAgentSessionForkSource
-    tabPlacement?: StructuredAgentSessionCreateParams['tabPlacement']
-  }
-): Promise<MobileStructuredAgentLaunchResult> {
-  const { sideChatOf, question, skills = [], permission, forkFrom, tabPlacement } = options
   const worktree = `id:${worktreeId}`
-  if (!sideChatOf) {
-    let supportResponse
-    for (let attempt = 0; ; attempt += 1) {
-      try {
-        supportResponse = await structuredAgentSupportProbe.request(client, { worktree, agent })
-      } catch (error) {
-        const retryDelayMs = CREATE_SUPPORT_RETRY_DELAYS_MS[attempt]
-        if (
-          retryDelayMs === undefined ||
-          !hasRuntimeRpcErrorCode(error, SELECTOR_NOT_RESOLVABLE_CODE)
-        ) {
-          return { kind: 'unsupported' }
-        }
-        await delay(retryDelayMs)
-        continue
-      }
+  let supportResponse
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      supportResponse = await structuredAgentSupportProbe.request(client, { worktree, agent })
+    } catch (error) {
       const retryDelayMs = CREATE_SUPPORT_RETRY_DELAYS_MS[attempt]
       if (
-        retryDelayMs !== undefined &&
-        hasRuntimeRpcErrorCode(supportResponse, SELECTOR_NOT_RESOLVABLE_CODE)
+        retryDelayMs === undefined ||
+        !hasRuntimeRpcErrorCode(error, SELECTOR_NOT_RESOLVABLE_CODE)
       ) {
-        await delay(retryDelayMs)
-        continue
+        return { kind: 'unsupported' }
       }
-      break
+      await delay(retryDelayMs)
+      continue
     }
+    const retryDelayMs = CREATE_SUPPORT_RETRY_DELAYS_MS[attempt]
     if (
-      !supportResponse ||
-      typeof supportResponse !== 'object' ||
-      typeof supportResponse.ok !== 'boolean' ||
-      !supportResponse.ok
+      retryDelayMs !== undefined &&
+      hasRuntimeRpcErrorCode(supportResponse, SELECTOR_NOT_RESOLVABLE_CODE)
     ) {
-      return { kind: 'unsupported' }
+      await delay(retryDelayMs)
+      continue
     }
-    const support = supportResponse.result as StructuredCreateSupport | null
-    if (!support || typeof support !== 'object' || support.supported !== true) {
-      return { kind: 'unsupported', reason: support?.reason }
-    }
+    break
+  }
+  if (
+    !supportResponse ||
+    typeof supportResponse !== 'object' ||
+    typeof supportResponse.ok !== 'boolean' ||
+    !supportResponse.ok
+  ) {
+    return { kind: 'unsupported' }
+  }
+  const support = supportResponse.result as StructuredCreateSupport | null
+  if (!support || typeof support !== 'object' || support.supported !== true) {
+    return { kind: 'unsupported', reason: support?.reason }
   }
 
-  const key = sideChatOf
-    ? JSON.stringify([
-        client.getGeneration?.() ?? 0,
-        worktree,
-        agent,
-        sideChatOf,
-        question ?? '',
-        skills,
-        permission
-      ])
-    : null
-  const pending = key
-    ? (pendingSideChatCreates.get(client) ?? new Map<string, StructuredAgentSessionCreateParams>())
-    : null
-  if (pending) {
-    pendingSideChatCreates.set(client, pending)
-  }
-  const params =
-    (key ? pending?.get(key) : undefined) ??
-    structuredAgentSessionCreateParams({
-      sessionId: createStructuredAgentSessionId(agent, randomV4Uuid),
-      worktree,
-      agent,
-      sideChatOf,
-      forkFrom,
-      tabPlacement,
-      ...(sideChatOf && permission === 'read-only'
-        ? { options: { permissionMode: 'read-only' } }
-        : {}),
-      firstMessage: sideChatOpeningMessage(question, skills),
-      randomUuid: randomV4Uuid
-    })
-  if (key) {
-    pending?.set(key, params)
-  }
-  const result = await requestMobileStructuredCreate(client, params)
-  if (result.kind === 'unknown') {
-    return sideChatOf ? { ...result, sessionId: params.envelope.sessionId } : result
-  }
-  if (key && pending?.get(key) === params) {
-    pending.delete(key)
-  }
-  return result
+  return requestMobileStructuredCreate(
+    client,
+    createParamsFor(agent, worktree, forkFrom, tabPlacement)
+  )
 }
 
-async function requestMobileStructuredCreate(
+export async function requestMobileStructuredCreate(
   client: RpcClient,
   params: StructuredAgentSessionCreateParams
 ): Promise<MobileStructuredAgentLaunchResult> {
   const { agent } = params
   rememberMobileCreatedStructuredSession(params.envelope.sessionId, params.worktree)
   let response
+  let priorCreateOutcomeUnknown = false
   try {
     response = await structuredAgentSessionCreate.request(client, params, {
       timeoutMs: params.sideChatOf ? 195_000 : 15_000,
       budgetSpansConnect: true
     })
   } catch {
+    priorCreateOutcomeUnknown = true
     // Replay the durable envelope once so a lost acknowledgement cannot create a sibling.
     try {
       response = await structuredAgentSessionCreate.request(client, params, {
@@ -274,6 +204,22 @@ async function requestMobileStructuredCreate(
         result.refusal.details?.reason === 'sideChatSourceUnsaved')
     ) {
       return { kind: 'failed', message: result.refusal.message }
+    }
+    if (
+      params.forkFrom &&
+      !priorCreateOutcomeUnknown &&
+      result.refusal.createAttemptRefusedBeforeCommit === true &&
+      isAgentSessionForkSourceAdmissionRefusal(result.refusal)
+    ) {
+      return {
+        kind: 'failed',
+        message:
+          agentSessionForkSourceFailureWords(
+            result.refusal.message,
+            formatAgentTypeLabel(agent),
+            sayMobileAgentSessionFailure
+          ) ?? result.refusal.message
+      }
     }
     return classifyCreateRefusal(agent, result.refusal.code, result.refusal.message)
   }

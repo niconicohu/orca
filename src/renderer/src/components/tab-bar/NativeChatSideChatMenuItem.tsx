@@ -2,7 +2,7 @@ import { AGENT_SESSION_CREATE_OPTIONS_MODE_RUNTIME_CAPABILITY } from '../../../.
 import { agentChatPermissionModes } from '../../../../shared/agent-launch/permissions/agent-chat-permission-support'
 import type { SideChatPermission } from '../../../../shared/agent-session-side-chat'
 import { AGENT_SESSION_SIDE_CHAT_READ_ONLY_CAPABILITY } from '../../../../shared/agent-session-side-chat'
-import { useStructuredAgentSessionHostCapability } from '@/runtime/structured-agent-session-host-capability'
+import { useStructuredAgentSessionHostCapability } from '@/runtime/native-chat/host-capabilities/structured-agent-session-host-capability'
 import { CornerDownRight, Eye, GitFork } from 'lucide-react'
 import {
   ContextMenuItem,
@@ -11,8 +11,8 @@ import {
   ContextMenuSubContent
 } from '@/components/ui/context-menu'
 import { useAppStore } from '@/store'
-import type { structuredAgentSessionTargetForTab } from '@/runtime/structured-agent-session-owner'
-import { useNativeChatSideChat } from '../native-chat/use-native-chat-side-chat'
+import type { structuredAgentSessionTargetForTab } from '@/runtime/native-chat/session-ownership/structured-agent-session-owner'
+import { useTabContextSideChat } from './use-tab-context-side-chat'
 import type { NativeChatTabSession } from './tab-session-history-switch'
 import { translate } from '@/i18n/i18n'
 import { useMemo } from 'react'
@@ -20,7 +20,7 @@ import { toast } from 'sonner'
 import {
   structuredAgentSessionOwnerForTab,
   structuredAgentSessionTargetForHost
-} from '@/runtime/structured-agent-session-owner'
+} from '@/runtime/native-chat/session-ownership/structured-agent-session-owner'
 
 export function NativeChatSideChatMenuItem({
   tab,
@@ -49,7 +49,7 @@ function SideChatItem({
 }: Parameters<typeof NativeChatSideChatMenuItem>[0] & {
   target: NonNullable<ReturnType<typeof structuredAgentSessionTargetForTab>>
 }) {
-  const open = useNativeChatSideChat({
+  const open = useTabContextSideChat({
     target,
     agent: nativeChat.agent ?? '',
     sessionId: nativeChat.sessionId,
@@ -68,7 +68,7 @@ function SideChatItem({
     toast.error(translate('components.native-chat.sideChat.failed', 'Could not open a side chat.'))
   const choose = (permission: SideChatPermission) => {
     onComplete?.()
-    void open?.('', [], permission)
+    void open?.(permission)
       .then((accepted) => {
         if (!accepted) {
           reportFailure()

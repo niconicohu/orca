@@ -12,7 +12,7 @@ import type {
 import type { RuntimeClientTarget } from '../../../../../shared/runtime-client-target'
 import type { ExecutionHostId } from '../../../../../shared/execution-host'
 import type { StructuredLaunchAttempt } from './structured-agent-session-launch-request'
-import type { AgentLaunchRequestId } from '../../agent-launch-request-id'
+import type { AgentLaunchRequestId } from './routing/agent-launch-request-id'
 import type { StructuredAgentSessionCreateGate } from './structured-agent-session-launch-errors'
 
 export type StructuredAgentLaunchOptions = StructuredLaunchPromptOptions & {
@@ -28,6 +28,8 @@ export type StructuredAgentLaunchOptions = StructuredLaunchPromptOptions & {
   resumeFrom?: StructuredAgentSessionResumeSource
   sideChatOf?: string
   forkFrom?: StructuredAgentSessionForkSource
+  /** Client-only admission requirement; reacquired from the child after reload. */
+  forkRequiresInheritedOriginal?: boolean
   /** The host the route decided on; read only by the caller that starts the launch. */
   executionHostId?: ExecutionHostId
   /** The saved selection a paired host reported it will seed; read only by the starting caller. */

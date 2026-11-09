@@ -24,7 +24,7 @@ import type { MobileNativeChatImageSource } from './visual/mobile-native-chat-im
 import type { MobileNativeChatHostOutage } from './mobile-native-chat-host-outage'
 import { useMobileNativeChatMarkdownLinks } from './use-mobile-native-chat-markdown-links'
 import { MobileMarkdownLinksContext } from '../../components/mobile-markdown-links-context'
-import type { ConnectionState } from '../../transport/types'
+import type { ConnectionState } from '../../transport/connection/connection-state'
 import { useMobileTranslation } from '../../i18n/use-mobile-translation'
 
 type Props = {
@@ -118,12 +118,17 @@ function MobileNativeChatOverlayContent({
     session.messages,
     controller.nativeChatItemSource
   )
-  const folded = useMobileNativeChatProjection(fullContent.messages, agent, [
-    sendSurfaceId,
-    sessionId,
-    controller.nativeChatItemSource?.client,
-    controller.nativeChatItemSource?.sessionId
-  ])
+  const folded = useMobileNativeChatProjection(
+    fullContent.messages,
+    agent,
+    [
+      sendSurfaceId,
+      sessionId,
+      controller.nativeChatItemSource?.client,
+      controller.nativeChatItemSource?.sessionId
+    ],
+    controller.nativeChatShowsCiResultLines
+  )
   const taskList = useMemo(() => nativeChatDockedTaskList(folded), [folded])
   const streaming = controller.nativeChatStreamingText ?? null
   const queued = controller.nativeChatQueued
@@ -179,6 +184,9 @@ function MobileNativeChatOverlayContent({
     () => ({
       agent,
       structured: structuredComposer ?? null,
+      interactionModeSupported: controller.nativeChatSessionOptions?.controller.snapshot.some(
+        (entry) => entry.id === 'interactionMode'
+      ),
       skillDiscovery: controller.nativeChatSkills,
       onNeedSkills: controller.loadNativeChatSkills,
       filePaths: controller.nativeChatFilePaths,
@@ -195,6 +203,7 @@ function MobileNativeChatOverlayContent({
     [
       agent,
       structuredComposer,
+      controller.nativeChatSessionOptions,
       controller.nativeChatSkills,
       controller.loadNativeChatSkills,
       controller.nativeChatFilePaths,
@@ -276,6 +285,7 @@ function MobileNativeChatOverlayContent({
                       status={session.status}
                       error={session.error}
                       readFailedFinally={session.readFailedFinally === true}
+                      clearing={session.clearing === true}
                       agent={controller.nativeChatAgent}
                       sessionLive={controller.nativeChatSessionLive}
                       agentWorking={controller.nativeChatTurnActive}

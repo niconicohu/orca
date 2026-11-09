@@ -2,17 +2,17 @@ import { translate } from '../i18n/mobile-i18n'
 import type { SideChatPermission } from '../../../src/shared/agent-session-side-chat'
 import type { AgentJournalSkillRef } from '../../../src/shared/agent-session/journal/agent-session-journal-types'
 import { useCallback } from 'react'
-import type { MobileSessionTab } from './mobile-session-route-types'
+import type { MobileSessionTab } from './tabs/mobile-session-tabs'
 import type { MobileSessionFeedbackCapabilitiesModel } from './use-mobile-session-feedback-capabilities'
 import {
   launchedSelection,
   withLaunchReply,
   withoutUnansweredLaunch,
   resolveLaunchedSelection
-} from './pending-session-selection'
+} from './tabs/pending-session-selection'
 import { structuredSessionOperationId } from './structured-session-operation-id'
-import type { RpcClient } from '../transport/rpc-client'
-import { createMobileStructuredAgentSession } from './mobile-structured-agent-session-launch'
+import type { RpcClient } from '../transport/rpc/rpc-client-contract'
+import { createMobileSideChat } from './mobile-side-chat-launch'
 
 export async function openMobileSideChat(input: {
   client: RpcClient
@@ -30,11 +30,11 @@ export async function openMobileSideChat(input: {
 }): Promise<boolean> {
   const { pendingSelectionRef, sessionTabsRef, switchSessionTabRef } = input.navigation
   let lock: string | undefined
-  let result: Awaited<ReturnType<typeof createMobileStructuredAgentSession>>
+  let result: Awaited<ReturnType<typeof createMobileSideChat>>
   try {
     lock = structuredSessionOperationId()
     pendingSelectionRef.current = launchedSelection(lock, {}, null)
-    result = await createMobileStructuredAgentSession(
+    result = await createMobileSideChat(
       input.client,
       input.worktreeId,
       input.agent,

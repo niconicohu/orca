@@ -103,12 +103,16 @@ function resetStructuredLaunchCallers(
   state.callers.onSettled = () => maybeCleanupLaunchState(state)
 }
 
-function restartStructuredLaunchState(state: StructuredLaunchState, requested = false): void {
+function restartStructuredLaunchState(
+  state: StructuredLaunchState,
+  requested = false,
+  fresh = false
+): void {
   const wasVisibilityUnknown = state.visibilityUnknown
   const retainedOpening = wasVisibilityUnknown && !!state.intent.params.firstMessage
   if (!wasVisibilityUnknown || (retainedOpening && requested)) {
     const surfaceAddress = state.intent.surfaceAddress
-    state.intent = retryStructuredAgentSessionLaunchIntent(state.intent, retainedOpening)
+    state.intent = retryStructuredAgentSessionLaunchIntent(state.intent, retainedOpening, fresh)
     state.intent.surfaceAddress = surfaceAddress
   }
   resetStructuredLaunchCallers(state, retainedOpening)
@@ -135,7 +139,7 @@ function restartStructuredLaunchState(state: StructuredLaunchState, requested = 
 function joinStructuredLaunchState(
   existing: StructuredLaunchState,
   options: StructuredAgentLaunchOptions
-): StructuredLaunchStateResult | undefined {
+): StructuredLaunchStateResult {
   // A re-delivery of the same action shares the text it staged, so it is sent once.
   const repeat = repeatedStructuredLaunchAttempt(existing.callers.attempt, options.requestId)
   const retrying = existing.visibilityUnknown && !existing.intent.params.firstMessage
@@ -188,9 +192,8 @@ function structuredAgentLaunchState(
 ): StructuredLaunchStateResult {
   const identity = structuredLaunchIdentity(worktreeId, agent, options)
   const existing = getJoinableStructuredLaunchState(identity, options.requestId)
-  const joined = existing && joinStructuredLaunchState(existing, options)
-  if (joined) {
-    return joined
+  if (existing) {
+    return joinStructuredLaunchState(existing, options)
   }
 
   const intent = createStructuredAgentSessionLaunchIntent(
@@ -206,6 +209,7 @@ function structuredAgentLaunchState(
   // A fork inherits its source's options.
   intent.explicitLaunchOptions =
     !options.forkFrom && options.launchOptions ? { ...options.launchOptions } : undefined
+  intent.forkRequiresInheritedOriginal = options.forkRequiresInheritedOriginal
   intent.beforeCreate = options.beforeCreate
   intent.createAfter = options.createAfter
   intent.surfaceAddress = options.surfaceAddress
@@ -286,7 +290,11 @@ export function startStructuredAgentLaunch(
   }
 }
 
-export function retryStructuredAgentSessionLaunch(worktreeId: string, sessionId: string): boolean {
+export function retryStructuredAgentSessionLaunch(
+  worktreeId: string,
+  sessionId: string,
+  { fresh = false }: { fresh?: boolean } = {}
+): boolean {
   const state =
     getStructuredLaunchStateBySessionId(sessionId) ??
     restorePersistedStructuredLaunchState(worktreeId, sessionId)
@@ -298,7 +306,7 @@ export function retryStructuredAgentSessionLaunch(worktreeId: string, sessionId:
   ) {
     return false
   }
-  restartStructuredLaunchState(state, true)
+  restartStructuredLaunchState(state, true, fresh)
   return true
 }
 

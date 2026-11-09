@@ -19,7 +19,7 @@ import type {
   AgentSessionStatusSummary,
   AgentSessionConversationName
 } from '../../../../shared/agent-session/agent-session-wire'
-import type * as StatusFeedModule from '@/runtime/structured-agent-session-status-feed'
+import type * as StatusFeedModule from '@/runtime/native-chat/status/structured-agent-session-status-feed'
 
 const sideStatus = vi.hoisted(() => ({
   rows: new Map<string, AgentSessionStatusSummary>(),
@@ -31,16 +31,20 @@ function subscribeToTestStatus(listener: () => void) {
   return () => sideStatus.listeners.delete(listener)
 }
 
-vi.mock('@/runtime/structured-agent-session-status-feed', async (importOriginal) => ({
-  ...(await importOriginal<typeof StatusFeedModule>()),
-  getStructuredAgentSessionStatusFeed: () => ({
-    activate: () => () => {},
-    getSnapshot: () => sideStatus.rows,
-    getNamingSnapshot: () => sideStatus.names,
-    subscribe: subscribeToTestStatus,
-    subscribeSession: (_sessionId: string, listener: () => void) => subscribeToTestStatus(listener)
+vi.mock(
+  '@/runtime/native-chat/status/structured-agent-session-status-feed',
+  async (importOriginal) => ({
+    ...(await importOriginal<typeof StatusFeedModule>()),
+    getStructuredAgentSessionStatusFeed: () => ({
+      activate: () => () => {},
+      getSnapshot: () => sideStatus.rows,
+      getNamingSnapshot: () => sideStatus.names,
+      subscribe: subscribeToTestStatus,
+      subscribeSession: (_sessionId: string, listener: () => void) =>
+        subscribeToTestStatus(listener)
+    })
   })
-}))
+)
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 

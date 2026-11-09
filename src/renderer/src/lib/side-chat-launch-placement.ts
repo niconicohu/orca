@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { pendingTabGroupId } from '@/runtime/layout-owner-pending-tabs'
+import { pendingTabGroupId } from '@/runtime/workspace-layout/intents/layout-owner-pending-tabs'
 import { structuredChatTabIsSideChat } from '@/runtime/structured-chat-tab-side-chat'
 import { structuredAgentSessionTabId } from '../../../shared/agent-session/view/structured-agent-session-projection'
 import { readStructuredAgentLaunchRecords } from './agent-session/launch/structured-agent-session-launch-persistence'

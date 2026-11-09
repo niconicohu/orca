@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   readOnlySupported: true,
   explicitOptionsSupported: true
 }))
-vi.mock('@/runtime/structured-agent-session-host-capability', () => ({
+vi.mock('@/runtime/native-chat/host-capabilities/structured-agent-session-host-capability', () => ({
   useStructuredAgentSessionHostCapability: (_target: unknown, capability: string) =>
     capability === AGENT_SESSION_CREATE_OPTIONS_MODE_RUNTIME_CAPABILITY
       ? mocks.explicitOptionsSupported
@@ -26,12 +26,12 @@ vi.mock('@/store', () => ({
       unifiedTabsByWorktree: { workspace: [{ id: 'parent-tab' }] }
     })
 }))
-vi.mock('@/runtime/structured-agent-session-owner', () => ({
+vi.mock('@/runtime/native-chat/session-ownership/structured-agent-session-owner', () => ({
   structuredAgentSessionOwnerForTab: () => 'local',
   structuredAgentSessionTargetForHost: () => ({ kind: 'local' })
 }))
-vi.mock('../native-chat/use-native-chat-side-chat', () => ({
-  useNativeChatSideChat: () => mocks.open
+vi.mock('./use-tab-context-side-chat', () => ({
+  useTabContextSideChat: () => mocks.open
 }))
 beforeEach(() => {
   vi.clearAllMocks()
@@ -85,8 +85,6 @@ it.each(['Read only', 'Use main chat permissions'] as const)(
     fireEvent.click(screen.getByRole('menuitem', { name: label }))
     await waitFor(() =>
       expect(mocks.open).toHaveBeenCalledExactlyOnceWith(
-        '',
-        [],
         label === 'Read only' ? 'read-only' : 'inherit'
       )
     )
@@ -104,6 +102,6 @@ it.each(['readOnlySupported', 'explicitOptionsSupported'] as const)(
     fireEvent.click(readOnly)
     expect(mocks.open).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('menuitem', { name: 'Use main chat permissions' }))
-    await waitFor(() => expect(mocks.open).toHaveBeenCalledExactlyOnceWith('', [], 'inherit'))
+    await waitFor(() => expect(mocks.open).toHaveBeenCalledExactlyOnceWith('inherit'))
   }
 )

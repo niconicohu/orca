@@ -46,15 +46,18 @@ vi.mock('@/store', () => ({
   )
 }))
 
-vi.mock('@/runtime/structured-agent-session-owner', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  structuredAgentSessionOwnerForTab: () => 'local'
-}))
-vi.mock('@/runtime/structured-agent-session-host-capability', () => ({
+vi.mock(
+  '@/runtime/native-chat/session-ownership/structured-agent-session-owner',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    structuredAgentSessionOwnerForTab: () => 'local'
+  })
+)
+vi.mock('@/runtime/native-chat/host-capabilities/structured-agent-session-host-capability', () => ({
   useStructuredAgentSessionHostCapability: () => true
 }))
-vi.mock('../native-chat/use-native-chat-side-chat', () => ({
-  useNativeChatSideChat: () => (mocks.sideChatSource ? mocks.openSideChat : null)
+vi.mock('./use-tab-context-side-chat', () => ({
+  useTabContextSideChat: () => (mocks.sideChatSource ? mocks.openSideChat : null)
 }))
 
 vi.mock('./tab-session-history-switch', async (importOriginal) => ({

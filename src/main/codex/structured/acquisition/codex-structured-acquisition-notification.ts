@@ -3,11 +3,18 @@ import type { CodexAppServerConnectionHandlers } from '../../app-server/codex-ap
 import type { CodexAcquisitionWindow } from './codex-structured-acquisition-window'
 import type { CodexDispatchEchoes } from '../turns/codex-structured-dispatch-echo'
 import type { CodexStructuredNotificationRetry } from '../session-lifecycle/codex-structured-notification-retry'
-import { CODEX_RECEIPT_TIMED_METHODS } from '../session-lifecycle/codex-structured-session-state'
 import {
   codexThreadIsActive,
   readCodexThreadId
 } from '../../app-server/codex-structured-thread-facts'
+
+/** Boundaries retain host receipt time through buffering and retries. */
+const CODEX_RECEIPT_TIMED_METHODS: ReadonlySet<string> = new Set([
+  'turn/started',
+  'turn/completed',
+  'item/started',
+  'item/completed'
+])
 
 /** Stamp provider receipt before pre-publication buffering or retry. */
 export function codexAcquisitionNotificationHandler(input: {

@@ -1,9 +1,9 @@
 import type {
   AgentSessionLaunchPlan,
   AgentSessionLaunchTarget
-} from '@/lib/agent-session-launch-plan'
-import type { StructuredAgentLaunchHooks } from '@/lib/structured-agent-launch-settlement'
-import type { NativeChatComposerFocusIntent } from '@/components/native-chat/use-native-chat-composer-reveal-focus'
+} from '@/lib/agent-session/launch/routing/agent-session-launch-plan'
+import type { StructuredAgentLaunchHooks } from '@/lib/agent-session/launch/continuation/structured-agent-launch-settlement'
+import type { NativeChatComposerFocusIntent } from '@/components/native-chat/composer/focus/native-chat-composer-focus-intent'
 import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 import type {
   DeclinedStructuredLaunchTerminalOptions,

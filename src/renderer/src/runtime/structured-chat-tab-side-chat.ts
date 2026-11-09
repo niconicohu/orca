@@ -5,8 +5,8 @@ import { readStructuredAgentLaunchRecord } from '@/lib/agent-session/launch/stru
 import {
   structuredAgentSessionOwnerForTab,
   structuredAgentSessionTargetForHost
-} from './structured-agent-session-owner'
-import { getStructuredAgentSessionStatusFeed } from './structured-agent-session-status-feed'
+} from './native-chat/session-ownership/structured-agent-session-owner'
+import { getStructuredAgentSessionStatusFeed } from './native-chat/status/structured-agent-session-status-feed'
 
 export function structuredChatTabIsSideChat(
   state: AppState,

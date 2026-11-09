@@ -1,5 +1,5 @@
-import { launchStateLifecycle } from '../../structured-agent-session-launch-lifecycle'
-import { forgetStructuredSessionSelection } from '../../structured-agent-session-selection-controller'
+import { launchStateLifecycle } from './structured-agent-session-launch-lifecycle'
+import { forgetStructuredSessionSelection } from '../options/structured-agent-session-selection-controller'
 import { useSyncExternalStore } from 'react'
 import type { StructuredLaunchFailure } from './structured-agent-session-launch-failure'
 import type { ExecutionHostId } from '../../../../../shared/execution-host'
@@ -70,6 +70,10 @@ export function notifyStructuredLaunchListeners(): void {
     }
   }
   updateStructuredAgentLaunchRecords(changes())
+  publishStructuredLaunchChange()
+}
+
+export function publishStructuredLaunchChange(): void {
   for (const listener of structuredLaunchListeners) {
     listener()
   }

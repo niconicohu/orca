@@ -6,9 +6,9 @@ import {
   cleanupCreateMessageFixture,
   created,
   createParams
-} from '../../structured-agent-session-launch-create-message.test-fixture'
+} from './structured-agent-session-launch-create-message.test-fixture'
 import { startStructuredAgentLaunch } from './structured-agent-session-launch'
-import { newAgentLaunchRequestId } from '../../agent-launch-request-id'
+import { newAgentLaunchRequestId } from './routing/agent-launch-request-id'
 import { CreateIntentParams } from '../../../../../shared/rpc-contract/structured-agent-session-params'
 
 it('does not seed a side chat from unrelated new-chat defaults on exact-selection hosts', async () => {

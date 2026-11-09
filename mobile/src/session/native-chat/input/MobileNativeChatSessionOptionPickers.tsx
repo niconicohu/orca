@@ -3,6 +3,7 @@ import { AccessibilityInfo, Keyboard, Platform, Text, View } from 'react-native'
 import {
   ChevronLeft,
   Eye,
+  Clock,
   FilePenLine,
   Hand,
   LockKeyhole,
@@ -73,21 +74,10 @@ function permissionChoiceColor(value: string | undefined): string | undefined {
 }
 
 function permissionModeIcon(value: string): LucideIcon | undefined {
-  if (!isAgentChatPermissionMode(value)) {
-    return undefined
-  }
-  switch (AGENT_CHAT_PERMISSION_MODE_ICON_NAMES[value]) {
-    case 'Eye':
-      return Eye
-    case 'Hand':
-      return Hand
-    case 'FilePenLine':
-      return FilePenLine
-    case 'ShieldCheck':
-      return ShieldCheck
-    case 'ShieldAlert':
-      return ShieldAlert
-  }
+  const icons = { Eye, Hand, FilePenLine, ShieldCheck, ShieldAlert }
+  return isAgentChatPermissionMode(value)
+    ? icons[AGENT_CHAT_PERMISSION_MODE_ICON_NAMES[value]]
+    : undefined
 }
 
 function permissionChoiceLeading(value: string): React.JSX.Element | null {
@@ -128,7 +118,8 @@ export function MobileNativeChatSessionOptionPickers({
     }
     wasOpen.current = open
   }, [open, controller.optionSurface])
-  const { snapshot, pendingId } = controller
+  const { pendingId } = controller
+  const snapshot = controller.snapshot.filter((descriptor) => descriptor.id !== 'interactionMode')
   const hasControls = snapshot.some((descriptor) => descriptor.settable)
   const canOpen = !sendInFlight && pendingId === null && hasControls
   useEffect(() => {
@@ -165,10 +156,10 @@ export function MobileNativeChatSessionOptionPickers({
   }, [showWorkingNotice])
 
   const options = sortNativeChatSessionOptions(snapshot)
-  if (!model && !permission) {
+  if (!model && !permission && options.length === 0) {
     return null
   }
-  const home = model ?? permission!
+  const home = model ?? permission ?? options[0]!
   const homeView = activeDescriptor !== undefined && activeDescriptor === home
   const busy = pendingId !== null || sendInFlight
   // Structured picks and permission mode affect the next send, not the running turn.
@@ -223,6 +214,7 @@ export function MobileNativeChatSessionOptionPickers({
         secondary={secondary}
         warning={permissionColor !== undefined}
         icon={permissionIcon}
+        leading={controller.heldPick ? Clock : undefined}
         accessibleName={
           model
             ? permissionColor
@@ -265,7 +257,9 @@ export function MobileNativeChatSessionOptionPickers({
                 subtitle={
                   pendingId !== null
                     ? t('chat.sessionOptionPickers.applying', 'Applying…')
-                    : undefined
+                    : controller.appliesOnAttach
+                      ? t('chat.sessionOptionPickers.onAttach', 'Applies when the chat attaches')
+                      : undefined
                 }
                 trailing={{ label: t('common.done', 'Done'), onPress: closePicker }}
               />

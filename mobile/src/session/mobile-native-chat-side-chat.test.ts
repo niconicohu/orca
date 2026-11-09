@@ -4,13 +4,13 @@ import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { mountFixture } from '../test-support/rpc-recording/recorder-fixture-shape'
 import type { MobileSessionFeedbackCapabilitiesModel } from './use-mobile-session-feedback-capabilities'
-import { createMobileStructuredAgentSession } from './mobile-structured-agent-session-launch'
-import type { PendingSessionSelection } from './pending-session-selection'
-import type { MobileSessionTab } from './mobile-session-route-types'
+import { createMobileSideChat } from './mobile-side-chat-launch'
+import type { PendingSessionSelection } from './tabs/pending-session-selection'
+import type { MobileSessionTab } from './tabs/mobile-session-tabs'
 import { createFakeRpcClient } from '../mobile-web-shell/bridge-host-test-fakes'
 
-vi.mock('./mobile-structured-agent-session-launch', () => ({
-  createMobileStructuredAgentSession: vi.fn()
+vi.mock('./mobile-side-chat-launch', () => ({
+  createMobileSideChat: vi.fn()
 }))
 
 beforeEach(() => vi.clearAllMocks())
@@ -57,12 +57,12 @@ it('reports an unavailable action instead of silently ignoring a stale tab menu'
     throw new Error('Side chat hook did not mount')
   }
   scope.sessionTabsRef.current = []
-  await expect(controls.handleOpenSideChat(tab)).resolves.toBe(false)
+  await expect(controls(tab)).resolves.toBe(false)
   expect(showToast).toHaveBeenCalledWith(
     'This chat is not currently available for a side chat.',
     3000
   )
-  expect(createMobileStructuredAgentSession).not.toHaveBeenCalled()
+  expect(createMobileSideChat).not.toHaveBeenCalled()
   await act(async () => {
     renderer?.unmount()
   })
@@ -78,7 +78,7 @@ it('selects a side chat already published before its create reply', async () => 
     isActive: false
   }
   const nav = navigation([tab])
-  vi.mocked(createMobileStructuredAgentSession).mockResolvedValue({
+  vi.mocked(createMobileSideChat).mockResolvedValue({
     kind: 'created',
     sessionId: tab.sessionId
   })
@@ -97,7 +97,7 @@ it('selects a side chat already published before its create reply', async () => 
 
 it('preserves a newer user tab pick while a side chat is being created', async () => {
   const nav = navigation()
-  vi.mocked(createMobileStructuredAgentSession).mockImplementation(async () => {
+  vi.mocked(createMobileSideChat).mockImplementation(async () => {
     nav.pendingSelectionRef.current = { kind: 'tab', tabId: 'user-picked' }
     return { kind: 'created', sessionId: 'codex_child_123' }
   })
@@ -116,7 +116,7 @@ it('preserves a newer user tab pick while a side chat is being created', async (
 it('keeps an uncertain child selectable instead of discarding its original session', async () => {
   const nav = navigation()
   const onError = vi.fn()
-  vi.mocked(createMobileStructuredAgentSession).mockResolvedValue({
+  vi.mocked(createMobileSideChat).mockResolvedValue({
     kind: 'unknown',
     sessionId: 'codex_child_123',
     message: 'Tab publication could not be confirmed'
@@ -143,7 +143,7 @@ it.each([false, true])(
   async (newerPick) => {
     const nav = navigation()
     const onError = vi.fn()
-    vi.mocked(createMobileStructuredAgentSession).mockImplementationOnce(async () => {
+    vi.mocked(createMobileSideChat).mockImplementationOnce(async () => {
       if (newerPick) {
         nav.pendingSelectionRef.current = { kind: 'tab', tabId: 'user-picked' }
       }

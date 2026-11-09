@@ -10,11 +10,11 @@ import {
   GIT_KEY
 } from '../../../../shared/workspace-layout/workspace-layout-session.test-fixture'
 import { bootWindowFromPartitions } from '../../app-shell/startup-window-view.test-fixture'
-import { createStoreSessionMockApi } from '../../store/slices/store-session-test-harness'
-import { layoutApplyTestTransport } from '@/runtime/layout-apply-test-transport.test-fixture'
-import { loadMainLayoutModel } from '@/runtime/main-loaded-layout-frames.test-fixture'
-import { endLayoutFramePositions } from '@/runtime/layout-frame-position'
-import { openWorkspaceLayoutFrameSync } from '@/runtime/workspace-layout-frame-sync'
+import { createStoreSessionMockApi } from '../../store/testing/app-store-session-api.test-fixture'
+import { layoutApplyTestTransport } from '@/runtime/workspace-layout/testing/layout-apply-test-transport.test-fixture'
+import { loadMainLayoutModel } from '@/runtime/workspace-layout/testing/main-loaded-layout-frames.test-fixture'
+import { endLayoutFramePositions } from '@/runtime/workspace-layout/frames/layout-frame-position'
+import { openWorkspaceLayoutFrameSync } from '@/runtime/workspace-layout/frames/workspace-layout-frame-sync'
 import { openStructuredAgentSessionProvisionalTab } from '@/lib/agent-session/launch/structured-agent-session-launch-surface'
 import {
   readStructuredAgentLaunchRecord,
@@ -26,31 +26,31 @@ import { notifyStructuredLaunchListeners } from '@/lib/agent-session/launch/stru
 import { useSideChatPane } from './use-side-chat-pane'
 import { sideChatPanePlacement } from './side-chat-pane-placement'
 import { openNativeChatSideChat } from '@/lib/open-native-chat-side-chat'
-import type * as LaunchPlan from '@/lib/agent-session-launch-plan'
+import type * as LaunchPlan from '@/lib/agent-session/launch/routing/agent-session-launch-plan'
 
 vi.mock('../../../../shared/layout-owner-switch', () => ({
   get ORCA_LAYOUT_OWNER_IS_MAIN() {
     return launches.layoutOwnerIsMain
   }
 }))
-vi.mock('@/runtime/runtime-rpc-client', async (original) =>
+vi.mock('@/runtime/rpc/calls/runtime-rpc-call', async (original) =>
   (
-    await import('@/runtime/layout-apply-test-transport.test-fixture')
+    await import('@/runtime/workspace-layout/testing/layout-apply-test-transport.test-fixture')
   ).runtimeRpcClientWithLayoutApply(await original())
 )
-vi.mock('@/runtime/runtime-layout-client', async (original) =>
+vi.mock('@/runtime/workspace-layout/frames/runtime-layout-client', async (original) =>
   (
-    await import('@/runtime/layout-apply-test-transport.test-fixture')
+    await import('@/runtime/workspace-layout/testing/layout-apply-test-transport.test-fixture')
   ).runtimeLayoutClientWithTestFrames(await original())
 )
-vi.mock('@/runtime/workspace-layout-frame-sync', async (original) => ({
+vi.mock('@/runtime/workspace-layout/frames/workspace-layout-frame-sync', async (original) => ({
   ...(await original<object>()),
   showStartupLayoutFrames: () => {}
 }))
 vi.mock('./tab-group-panel-split-target', () => ({
   getTabGroupPanelRect: () => ({ width: 500, height: 900 })
 }))
-vi.mock('@/runtime/structured-agent-session-status-feed', () => ({
+vi.mock('@/runtime/native-chat/status/structured-agent-session-status-feed', () => ({
   getStructuredAgentSessionStatusFeed: () => feed
 }))
 const feed = vi.hoisted(() => ({
@@ -64,15 +64,18 @@ const feed = vi.hoisted(() => ({
     ])
 }))
 const launches = vi.hoisted(() => ({ count: 0, fail: false, layoutOwnerIsMain: true }))
-vi.mock('@/runtime/structured-agent-session-client', async (original) => ({
-  ...(await original<object>()),
-  supportsStructuredAgentSessionSideChat: async () => true
-}))
+vi.mock(
+  '@/runtime/native-chat/host-capabilities/structured-agent-session-side-chat-support',
+  async (original) => ({
+    ...(await original<object>()),
+    supportsStructuredAgentSessionSideChat: async () => true
+  })
+)
 vi.mock('@/lib/agent-session/launch/structured-agent-session-host-admission', async (original) => ({
   ...(await original<object>()),
   admitStructuredLaunchOnHost: async () => ({ kind: 'admitted' })
 }))
-vi.mock('@/lib/agent-session-launch-plan', async (original) => {
+vi.mock('@/lib/agent-session/launch/routing/agent-session-launch-plan', async (original) => {
   const actual = await original<typeof LaunchPlan>()
   return {
     ...actual,

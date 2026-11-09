@@ -2,17 +2,17 @@
 
 import { useAppStore } from '@/store'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/layout-owner-switch'
-import type { TabSplitDirection } from '@/store/slices/tabs'
-import { sendLayoutCommandToOwner } from '@/runtime/layout-owner-command'
-import type { WindowLayoutCommand } from '@/runtime/layout-apply-send'
+import type { TabSplitDirection } from '@/store/slices/tabs/tabs-slice-contract'
+import { sendLayoutCommandToOwner } from '@/runtime/workspace-layout/commands/layout-owner-command'
+import type { WindowLayoutCommand } from '@/runtime/workspace-layout/commands/layout-apply-send'
 import { isPaneColumnSplitDropNoOp } from '../../../../shared/workspace-layout/pane-column-split-drop-no-op'
 import { mirrorWebRuntimeTabMove } from '../tab-bar/web-runtime-tab-move-mirror'
 import {
   expectMovedTabSelection,
   type MovedTabSelection
-} from '@/runtime/layout-owner-pane-intents'
+} from '@/runtime/workspace-layout/intents/layout-owner-pane-intents'
 import { tabSelectionKey } from '@/store/slices/tabs/moved-tab-selection'
-import { layoutFramesFlowing } from '@/runtime/layout-frame-position'
+import { layoutFramesFlowing } from '@/runtime/workspace-layout/frames/layout-frame-position'
 import { splitRatioIntentAt } from '../../../../shared/workspace-layout/split-ratio-intents'
 import { serverTabCount } from '@/lib/frame-drawn-desktop-created-tabs'
 import { tabOrderAnchor } from '../../../../shared/workspace-layout/tab-order'
@@ -29,23 +29,34 @@ export function moveTabInWorkspace(worktreeId: string, drop: TabDrop): boolean {
   const activate =
     state.groupsByWorktree[worktreeId]?.find((group) => group.id === activeGroupId)?.activeTabId ===
     drop.tabId
-  if (ORCA_LAYOUT_OWNER_IS_MAIN && dropTabThroughLayoutOwner(worktreeId, drop, activate)) {
+  if (
+    ORCA_LAYOUT_OWNER_IS_MAIN &&
+    dropTabThroughLayoutOwner(worktreeId, drop, undefined, activate)
+  ) {
     return true
   }
   return moveAsToday(worktreeId, drop, activate)
+}
+
+/** A caller that selects the moved tab itself: it hears main refuse, and decides whether a move main
+ *  hands back is still wanted. It watches the store for the drawn move. */
+export type TabDropCompletion = {
+  refused: () => void
+  moveHere: (move: () => void) => void
 }
 
 /** Send drops to main; refusal leaves tabs in place, while false delegates skipped or paired-server drops to the caller. */
 export function dropTabThroughLayoutOwner(
   worktreeId: string,
   drop: TabDrop,
+  completion?: TabDropCompletion,
   activate = true
 ): boolean {
   const command = commandFor(worktreeId, drop)
   if (!command) {
     return false
   }
-  const forget = activate ? expectSelectionAfterMove(worktreeId, drop) : () => {}
+  const forget = completion || !activate ? () => {} : expectSelectionAfterMove(worktreeId, drop)
   const sent = sendLayoutCommandToOwner(worktreeId, command, {
     // Forget after the answering frame; without a stream, retain selection intent for the reconnect snapshot.
     apply: (_result, origin) => {
@@ -55,9 +66,16 @@ export function dropTabThroughLayoutOwner(
     },
     asToday: () => {
       forget()
-      moveAsToday(worktreeId, drop, activate)
+      if (completion) {
+        completion.moveHere(() => moveAsToday(worktreeId, drop, activate))
+      } else {
+        moveAsToday(worktreeId, drop, activate)
+      }
     },
-    refused: forget
+    refused: () => {
+      forget()
+      completion?.refused()
+    }
   })
   if (!sent) {
     forget()

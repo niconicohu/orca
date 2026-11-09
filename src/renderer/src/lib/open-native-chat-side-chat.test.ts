@@ -20,16 +20,21 @@ vi.mock('@/store', () => ({
     })
   }
 }))
-vi.mock('@/runtime/structured-agent-session-owner', () => ({
+vi.mock('@/runtime/native-chat/session-ownership/structured-agent-session-owner', () => ({
   structuredAgentSessionOwnerForTab: () => 'local',
   structuredAgentSessionTargetForHost: () => ({ kind: 'local' })
 }))
-vi.mock('@/runtime/structured-agent-session-client', () => ({
-  supportsStructuredAgentSessionCreateOptionsMode: mocks.explicitOptions,
-  supportsStructuredAgentSessionReadOnlySideChat: mocks.support,
-  supportsStructuredAgentSessionSideChat: mocks.support
+vi.mock('@/runtime/native-chat/host-capabilities/structured-agent-session-host-support', () => ({
+  supportsStructuredAgentSessionCreateOptionsMode: mocks.explicitOptions
 }))
-vi.mock('./agent-session-launch-plan', () => ({
+vi.mock(
+  '@/runtime/native-chat/host-capabilities/structured-agent-session-side-chat-support',
+  () => ({
+    supportsStructuredAgentSessionReadOnlySideChat: mocks.support,
+    supportsStructuredAgentSessionSideChat: mocks.support
+  })
+)
+vi.mock('./agent-session/launch/routing/agent-session-launch-plan', () => ({
   adoptAgentSessionLaunchVerdict: (plan: unknown) => plan
 }))
 vi.mock('./agent-session/structured-agent-session-provisional-tab', () => ({
