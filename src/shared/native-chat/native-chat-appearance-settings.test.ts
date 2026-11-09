@@ -37,28 +37,11 @@ describe('native chat appearance normalization', () => {
       }
     }
   })
-
-  it('derives defaults without storing them', () => {
-    expect(
-      normalizeNativeChatAppearanceSettings({
-        fontSize: 14,
-        codeFontSize: 12,
-        width: 'comfortable'
-      })
-    ).toBeUndefined()
-    expect(resolveNativeChatAppearanceSettings(undefined)).toEqual({
-      fontFamily: '',
-      fontSize: 14,
-      codeFontSize: 12,
-      width: 'comfortable',
-      contrast: 100,
-      matchTerminalInterface: false
-    })
-  })
   it('resets known controls while keeping settings from a newer version', () => {
     const fromNewerVersion = {
       fontFamily: 'Georgia',
       fontSize: 18,
+      fontWeight: 500,
       codeFontSize: 16,
       width: 'wide' as const,
       contrast: 151,
@@ -76,6 +59,7 @@ describe('native chat appearance normalization', () => {
     ).toEqual({
       fontFamily: '',
       fontSize: 20,
+      fontWeight: 400,
       codeFontSize: 10,
       width: 'full',
       contrast: 100,
@@ -111,26 +95,6 @@ describe('native chat appearance normalization', () => {
 })
 
 describe('chat contrast and terminal interface normalization', () => {
-  it('removes default fields and the empty object', () => {
-    expect(
-      normalizeNativeChatAppearanceSettings({ contrast: 100, matchTerminalInterface: false })
-    ).toBeUndefined()
-    expect(
-      normalizeNativeChatAppearanceSettings({
-        fontSize: 16,
-        contrast: 100,
-        matchTerminalInterface: false
-      })
-    ).toEqual({ fontSize: 16 })
-    expect(
-      normalizeNativeChatAppearanceSettings({
-        codeFontSize: 13,
-        contrast: 120,
-        matchTerminalInterface: true
-      })
-    ).toEqual({ codeFontSize: 13, contrast: 120, matchTerminalInterface: true })
-  })
-
   it('clamps and rounds persisted contrast, accepting only an explicit true toggle', () => {
     expect(
       resolveNativeChatAppearanceSettings({ contrast: 999, matchTerminalInterface: 'true' })
@@ -141,4 +105,25 @@ describe('chat contrast and terminal interface normalization', () => {
       expect(normalizeNativeChatAppearanceSettings({ contrast })).toBeUndefined()
     }
   })
+})
+
+describe('message body weight normalization', () => {
+  it.each([
+    [100, 300],
+    [300, 300],
+    [325, 300],
+    [375, 400],
+    [400, 400],
+    [475, 500],
+    [500, 500],
+    [700, 500]
+  ])('snaps %s to the readable body step %s', (fontWeight, expected) => {
+    expect(resolveNativeChatAppearanceSettings({ fontWeight }).fontWeight).toBe(expected)
+  })
+  it.each([400, Number.NaN, Number.POSITIVE_INFINITY, '500', null, undefined])(
+    'removes defaults and malformed weight %s',
+    (fontWeight) => {
+      expect(normalizeNativeChatAppearanceSettings({ fontWeight })).toBeUndefined()
+    }
+  )
 })

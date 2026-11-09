@@ -6,27 +6,27 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AGENT_LAUNCH_RUNTIME_CAPABILITY } from '../../../../shared/agent-launch-runtime-capability'
+import { AGENT_LAUNCH_RUNTIME_CAPABILITY } from '../../../../shared/agent-launch/contracts/agent-launch-runtime-capability'
 import {
   computeAgentLaunchFingerprint,
   deriveAgentLaunchChildOperationId,
   type AgentLaunchFingerprintInput
-} from '../../../../shared/agent-launch-operation'
+} from '../../../../shared/agent-launch/contracts/agent-launch-operation'
 import {
   agentSessionOperationKey,
   claimAgentSessionOperation,
   isAgentSessionOperationRow,
   settleAgentSessionOperation,
   type AgentSessionOperationRow
-} from '../../../../shared/agent-session-operation-ledger'
-import type { AgentSessionRecordStore } from '../../agent-session-record-store'
+} from '../../../../shared/agent-session/lifecycle/agent-session-operation-ledger'
+import type { AgentSessionRecordStore } from '../../agent-session/records/agent-session-record-store'
 import {
   editPersistedTestAgentSessionStore,
   openTestAgentSessionRecordStore,
   readPersistedTestAgentSessionStore
-} from '../../agent-session-record-store-test-harness'
+} from '../../agent-session/records/agent-session-record-store-test-harness'
 import type { RpcContext } from '../core'
-import { terminalStartError } from '../../../../shared/terminal-start-failure'
+import { terminalStartError } from '../../../../shared/terminal/pty/lifecycle/terminal-start-failure'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { RpcDispatcher } from '../dispatcher'
 import {
@@ -259,9 +259,7 @@ describe('a replay answers from the record', () => {
 
     // Changed settings must not recompute the recorded launch receipt.
     const movedSettings = runtimeStub({
-      settings: {
-        experimentalNativeChat: false
-      }
+      settings: { nativeChatProviders: { claude: false, codex: false } }
     })
     const replayed = await launch(params, movedSettings, PAIRED_CLIENT)
 
