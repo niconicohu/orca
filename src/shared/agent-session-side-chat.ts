@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as z from 'zod'
 
 export const AGENT_SESSION_SIDE_CHAT_RUNTIME_CAPABILITY = 'agent-session.side-chat.v1' as const
 
