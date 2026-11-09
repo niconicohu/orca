@@ -48,6 +48,7 @@ vi.mock('lucide-react-native', () => ({
   ChevronDown: 'ChevronDown',
   ChevronLeft: 'ChevronLeft',
   ChevronRight: 'ChevronRight',
+  Eye: 'Eye',
   FilePenLine: 'FilePenLine',
   Hand: 'Hand',
   LockKeyhole: 'LockKeyhole',
