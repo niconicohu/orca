@@ -1,7 +1,6 @@
 import { useAppStore } from '@/store/index'
 // @vitest-environment happy-dom
 
-import { getStructuredLaunchStateBySessionId } from './structured-agent-session-launch-registry'
 import { prepareStructuredLaunchCreateMessage } from './structured-agent-session-launch-create-message'
 import type * as LaunchErrors from '@/lib/agent-session/launch/structured-agent-session-launch-errors'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -98,6 +97,7 @@ import {
 } from './structured-agent-session-launch'
 import {
   getStructuredAgentSessionLaunchLifecycle,
+  getStructuredLaunchStateBySessionId,
   resetStructuredAgentLaunchRegistryForTests
 } from './structured-agent-session-launch-registry'
 import {

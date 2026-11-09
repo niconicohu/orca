@@ -1,15 +1,12 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 
 export function SideChatTabBadge({ className }: { className?: string }): React.JSX.Element {
+  const t = useTranslate()
   return (
     <Badge variant="contextLabel" className={cn('mr-1 shrink-0', className)}>
-      {translate('components.native-chat.sideChat.badge', 'btw')}
+      {t('components.native-chat.sideChat.badge', 'btw')}
     </Badge>
   )
-}
-
-export function sideChatTabLabel(sideChat: boolean | undefined): string | undefined {
-  return sideChat ? translate('components.native-chat.sideChat.title', 'Side chat') : undefined
 }

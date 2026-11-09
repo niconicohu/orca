@@ -14,7 +14,7 @@ import { useAppStore } from '@/store'
 import type { structuredAgentSessionTargetForTab } from '@/runtime/native-chat/session-ownership/structured-agent-session-owner'
 import { useTabContextSideChat } from './use-tab-context-side-chat'
 import type { NativeChatTabSession } from './tab-session-history-switch'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { useMemo } from 'react'
 import { toast } from 'sonner'
 import {
@@ -49,6 +49,7 @@ function SideChatItem({
 }: Parameters<typeof NativeChatSideChatMenuItem>[0] & {
   target: NonNullable<ReturnType<typeof structuredAgentSessionTargetForTab>>
 }) {
+  const t = useTranslate()
   const open = useTabContextSideChat({
     target,
     agent: nativeChat.agent ?? '',
@@ -65,7 +66,7 @@ function SideChatItem({
     AGENT_SESSION_CREATE_OPTIONS_MODE_RUNTIME_CAPABILITY
   )
   const reportFailure = () =>
-    toast.error(translate('components.native-chat.sideChat.failed', 'Could not open a side chat.'))
+    toast.error(t('components.native-chat.sideChat.failed', 'Could not open a side chat.'))
   const choose = (permission: SideChatPermission) => {
     onComplete?.()
     void open?.(permission)
@@ -80,7 +81,7 @@ function SideChatItem({
     <ContextMenuSub>
       <ContextMenuSubTrigger>
         <CornerDownRight />
-        {translate('components.native-chat.sideChat.new', 'New side chat')}
+        {t('components.native-chat.sideChat.new', 'New side chat')}
       </ContextMenuSubTrigger>
       <ContextMenuSubContent>
         <ContextMenuItem
@@ -92,14 +93,11 @@ function SideChatItem({
           onSelect={() => choose('read-only')}
         >
           <Eye />
-          {translate('components.native-chat.composer.permissionReadOnly', 'Read only')}
+          {t('components.native-chat.composer.permissionReadOnly', 'Read only')}
         </ContextMenuItem>
         <ContextMenuItem onSelect={() => choose('inherit')}>
           <GitFork />
-          {translate(
-            'components.native-chat.sideChat.inheritPermissions',
-            'Use main chat permissions'
-          )}
+          {t('components.native-chat.sideChat.inheritPermissions', 'Use main chat permissions')}
         </ContextMenuItem>
       </ContextMenuSubContent>
     </ContextMenuSub>

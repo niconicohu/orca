@@ -3,7 +3,7 @@ import { useCallback, useEffect } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { X, Minimize2, Pin } from 'lucide-react'
 import { stripLeadingAgentTitleDecoration } from '../../../../shared/agent-status/title/agent-title-decoration'
-import { SideChatTabBadge, sideChatTabLabel } from './SideChatTabBadge'
+import { SideChatTabBadge } from './SideChatTabBadge'
 import { getAgentLabel } from '@/lib/agent-catalog/agent-catalog'
 import { basename } from '@/lib/path'
 import { Input } from '@/components/ui/input'
@@ -198,7 +198,9 @@ export default function SortableTab({
   })
   const handleMenuOpenChange = useTabContextMenuOpening(setMenuOpen, retirePendingActivation)
   const slotProps = useTabStripSlotProps(tab.id, isActive, 'terminal')
-  const sideChatLabel = sideChatTabLabel(nativeChat?.sideChat)
+  const sideChatLabel = nativeChat?.sideChat
+    ? t('components.native-chat.sideChat.title', 'Side chat')
+    : undefined
   const tabTitle = tab.customTitle ?? tab.title
   const tabRoot = (
     <div
