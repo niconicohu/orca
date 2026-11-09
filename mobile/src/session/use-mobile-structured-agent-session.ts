@@ -106,7 +106,7 @@ export function useMobileStructuredAgentSession(
     unloadedTurnRevisions: state.unloadedTurnRevisions,
     hostSupport
   })
-  const sendController = useMobileStructuredCommandController(options, args.openSideChat)
+  const sendController = useMobileStructuredCommandController(options)
   const { contextUsageSupport, ...optionFields } = options
 
   const { respondPermission, respondQuestion } = useMobileStructuredPromptResponses({
@@ -282,6 +282,7 @@ export function useMobileStructuredAgentSession(
     turnIndicator,
     ...turnTiming,
     sendWithOutcome,
+    holdUnconfirmed: sends.holdUnconfirmed,
     cancel: () => void stopPress.track(() => requestCancel()),
     cancelPrompt: (prompt?: { itemId: string; expectedRevision: number }) =>
       requestCancel(prompt ?? pendingStructuredPromptIdentity(stateRef.current)),

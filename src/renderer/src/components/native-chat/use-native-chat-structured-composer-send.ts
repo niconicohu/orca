@@ -16,8 +16,7 @@ import { completeNativeChatStructuredUserAction } from './native-chat-structured
 import {
   isStructuredAgentSessionHostCommand,
   isStructuredAgentSessionGoalCommand,
-  structuredAgentSessionCommandChangesConversation,
-  structuredAgentSessionCommandStartsSideChatTurn
+  structuredAgentSessionCommandChangesConversation
 } from '../../../../shared/agent-session/view/structured-agent-session-composer'
 import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
 import { dispatchNativeChatStructuredComposerText } from './native-chat-structured-composer-dispatch'
@@ -85,15 +84,12 @@ export function useNativeChatStructuredComposerSend({
       text = projectNativeChatPastedText(text, submitted.pastedTextFiles)
       const hostCommand = isStructuredAgentSessionHostCommand(
         text,
-        structuredTransport.threadGoal !== undefined,
-        structuredTransport.openSideChat !== undefined
+        structuredTransport.threadGoal !== undefined
       )
       // Blocked hosts cannot take turns/conversation commands; option commands only configure later turns.
       if (
         structuredTransport.sendBlockedReason !== undefined &&
-        (!hostCommand ||
-          structuredAgentSessionCommandChangesConversation(text) ||
-          structuredAgentSessionCommandStartsSideChatTurn(text))
+        (!hostCommand || structuredAgentSessionCommandChangesConversation(text))
       ) {
         return false
       }

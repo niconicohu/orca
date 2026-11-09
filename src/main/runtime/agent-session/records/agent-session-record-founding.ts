@@ -18,8 +18,9 @@ export type AgentSessionRecordIdentity = Pick<
   | 'options'
   | 'launchArgs'
   | 'launchDirectory'
-  | 'conversationName'
   | 'sideChat'
+  | 'forkedFrom'
+  | 'conversationName'
 >
 
 export function agentSessionRecordIdentityFields(
@@ -37,6 +38,7 @@ export function agentSessionRecordIdentityFields(
     provider: identity.provider,
     ...(identity.sideChat ? { sideChat: identity.sideChat } : {}),
     accountHome: identity.accountHome,
+    ...(identity.forkedFrom ? { forkedFrom: identity.forkedFrom } : {}),
     ...(Object.keys(options).length > 0 ? { options } : {}),
     ...(permissionMode ? { permissionMode } : {}),
     ...(identity.launchArgs ? { launchArgs: [...identity.launchArgs] } : {}),

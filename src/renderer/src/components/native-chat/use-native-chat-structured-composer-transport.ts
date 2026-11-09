@@ -1,5 +1,4 @@
 import { openNativeChatAccountUsageModal } from './native-chat-account-usage-modal'
-import { useNativeChatSideChat } from './use-native-chat-side-chat'
 import { useMemo, type Dispatch, type SetStateAction } from 'react'
 import { dispatchStructuredAgentSessionComposerCommand } from '../../../../shared/agent-session/view/structured-agent-session-composer'
 import { localizeStructuredComposerOutcome } from './structured-composer-command-error-text'
@@ -31,7 +30,7 @@ function nativeChatSessionAttachmentNotReadyNotice(agent: AgentType, starting: b
 }
 
 export function useNativeChatStructuredComposerTransport(args: {
-  props: Pick<NativeChatStructuredViewProps, 'agent' | 'sessionId' | 'target' | 'tabId'>
+  props: Pick<NativeChatStructuredViewProps, 'agent' | 'sessionId' | 'target'>
   controller: ReturnType<typeof useStructuredAgentSession>
   /** Sends now, restarts a failed start with the message, or refuses while the chat starts. */
   sendThroughLaunch: (
@@ -53,7 +52,6 @@ export function useNativeChatStructuredComposerTransport(args: {
   const { setOptionPickerRequest, onError } = args
   const { revealLatest: onSubmitted, captureRevealLatest: captureAdmittedReveal } = args.reveal
   const { transportEnabled } = args
-  const openSideChat = useNativeChatSideChat({ ...props, worktreeId })
   const sendBlockedReason = args.sendBlockedReason ?? null
   const acceptsImages = useStructuredAgentAcceptsImages(
     props.target,
@@ -72,7 +70,6 @@ export function useNativeChatStructuredComposerTransport(args: {
             : Promise.resolve(false)
       : null
     return {
-      ...(openSideChat ? { openSideChat } : {}),
       accountUsage:
         controller.accountUsage === true
           ? {
@@ -102,26 +99,21 @@ export function useNativeChatStructuredComposerTransport(args: {
               ...request
             )
         ),
-      dispatchCommand: (text, skills) =>
-        dispatchStructuredAgentSessionComposerCommand(
-          text,
-          {
-            agent: props.agent,
-            ...(openSideChat ? { openSideChat } : {}),
-            snapshot: controller.optionSnapshot,
-            invokeAction: async (id) => {
-              setOptionPickerRequest({ id, consume: () => setOptionPickerRequest(null) })
-              return true
-            },
-            setOption: controller.setStructuredOption,
-            sessionCommands: controller.sessionCommands,
-            conversationCommands: controller.conversationCommands,
-            compactInstructions: controller.compactInstructions,
-            runConversationCommand: controller.runConversationCommand,
-            ...(changeThreadGoal ? { changeThreadGoal } : {})
+      dispatchCommand: (text: string) =>
+        dispatchStructuredAgentSessionComposerCommand(text, {
+          agent: props.agent,
+          snapshot: controller.optionSnapshot,
+          invokeAction: async (id) => {
+            setOptionPickerRequest({ id, consume: () => setOptionPickerRequest(null) })
+            return true
           },
-          skills
-        ).then(localizeStructuredComposerOutcome),
+          setOption: controller.setStructuredOption,
+          sessionCommands: controller.sessionCommands,
+          conversationCommands: controller.conversationCommands,
+          compactInstructions: controller.compactInstructions,
+          runConversationCommand: controller.runConversationCommand,
+          ...(changeThreadGoal ? { changeThreadGoal } : {})
+        }).then(localizeStructuredComposerOutcome),
       ...(changeThreadGoal
         ? {
             threadGoal: {
@@ -164,7 +156,6 @@ export function useNativeChatStructuredComposerTransport(args: {
     onError,
     onSubmitted,
     captureAdmittedReveal,
-    openSideChat,
     optionPickerRequest,
     props.agent,
     props.sessionId,

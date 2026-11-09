@@ -13,8 +13,7 @@ export function useMobileNativeChatStructuredComposer(args: {
   /** The host keeps files a phone uploads; an older one refuses the upload. */
   acceptsFiles: boolean
   conversationCommands: readonly AgentSessionConversationCommand[] | undefined
-  sideChat?: boolean
-  compactInstructions?: boolean
+  compactInstructions?: boolean | undefined
   files: MobileNativeChatFileAttachments
   threadGoal: MobileStructuredThreadGoal | null
 }): MobileNativeChatStructuredComposer | null {
@@ -24,13 +23,8 @@ export function useMobileNativeChatStructuredComposer(args: {
   const { files: pendingFiles, attachFiles, attachPastedText, removeFiles } = files
   // Memoize commands separately so attachment changes cannot rebuild the menu catalog.
   const catalog = useMemo(
-    () => ({
-      reported: commands,
-      conversationCommands,
-      compactInstructions,
-      sideChat: args.sideChat
-    }),
-    [commands, compactInstructions, conversationCommands, args.sideChat]
+    () => ({ reported: commands, conversationCommands, compactInstructions }),
+    [commands, compactInstructions, conversationCommands]
   )
   return useMemo(
     () =>

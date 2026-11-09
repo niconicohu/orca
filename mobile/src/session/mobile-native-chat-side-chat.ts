@@ -73,7 +73,7 @@ export async function openMobileSideChat(input: {
 }
 
 export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel) {
-  const { client, agentSessionHostSupport, worktreeId, showToast, activeSessionTab } = scope
+  const { client, agentSessionHostSupport, worktreeId, showToast } = scope
   const handleOpenSideChat = useCallback(
     async (
       tab: Extract<MobileSessionTab, { type: 'agent-session' }>,
@@ -138,20 +138,5 @@ export function useMobileSideChat(scope: MobileSessionFeedbackCapabilitiesModel)
       showToast
     ]
   )
-  const openCurrentSideChat = useCallback(
-    (question: string, skills?: readonly AgentJournalSkillRef[]) =>
-      activeSessionTab?.type === 'agent-session'
-        ? handleOpenSideChat(activeSessionTab, question, skills)
-        : Promise.resolve(false),
-    [activeSessionTab, handleOpenSideChat]
-  )
-  return {
-    handleOpenSideChat,
-    openCurrentSideChat:
-      activeSessionTab?.type === 'agent-session' &&
-      activeSessionTab.sideChatSupported &&
-      agentSessionHostSupport?.sideChat
-        ? openCurrentSideChat
-        : undefined
-  }
+  return handleOpenSideChat
 }

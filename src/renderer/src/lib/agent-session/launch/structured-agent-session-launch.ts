@@ -19,9 +19,9 @@ import {
 } from '@/lib/agent-session/launch/structured-agent-session-launch-recovery'
 import {
   addStructuredLaunchCaller,
+  promptOwner,
   launchPromptText,
   joinLaunchDelivery,
-  promptOwner,
   createStructuredLaunchCallerGroup,
   releaseStructuredLaunchCallerAfterUnknownOutcome,
   type StructuredAgentLaunchOptions,
@@ -78,7 +78,7 @@ function adoptPairedHostSeed(
   seedOptions: StructuredLaunchState['selection']['seed']
 ): void {
   // The support answer is a fresh seed; continuation baseline belongs to actual host create.
-  if (state.intent.params.resumeFrom) {
+  if (state.intent.params.resumeFrom || state.intent.params.forkFrom) {
     seedOptions = undefined
   }
   const { seedPending, ...selection } = state.selection
@@ -200,9 +200,12 @@ function structuredAgentLaunchState(
     options.resumeFrom,
     options.hostSeedOptions,
     options.activate,
-    ...(options.sideChatOf ? [options.sideChatOf] : [])
+    options.forkFrom,
+    options.sideChatOf
   )
-  intent.explicitLaunchOptions = options.launchOptions ? { ...options.launchOptions } : undefined
+  // A fork inherits its source's options.
+  intent.explicitLaunchOptions =
+    !options.forkFrom && options.launchOptions ? { ...options.launchOptions } : undefined
   intent.beforeCreate = options.beforeCreate
   intent.createAfter = options.createAfter
   intent.surfaceAddress = options.surfaceAddress

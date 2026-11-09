@@ -61,7 +61,7 @@ export function useMobileSessionNativeChatDictation(
     showToast
   })
   const nativeChatTranscriptIsLocalReadable = useMobileNativeChatReadability(client, worktreeId)
-  const { handleOpenSideChat, openCurrentSideChat } = useMobileSideChat(scope)
+  const handleOpenSideChat = useMobileSideChat(scope)
   const {
     ready: nativeChatInputLeaseReady,
     readyRef: nativeChatInputLeaseReadyRef,
@@ -73,7 +73,6 @@ export function useMobileSessionNativeChatDictation(
     connected: connState === 'connected'
   })
   const nativeChatController = useMobileNativeChatController({
-    openSideChat: openCurrentSideChat,
     client,
     pairedHostClient,
     hostId,

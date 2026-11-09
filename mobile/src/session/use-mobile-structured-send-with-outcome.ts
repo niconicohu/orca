@@ -1,5 +1,4 @@
 import { selectAgentSessionCurrentRequests } from '../../../src/shared/agent-session/requests/agent-session-current-requests'
-
 import { useCallback } from 'react'
 import { runningStructuredAgentSessionTurnId } from '../../../src/shared/agent-session/view/structured-agent-session-live-turn'
 import { mobileStructuredAgentSessionWorking } from './mobile-structured-agent-session-working'
@@ -44,6 +43,7 @@ import {
   actionableStructuredQuestion
 } from './mobile-structured-actionable-prompt'
 
+/** The desktop's rule: the alternate flips the setting first, then the queue's own rules decide. */
 export function mobileStructuredSendQueues(
   queueCapable: boolean,
   queueFollowUps: boolean,
@@ -93,7 +93,6 @@ export function useMobileStructuredSendWithOutcome(args: {
     | 'conversationCommands'
     | 'compactInstructions'
     | 'changeThreadGoal'
-    | 'openSideChat'
   >
   sessionCommands?: readonly AgentSessionSlashCommand[]
   onSendError: MobileNativeChatSendErrorReporter
@@ -180,7 +179,6 @@ export function useMobileStructuredSendWithOutcome(args: {
       const commandOutcome = await dispatchMobileStructuredCommand({
         text: messageText,
         hasAttachments,
-        skills: pickedSkills,
         client,
         sessionId,
         fence: currentFence,

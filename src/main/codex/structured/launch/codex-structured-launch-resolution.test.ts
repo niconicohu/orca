@@ -1,11 +1,11 @@
+import { openCodexThread } from '../threads/codex-structured-thread-open'
+import { CodexAppServerRequestError } from '../../app-server/codex-app-server-request-error'
 import { agentSessionRecordFixture } from '../../../native-chat/agent-session-record-test-fixture'
 import { createCodexStructuredLaunchResolver } from '../../../runtime/agent-session/launch/structured-agent-launch-composition.test-support'
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentSessionRecord } from '../../../../shared/agent-session/lifecycle/agent-session-record'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import { codexProviderHandle } from '../../../../shared/agent-session/lifecycle/agent-session-provider-handle-encoding'
-import { openCodexThread } from '../threads/codex-structured-thread-open'
-import { CodexAppServerRequestError } from '../../app-server/codex-app-server-request-error'
 
 const { isWindowsProcessStartTimeAvailable } = vi.hoisted(() => ({
   isWindowsProcessStartTimeAvailable: vi.fn(() => true)

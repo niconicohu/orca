@@ -7,7 +7,6 @@ import type { StructuredAgentContextUsage } from '../../../../shared/agent-sessi
 import type { AgentSessionSlashCommand } from '../../../../shared/agent-session/agent-session-wire'
 import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
 import type {
-  StructuredAgentSessionComposerOptions,
   StructuredAgentSessionCommandOutcome,
   StructuredAgentSessionCommandRefusalCause
 } from '../../../../shared/agent-session/view/structured-agent-session-composer'
@@ -16,11 +15,25 @@ import type {
   SessionOptionsSurface
 } from '../../../../shared/native-chat/input/native-chat-session-options'
 import type { NativeChatLaunchDraft } from '@/lib/native-chat-launch-prompt'
-import type { NativeChatComposerImageAttachment } from './NativeChatComposerField'
 import type { NativeChatAfterStopSend } from './native-chat-composer-target'
 import type { NativeChatLocalCommandAnswer } from './use-native-chat-local-command-answer'
 import type { NativeChatRecallSource } from './native-chat-sent-prompt-history'
 import type { NativeChatSendFollowUp } from '../../../../shared/native-chat/input/native-chat-follow-up-behavior'
+
+export type NativeChatComposerImageAttachment = {
+  id: string
+  /** Empty while `pending`: the clipboard image has no agent-readable path yet. */
+  path: string
+  connectionId?: string
+  /** Show clipboard thumbnails immediately, without waiting for disk/upload completion. */
+  previewUrl?: string
+  /** True while the pasted image is still being written to disk or uploaded. */
+  pending?: boolean
+  /** The file's name while it uploads: a dropped or picked file, not a pasted image. */
+  pendingName?: string
+  /** Set on an image the draft names but can't send: the file to attach again. */
+  unavailableName?: string
+}
 
 export type NativeChatComposerErrorDetail = {
   /** Error text Orca did not write, shown apart and copyable. */
@@ -40,7 +53,6 @@ export type NativeChatOptionPickerRequest = {
 export type NativeChatComposerSendIntent = Pick<StructuredAgentSessionSendRequest, 'alternate'>
 
 export type NativeChatStructuredComposerTransport = {
-  openSideChat?: StructuredAgentSessionComposerOptions['openSideChat']
   capturePresentation: CaptureStructuredAgentSessionPresentation
   conversationCommands?: readonly AgentSessionConversationCommand[]
   compactInstructions?: boolean
@@ -53,11 +65,9 @@ export type NativeChatStructuredComposerTransport = {
   sendOut?: boolean
   /** Send is held for this reason, which the disabled button says. */
   sendBlockedReason?: string
+  /** What a plain send does now, and whether Cmd/Ctrl+Enter would send it the other way. */
   sendFollowUp?: NativeChatSendFollowUp
-  dispatchCommand: (
-    text: string,
-    skills?: StructuredAgentSessionSendRequest['skills']
-  ) => Promise<StructuredAgentSessionCommandOutcome>
+  dispatchCommand: (text: string) => Promise<StructuredAgentSessionCommandOutcome>
   optionsSurface: SessionOptionsSurface
   optionSnapshot: SessionOptionDescriptor[]
   optionPickerRequest?: NativeChatOptionPickerRequest | null

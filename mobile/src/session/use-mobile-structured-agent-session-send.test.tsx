@@ -66,7 +66,6 @@ describe('mobile structured send actions', () => {
   let listener: ((value: unknown) => void) | null = null
   let storedOperations: Map<string, string>
   let agent = 'codex'
-  let openSideChat: ((question?: string) => Promise<boolean>) | undefined
   let sessionCommands: readonly AgentSessionSlashCommand[] | undefined
   let hostSupport: StructuredAgentSessionHostSupport | null = null
   const onSendError = vi.fn()
@@ -118,7 +117,6 @@ describe('mobile structured send actions', () => {
       connected: true,
       agent,
       sessionCommands,
-      openSideChat,
       hostSupport,
       onSendError
     })
@@ -139,6 +137,7 @@ describe('mobile structured send actions', () => {
       agent: 'codex',
       sessionCommands,
       sendStructured: (...args) => hook!.sendWithOutcome(...args),
+      holdUnconfirmed: (...args) => hook!.holdUnconfirmed(...args),
       onSendError
     })
     return createElement(Harness)
@@ -191,28 +190,8 @@ describe('mobile structured send actions', () => {
     listener = null
     agent = 'codex'
     sessionCommands = undefined
-    openSideChat = undefined
     hostSupport = null
     resetMobileNativeChatDraftInputsForTests()
-  })
-
-  it('routes side-chat questions through the current opener after a host rerender', async () => {
-    const first = vi.fn(async () => true)
-    const next = vi.fn(async () => true)
-    openSideChat = first
-    await mountSession()
-    await act(async () => {
-      expect(await hook!.sendWithOutcome('/btw inspect this')).toBe('accepted')
-    })
-    expect(first).toHaveBeenCalledExactlyOnceWith('inspect this')
-    openSideChat = next
-    act(() => renderer?.update(createElement(Harness)))
-    await act(async () => {
-      expect(await hook!.sendWithOutcome('/btw continue')).toBe('accepted')
-    })
-    expect(next).toHaveBeenCalledExactlyOnceWith('continue')
-    expect(first).toHaveBeenCalledTimes(1)
-    expect(calls()).toEqual([])
   })
 
   it("keeps a chat's model its CLI stopped listing, and sends on it and its effort", async () => {
