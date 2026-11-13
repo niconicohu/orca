@@ -1,4 +1,9 @@
-import type { RuntimeMobileTerminalTheme } from '../../../../src/shared/runtime-mobile-session-tab-contracts'
+import { mobileTerminalThemesEqual } from './mobile-terminal-theme-equality'
+export { mobileTerminalThemesEqual } from './mobile-terminal-theme-equality'
+import type {
+  RuntimeMobileSessionTerminalTab,
+  RuntimeMobileTerminalTheme
+} from '../../../../src/shared/runtime-mobile-session-tab-contracts'
 import type { AgentStatusEntry } from '../../../../src/shared/agent-status/contracts/agent-status-types'
 import type { BrowserLoadError } from '../../../../src/shared/browser-workspace-types'
 import { browserLoadErrorsEqual } from '../../../../src/shared/browser-load-failure'
@@ -17,7 +22,12 @@ export type TerminalRecord = {
   agentIdentity?: string
 }
 
-export type MobileTerminalSessionTab = {
+export type MobileTerminalSessionTab = Partial<
+  Pick<
+    RuntimeMobileSessionTerminalTab,
+    'customTitle' | 'quickCommandLabel' | 'aiVaultTitle' | 'generatedTitle'
+  >
+> & {
   type: 'terminal'
   id: string
   title: string
@@ -83,34 +93,6 @@ type MobileSessionTabLike =
       isActive?: boolean
     }
 
-export function mobileTerminalThemesEqual(
-  left: RuntimeMobileTerminalTheme | null | undefined,
-  right: RuntimeMobileTerminalTheme | null | undefined
-): boolean {
-  if (left === right) {
-    return true
-  }
-  if (!left || !right || left.mode !== right.mode) {
-    return false
-  }
-  const leftColors = left.theme as Readonly<Record<string, unknown>>
-  const rightColors = right.theme as Readonly<Record<string, unknown>>
-  for (const color in leftColors) {
-    if (
-      Object.hasOwn(leftColors, color) &&
-      (!Object.hasOwn(rightColors, color) || leftColors[color] !== rightColors[color])
-    ) {
-      return false
-    }
-  }
-  for (const color in rightColors) {
-    if (Object.hasOwn(rightColors, color) && !Object.hasOwn(leftColors, color)) {
-      return false
-    }
-  }
-  return true
-}
-
 export function mobileSessionTabsEqual(
   a: readonly MobileSessionTabLike[],
   b: readonly MobileSessionTabLike[]
@@ -156,6 +138,11 @@ function mobileSessionTabEqual(
         a.terminal === b.terminal &&
         a.launchDraft === b.launchDraft &&
         a.launchDraftCreatedAt === b.launchDraftCreatedAt &&
+        // Names decide whether the title is agent evidence, so a name-only change must re-render.
+        a.customTitle === b.customTitle &&
+        a.quickCommandLabel === b.quickCommandLabel &&
+        a.aiVaultTitle?.title === b.aiVaultTitle?.title &&
+        a.generatedTitle === b.generatedTitle &&
         JSON.stringify(a.agentStatus ?? null) === JSON.stringify(b.agentStatus ?? null) &&
         JSON.stringify(a.nativeChatIdentity ?? null) ===
           JSON.stringify(b.nativeChatIdentity ?? null) &&

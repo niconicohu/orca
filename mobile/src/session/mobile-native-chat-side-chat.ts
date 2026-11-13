@@ -10,7 +10,7 @@ import {
   withoutUnansweredLaunch,
   resolveLaunchedSelection
 } from './tabs/pending-session-selection'
-import { structuredSessionOperationId } from './structured-session-operation-id'
+import { structuredSessionOperationId } from './native-chat/agent-session/structured-session-operation-id'
 import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import { createMobileSideChat } from './mobile-side-chat-launch'
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Orca",
     "slug": "orca-mobile",
-    "version": "0.0.71",
+    "version": "0.0.72",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -89,8 +89,9 @@
       "usesCleartextTraffic": true,
       "allowBackup": false,
       "permissions": ["RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS"],
+      "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"],
       "package": "com.stably.orca.mobile",
-      "versionCode": 38,
+      "versionCode": 39,
       "googleServicesFile": "./google-services.json"
     },
     "plugins": [
@@ -114,6 +115,7 @@
       "./plugins/android-window-density.js",
       "./plugins/android-release-signing.js",
       "./plugins/android-navigation-bar-theme.js",
+      "./plugins/android-device-transfer-rules.js",
       "./plugins/ios-pod-deployment-target-floor.js",
       "./plugins/ios-scene-lifecycle.js",
       "./plugins/ios-bundle-phase-quoted-script-path.js",

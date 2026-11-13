@@ -1,9 +1,7 @@
+import { subscribeStructuredAgentLaunchStatus } from '@/lib/agent-session/launch/structured-agent-session-launch-state-store'
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
-import {
-  getStructuredAgentSessionLaunchLifecycle,
-  subscribeStructuredAgentLaunchStatus
-} from '@/lib/agent-session/launch/structured-agent-session-launch-registry'
+import { getStructuredAgentSessionLaunchLifecycle } from '@/lib/agent-session/launch/structured-agent-session-launch-registry'
 import { useShallow } from 'zustand/react/shallow'
 import { structuredChatTabIsSideChat } from './structured-chat-tab-side-chat'
 import {

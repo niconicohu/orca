@@ -1,8 +1,8 @@
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import { agentChatPermissionModes } from '../../../shared/agent-launch/permissions/agent-chat-permission-support'
 import { structuredAgentSessionSendBody } from '../../../shared/agent-session/requests/structured-agent-session-send-mutation'
 import type { AgentJournalSkillRef } from '../../../shared/agent-session/journal/agent-session-journal-types'
 import { useAppStore } from '@/store'
-import { newAgentLaunchRequestId } from './agent-session/launch/routing/agent-launch-request-id'
 import { adoptAgentSessionLaunchVerdict } from './agent-session/launch/routing/agent-session-launch-plan'
 import { beginStructuredAgentSessionProvisionalLaunch } from './agent-session/structured-agent-session-provisional-tab'
 import {
@@ -122,7 +122,7 @@ async function launchNativeChatSideChat(
   const plan = adoptAgentSessionLaunchVerdict({
     route: 'structured-native-chat',
     requestedSurface: 'chat',
-    requestId: newAgentLaunchRequestId(),
+    requestId: createBrowserUuid(),
     worktreeId: source.worktreeId,
     executionHostId: host,
     agent,

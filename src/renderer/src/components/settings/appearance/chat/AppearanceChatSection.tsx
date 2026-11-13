@@ -55,7 +55,7 @@ export function AppearanceChatSection({
     )
   }
   return (
-    <div className="divide-y divide-border/40">
+    <>
       <AppearanceChatContrastControls
         appearance={appearance}
         onChange={update}
@@ -150,6 +150,6 @@ export function AppearanceChatSection({
           }
         />
       </SearchableSetting>
-    </div>
+    </>
   )
 }

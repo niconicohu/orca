@@ -1,3 +1,4 @@
+import { createBrowserUuid } from '@/lib/browser-uuid'
 // @vitest-environment happy-dom
 import { expect, it, vi } from 'vitest'
 import {
@@ -8,7 +9,6 @@ import {
   createParams
 } from './structured-agent-session-launch-create-message.test-fixture'
 import { startStructuredAgentLaunch } from './structured-agent-session-launch'
-import { newAgentLaunchRequestId } from './routing/agent-launch-request-id'
 import { CreateIntentParams } from '../../../../../shared/rpc-contract/structured-agent-session-params'
 
 it('does not seed a side chat from unrelated new-chat defaults on exact-selection hosts', async () => {
@@ -18,7 +18,7 @@ it('does not seed a side chat from unrelated new-chat defaults on exact-selectio
     mocks.settings = { nativeChatSessionOptions: { codex: { model: 'different-default' } } }
     mocks.call.mockImplementation(async () => created())
     const launch = startStructuredAgentLaunch('workspace-1', 'codex', {
-      requestId: newAgentLaunchRequestId(),
+      requestId: createBrowserUuid(),
       executionHostId: 'local',
       sideChatOf: 'codex_parent',
       prompt: 'a side question',
@@ -49,7 +49,7 @@ it('opens independent concurrent side questions with their own permission picks'
     })
     const open = (prompt: string, launchOptions?: Record<string, string>) =>
       startStructuredAgentLaunch('workspace-1', 'codex', {
-        requestId: newAgentLaunchRequestId(),
+        requestId: createBrowserUuid(),
         executionHostId: 'local',
         sideChatOf: 'codex_parent',
         prompt,

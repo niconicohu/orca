@@ -2,7 +2,7 @@ import { optionSession } from '../../../codex/structured/catalog/codex-structure
 import { resolvedCodexMessageOptions } from '../../../codex/structured/turns/codex-structured-message-options'
 import { startCodexTurn } from '../../../codex/structured/turns/codex-structured-turn-start'
 import { computeAgentSessionPayloadFingerprint } from '../../../../shared/agent-session/lifecycle/agent-session-mutation-envelope'
-import '../unused-default-rpc-methods.test-fixture'
+import '../dispatch/testing/unused-default-rpc-methods.test-fixture'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { structuredAgentSessionCreateParams } from '../../../../shared/agent-session/structured-agent-session-create'
 import { MOBILE_RUNTIME_CLIENT_CAPABILITIES } from '../../../../shared/mobile-runtime-client-capabilities'

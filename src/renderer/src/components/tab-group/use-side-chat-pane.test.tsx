@@ -8,8 +8,8 @@ import {
   emptySession,
   FOLDER_KEY,
   GIT_KEY
-} from '../../../../shared/workspace-layout/workspace-layout-session.test-fixture'
-import { bootWindowFromPartitions } from '../../app-shell/startup-window-view.test-fixture'
+} from '../../../../shared/workspace-layout/persistence/workspace-layout-session.test-fixture'
+import { bootWindowFromPartitions } from './side-chat-pane-startup.test-fixture'
 import { createStoreSessionMockApi } from '../../store/testing/app-store-session-api.test-fixture'
 import { layoutApplyTestTransport } from '@/runtime/workspace-layout/testing/layout-apply-test-transport.test-fixture'
 import { loadMainLayoutModel } from '@/runtime/workspace-layout/testing/main-loaded-layout-frames.test-fixture'
@@ -22,7 +22,7 @@ import {
   deleteStructuredAgentLaunchRecord,
   resetStructuredAgentLaunchPersistenceForTests
 } from '@/lib/agent-session/launch/structured-agent-session-launch-persistence'
-import { notifyStructuredLaunchListeners } from '@/lib/agent-session/launch/structured-agent-session-launch-registry'
+import { notifyStructuredLaunchListeners } from '@/lib/agent-session/launch/structured-agent-session-launch-state-store'
 import { useSideChatPane } from './use-side-chat-pane'
 import { sideChatPanePlacement } from './side-chat-pane-placement'
 import { openNativeChatSideChat } from '@/lib/open-native-chat-side-chat'

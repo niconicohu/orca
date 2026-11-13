@@ -1,3 +1,7 @@
+export {
+  agentSessionScopeKey,
+  agentSessionExecutionLocationsEqual
+} from './agent-session-execution-scope'
 import { isOptionalUsageLimitContinueCancel } from './agent-session-usage-limit-continue'
 import type { AgentSessionDeathEvidence } from './agent-session-death-evidence'
 import { isAgentSessionRewindRecord, type AgentSessionRewindRecord } from './agent-session-rewind'
@@ -34,8 +38,10 @@ import { isStructuredAgentId } from './agent-session-provider-handle-encoding'
 import { isNonNegativeSafeInteger } from '../../ssh-retained-payload-limits'
 import {
   isAgentSessionAccountHome,
+  isOptionalAgentSessionLaunchedAccount,
   MAX_PATH_LENGTH,
-  type AgentSessionAccountHome
+  type AgentSessionAccountHome,
+  type AgentSessionLaunchedAccount
 } from './agent-session-account-home'
 
 export const AGENT_SESSION_RECORD_SCHEMA_VERSION = 2 as const
@@ -124,6 +130,8 @@ export type AgentSessionRecord = {
   sideChat?: AgentSessionSideChat
   providerContextBoundary?: AgentSessionProviderContextBoundary
   accountHome: AgentSessionAccountHome
+  /** Where the latest proven runtime actually launched; absent before any or from older hosts. */
+  launchedAccount?: AgentSessionLaunchedAccount
   /** Optional host-written construction observation; checked independently of record readability. */
   acquiredAccount?: unknown
   /** Initial launch directory in host path syntax. Floating sessions resume here; worktree/folder IDs resolve their durable location. */
@@ -166,23 +174,6 @@ const isBoundedString = (value: unknown, max: number): value is string =>
 
 export const isAgentSessionId = (value: unknown): value is string =>
   typeof value === 'string' && SESSION_ID_PATTERN.test(value)
-
-/** NUL cannot occur in a host id, distro name, or workspace id, so no component can forge a join. */
-
-/** Separate native/WSL/SSH workspace copies so one host cannot adjudicate another's lease. */
-export function agentSessionScopeKey(location: AgentSessionExecutionLocation): string {
-  return [location.executionHostId, location.wslDistro ?? '', location.workspaceId].join('\u0000')
-}
-
-export function agentSessionExecutionLocationsEqual(
-  left: AgentSessionExecutionLocation,
-  right: AgentSessionExecutionLocation
-): boolean {
-  return (
-    agentSessionScopeKey(left) === agentSessionScopeKey(right) &&
-    left.workspaceKind === right.workspaceKind
-  )
-}
 
 export function isAgentSessionExecutionLocation(
   value: unknown
@@ -317,6 +308,7 @@ export function isPersistedAgentSessionObservationRecord(
       (record.sideChat === undefined ||
         AgentSessionSideChatSchema.safeParse(record.sideChat).success) &&
       isAgentSessionAccountHome(record.accountHome) &&
+      isOptionalAgentSessionLaunchedAccount(record.launchedAccount) &&
       (record.launchDirectory === undefined ||
         isBoundedString(record.launchDirectory, MAX_PATH_LENGTH)) &&
       (record.options === undefined || isAgentSessionOptions(record.options)) &&

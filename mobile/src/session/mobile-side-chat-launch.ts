@@ -8,11 +8,11 @@ import {
 import { structuredAgentSessionSendBody } from '../../../src/shared/agent-session/requests/structured-agent-session-send-mutation'
 import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import { randomV4Uuid } from '../platform/random-v4-uuid'
-import { structuredSessionOperationId } from './structured-session-operation-id'
+import { structuredSessionOperationId } from './native-chat/agent-session/structured-session-operation-id'
 import {
   requestMobileStructuredCreate,
   type MobileStructuredAgentLaunchResult
-} from './mobile-structured-agent-session-launch'
+} from './native-chat/agent-session/mobile-structured-agent-session-launch'
 
 const pendingSideChatCreates = new WeakMap<
   RpcClient,
