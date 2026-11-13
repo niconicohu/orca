@@ -77,8 +77,7 @@
       "moreCount_one": "{{count}} more",
       "moreCount_other": "{{count}} more",
       "queuedCount_one": "{{count}} queued message",
-      "queuedCount_other": "{{count}} queued messages",
-      "foldNeedsAttention": "{{more}}, a message needs attention"
+      "queuedCount_other": "{{count}} queued messages"
     },
     "subagentGroup": {
       "ran_one": "Ran {{count}} subagent",
@@ -326,7 +325,9 @@
       "providerResponseFailed": "{{agent}} couldn't finish this response. Open Details for more information.",
       "providerSafetyStopped": "{{agent}} stopped this response after a safety check. Review your request and send again.",
       "providerUnavailable": "{{agent}} couldn't respond because the service is busy. Pick another model, or wait a little and send again.",
-      "selectedModel": "the selected model"
+      "selectedModel": "the selected model",
+      "sideChatSourceUnsaved": "The source chat has no saved history. Send a message there before opening a side chat.",
+      "sideChatUnsupported": "This version of {{agent}} cannot open side chats. Update it on the host and try again."
     },
     "fileReader": {
       "reviewNotes_one": "{{count}} review note",
