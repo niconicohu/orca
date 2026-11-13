@@ -242,6 +242,7 @@ export const ORCAD_ARTIFACTS: readonly OrcadArtifact[] = [
   { filename: ORCAD_FOREIGN_SQLITE_READER_ENTRY },
   // Terminal agent identity SQL runs in this worker thread, off the hook server's loop.
   { filename: 'agent-identity-worker-entry.js' },
+  { filename: 'usage-limit-cut-worker-entry.js' },
   { filename: ORCAD_PORT_SCAN_COMMAND_WORKER_ENTRY },
   // Forked so transcript parsing stays off the server's event loop.
   { filename: ORCAD_SESSION_SCANNER_SERVICE_ENTRY },

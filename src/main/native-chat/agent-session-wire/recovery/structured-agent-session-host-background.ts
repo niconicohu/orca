@@ -2,7 +2,8 @@ import type { StructuredAgentSessionMutationContext } from '../operations/struct
 import type { StructuredAgentSessionClientDelivery } from '../publication/subscribers/structured-agent-session-client-delivery'
 import type { StructuredAgentSessionHost } from '../host/structured-agent-session-host'
 import { StructuredAgentSessionUsageLimitContinue } from './structured-agent-session-usage-limit-continue'
-import { readSavedUsageLimitCut } from './structured-agent-session-usage-limit-chain'
+import { journalDatabasePath } from '../../agent-session-journal/database/journal-host-database'
+import { UsageLimitCutWorkerClient } from './usage-limit-cut-worker-client'
 
 export function start(
   context: StructuredAgentSessionMutationContext,
@@ -13,7 +14,9 @@ export function start(
     host: context.deps,
     sessions: context.sessions,
     readLoadedCut: delivery.readUsageLimitCut,
-    readSavedCut: (id) => readSavedUsageLimitCut(context.deps.journalDatabase.db, id),
+    savedCuts: new UsageLimitCutWorkerClient(
+      journalDatabasePath(context.deps.journalDatabase.stateDirectory)
+    ),
     serialize: context.serialize,
     send: (params) => host.send({ callerKey: 'trusted-local:usage-limit-continue' }, params),
     publish: delivery.publishStatus,

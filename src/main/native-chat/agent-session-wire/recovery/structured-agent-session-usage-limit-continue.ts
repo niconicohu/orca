@@ -16,6 +16,7 @@ import type { sendStructuredAgentSessionTurn } from '../operations/structured-ag
 import { RestartContinuationSupersededError } from './structured-agent-session-restart-continuation'
 import { UsageLimitAccountHolds } from './structured-agent-session-usage-limit-account-hold'
 import { UsageLimitColdCuts } from './structured-agent-session-usage-limit-cold-cuts'
+import type { SavedUsageLimitCuts } from './usage-limit-cut-worker-protocol'
 
 type Cut = HostUsageLimitCut & { resetsAt: number; turnEndedAt: number }
 type Attempt = { identity: string; count: number; at: number; unconfirmed?: boolean }
@@ -31,8 +32,7 @@ type Deps = {
     >
   }
   sessions: ReadonlyMap<string, unknown>
-  /** Reads an unopened chat's saved cut; history-sized, so the sweep budgets it. */
-  readSavedCut: (id: string) => HostUsageLimitCut | null
+  savedCuts: SavedUsageLimitCuts
   serialize: <T>(id: string, run: () => Promise<T>) => Promise<T>
   send: (
     params: Parameters<typeof sendStructuredAgentSessionTurn>[2]
@@ -85,6 +85,7 @@ export class StructuredAgentSessionUsageLimitContinue {
     clearInterval(this.timer)
     this.stopSettings?.()
     this.cold.clear()
+    this.deps.savedCuts.dispose()
     this.attempts.clear()
     this.holds.clear()
   }
@@ -159,8 +160,8 @@ export class StructuredAgentSessionUsageLimitContinue {
 
   cancel = (input: { sessionId: string; turnItemId: string; resetsAt: number }): Promise<void> =>
     this.deps.serialize(input.sessionId, async () => {
-      const cut = this.cold.read(input.sessionId, true)
-      if (!cut || identity(cut) !== identity(input)) {
+      const cut = await this.cold.load(input.sessionId)
+      if (this.disposed || !cut || identity(cut) !== identity(input)) {
         return
       }
       await this.deps.host.store.cancelUsageLimitContinue(input.sessionId, {
@@ -181,7 +182,10 @@ export class StructuredAgentSessionUsageLimitContinue {
       this.retainShown(visible)
       // Visibility and workspace sleep can change without a journal or settings commit.
       this.publishScheduled()
-      this.cold.readUnread(visible)
+      await this.cold.readUnread(visible)
+      if (this.disposed) {
+        return
+      }
       this.holds.beginPass()
       const due: { id: string; cut: Cut; at: number }[] = []
       for (const id of visible) {
