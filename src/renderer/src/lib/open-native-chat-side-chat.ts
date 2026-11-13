@@ -1,4 +1,4 @@
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../shared/non-secure-context-uuid'
 import { agentChatPermissionModes } from '../../../shared/agent-launch/permissions/agent-chat-permission-support'
 import { structuredAgentSessionSendBody } from '../../../shared/agent-session/requests/structured-agent-session-send-mutation'
 import type { AgentJournalSkillRef } from '../../../shared/agent-session/journal/agent-session-journal-types'
