@@ -11,8 +11,25 @@ it('keeps a pending saved cut out of live state and discards it when the chat is
   const cuts = new UsageLimitColdCuts({
     sessions,
     logger: { warn: () => {}, error: () => {} },
-    savedCuts: { read: () => saved },
+    savedCuts: {
+      read: (id) =>
+        id === 'saved-chat'
+          ? Promise.resolve({
+              turnItemId: 'saved-turn',
+              resetsAt: 2_000,
+              turnEndedAt: 1_500,
+              chain: 0
+            })
+          : saved
+    },
     readLoadedCut: () => null
+  })
+  await cuts.readUnread(['saved-chat'])
+  expect(cuts.read('saved-chat')).toEqual({
+    turnItemId: 'saved-turn',
+    resetsAt: 2_000,
+    turnEndedAt: 1_500,
+    chain: 0
   })
   const sweep = cuts.readUnread(['chat'])
   expect(cuts.read('chat')).toBeNull()
