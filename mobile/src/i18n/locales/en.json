@@ -1331,7 +1331,9 @@
       "hooks": "HOOKS",
       "run": "Run",
       "skip": "Skip",
-      "runSetupCommand": "Run setup command"
+      "runSetupCommand": "Run setup command",
+      "waitForSetup": "Wait for setup to complete before starting agent",
+      "waitForSetupSaveFailed": "Failed to save setup startup behavior."
     },
     "newWorkspaceSshConnectionField": {
       "label": "SSH Connection",
