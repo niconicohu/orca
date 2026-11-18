@@ -41,6 +41,8 @@ function scrollTopOf(event: unknown): number {
     : 0
 }
 
+import { useNativeChatTextSettings } from '../../preferences/native-chat-text-settings'
+
 export function MobileNativeChatComposerField({
   value,
   skillToken,
@@ -53,6 +55,7 @@ export function MobileNativeChatComposerField({
   ...props
 }: MobileNativeChatComposerFieldProps) {
   useMobileColorScheme()
+  const { fontWeight } = useNativeChatTextSettings()
   const allocation = useMobileNativeChatComposerAllocation()
   const [scrollTop, setScrollTop] = useState(0)
   const [fieldHeight, setFieldHeight] = useState(0)
@@ -104,7 +107,12 @@ export function MobileNativeChatComposerField({
       <TextInput
         ref={input}
         value={value}
-        style={[composerInputStyles.messageText, sizing, copied ? clearText().field : null]}
+        style={[
+          composerInputStyles.messageText,
+          { fontWeight },
+          sizing,
+          copied ? clearText().field : null
+        ]}
         onScroll={skillToken ? (event) => setScrollTop(scrollTopOf(event)) : undefined}
         placeholder={dictationPreview ? undefined : placeholder}
         {...props}

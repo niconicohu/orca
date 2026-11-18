@@ -54,6 +54,7 @@ export type MarkdownBlockContext = MarkdownInlineContext & {
   lineSpacing: number
   /** The prose's face; undefined keeps the system font. */
   fontFamily?: string
+  fontWeight?: TextStyle['fontWeight']
   listText: StyleProp<TextStyle>
   listMarker: StyleProp<TextStyle>
   /** Interactive children own their touches and must forward the row action. */
@@ -167,6 +168,9 @@ function renderTable(node: Table, key: number, ctx: MarkdownBlockContext): React
                   rowIndex === 0 ? styles.tableHeader : null,
                   scaledMarkdownText(styles.tableCell, ctx.textScale, ctx.lineSpacing),
                   ctx.fontFamily ? { fontFamily: ctx.fontFamily } : null,
+                  rowIndex !== 0 && ctx.fontWeight !== undefined
+                    ? { fontWeight: ctx.fontWeight }
+                    : null,
                   { width, textAlign: node.align?.[cellIndex] ?? 'left' }
                 ]}
               >
@@ -291,6 +295,7 @@ function renderBlock(
                 styles.quoteText,
                 scaledMarkdownText(styles.quoteText, ctx.textScale, ctx.lineSpacing),
                 ctx.fontFamily ? { fontFamily: ctx.fontFamily } : null,
+                ctx.fontWeight === undefined ? null : { fontWeight: ctx.fontWeight },
                 ctx.tone.secondary
               ],
               selectable: true

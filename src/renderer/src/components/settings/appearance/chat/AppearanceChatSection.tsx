@@ -7,6 +7,7 @@ import {
 } from '../../../../../../shared/native-chat/settings/native-chat-appearance-settings'
 import { useAppStore } from '../../../../store/index'
 import { formatPrimaryShortcutLabel } from '@/lib/keyboard/useShortcutLabel'
+import { AppearanceChatTextWeightControl } from './AppearanceChatTextWeightControl'
 import { useTranslate } from '@/i18n/use-translate'
 import { AppearanceChatContrastControls } from './AppearanceChatContrastControls'
 import { ChatFontFamilySetting } from './ChatFontFamilySetting'
@@ -87,6 +88,11 @@ export function AppearanceChatSection({
           onChange={(fontSize) => update({ fontSize })}
         />
       </SearchableSetting>
+      <AppearanceChatTextWeightControl
+        appearance={appearance}
+        onChange={update}
+        forceVisiblePrimary={forceVisiblePrimary}
+      />
       <SearchableSetting
         id={entries.codeTextSize.targetSectionId}
         {...entries.codeTextSize}
