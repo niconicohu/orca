@@ -2787,6 +2787,11 @@
     },
     "nativeChatView": {
       "linkedMessageMissing": "そのメッセージが見つかりませんでした。"
+    },
+    "currentSideChat": {
+      "open": "新しいサイドチャット",
+      "readOnly": "新しいサイドチャット · 読み取り専用",
+      "mark": "btw"
     }
   },
   "settings": {

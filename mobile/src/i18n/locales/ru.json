@@ -2931,6 +2931,11 @@
     },
     "nativeChatView": {
       "linkedMessageMissing": "Не удалось найти это сообщение."
+    },
+    "currentSideChat": {
+      "open": "New side chat",
+      "readOnly": "New side chat · Read-only",
+      "mark": "btw"
     }
   },
   "settings": {

@@ -2787,6 +2787,11 @@
     },
     "nativeChatView": {
       "linkedMessageMissing": "找不到該訊息。"
+    },
+    "currentSideChat": {
+      "open": "New side chat",
+      "readOnly": "New side chat · Read-only",
+      "mark": "btw"
     }
   },
   "settings": {
