@@ -1,4 +1,8 @@
 import {
+  LEGACY_SIDE_CHAT_CAPABILITY,
+  LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
+} from '../../../../../shared/agent-session/lifecycle/operations/legacy-side-chat-create'
+import {
   ContextMenuItem,
   ContextMenuSub,
   ContextMenuSubContent,
@@ -30,11 +34,20 @@ export function CurrentSideChatMenu({ worktreeId, tabId }: { worktreeId: string;
     target,
     AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY
   )
+  const legacySupport = useStructuredAgentSessionHostCapabilityState(
+    target,
+    LEGACY_SIDE_CHAT_CAPABILITY
+  )
+  const legacyReadOnly = useStructuredAgentSessionHostCapabilityState(
+    target,
+    LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
+  )
   const agent = tab?.agentSessionAgent
   const registered = host
     ? readHostStructuredAgents(host, statuses)?.find((row) => row.agent === agent)
     : undefined
-  if (support !== 'supported' || !registered?.capabilities.currentFork) {
+  const legacy = support !== 'supported' && agent === 'codex' && legacySupport === 'supported'
+  if (!legacy && (support !== 'supported' || !registered?.capabilities.currentFork)) {
     return null
   }
   return (
@@ -46,7 +59,9 @@ export function CurrentSideChatMenu({ worktreeId, tabId }: { worktreeId: string;
         <ContextMenuItem onSelect={() => void openCurrentSideChat(worktreeId, tabId, 'inherit')}>
           {t('components.native-chat.currentSideChat.inherit', 'Same permissions as this chat')}
         </ContextMenuItem>
-        {agent && agentChatPermissionModes(agent)?.modes.includes('read-only') ? (
+        {agent &&
+        agentChatPermissionModes(agent)?.modes.includes('read-only') &&
+        (!legacy || legacyReadOnly === 'supported') ? (
           <ContextMenuItem
             onSelect={() => void openCurrentSideChat(worktreeId, tabId, 'read-only')}
           >

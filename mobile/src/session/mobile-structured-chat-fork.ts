@@ -73,7 +73,8 @@ export async function forkMobileStructuredChat(
       scope.worktreeId,
       agent,
       forkFrom,
-      tabPlacement
+      tabPlacement,
+      scope.hostCapabilities
     )
     if (result.kind === 'created') {
       scope.pendingSelectionRef.current = withLaunchReply(scope.pendingSelectionRef.current, lock, {

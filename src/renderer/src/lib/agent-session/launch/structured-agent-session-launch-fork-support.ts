@@ -1,4 +1,8 @@
 import {
+  LEGACY_SIDE_CHAT_CAPABILITY,
+  LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
+} from '../../../../../shared/agent-session/lifecycle/operations/legacy-side-chat-create'
+import {
   AGENT_SESSION_CREATE_FORK_RUNTIME_CAPABILITY,
   AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY,
   AGENT_SESSION_CREATE_FORK_ORIGINAL_RUNTIME_CAPABILITY
@@ -29,11 +33,11 @@ export const STRUCTURED_LAUNCH_FORK_UNSUPPORTED_REFUSAL =
 
 export async function requireHostForkSupport(
   intent: StructuredAgentSessionLaunchIntent
-): Promise<void> {
+): Promise<'legacy' | undefined> {
   if (!intent.params.forkFrom) {
     return
   }
-  const support = await structuredAgentSessionHostCapabilityState(
+  let support = await structuredAgentSessionHostCapabilityState(
     intent.target,
     intent.params.forkFrom.current
       ? AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY
@@ -41,6 +45,21 @@ export async function requireHostForkSupport(
   )
   if (support === 'supported') {
     return
+  }
+  if (support === 'unsupported' && intent.params.forkFrom.current && intent.agent === 'codex') {
+    support = await structuredAgentSessionHostCapabilityState(
+      intent.target,
+      LEGACY_SIDE_CHAT_CAPABILITY
+    )
+    if (support === 'supported' && intent.params.forkFrom.permission === 'read-only') {
+      support = await structuredAgentSessionHostCapabilityState(
+        intent.target,
+        LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
+      )
+    }
+    if (support === 'supported') {
+      return 'legacy'
+    }
   }
   // An unanswered probe may follow a create whose reply was lost, so it settles nothing.
   if (support === 'unknown') {

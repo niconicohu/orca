@@ -1,3 +1,4 @@
+import { legacySideChatCreateParams } from '../../../../../shared/agent-session/lifecycle/operations/legacy-side-chat-create'
 import { structuredAgentSessionSettledSends } from '../../../../../shared/agent-session/requests/structured-agent-session-send-settlement'
 import {
   AGENT_SESSION_SEND_SELECTION_RUNTIME_CAPABILITY,
@@ -152,7 +153,7 @@ export async function launchStructuredAgentSession(
       refuseUnsentInheritedFork(intent, priorCreateOutcomeUnknown, error)
     }
   }
-  await requireHostForkSupport(intent)
+  const forkFormat = await requireHostForkSupport(intent)
   const hostSeed = await requireHostCreateSupport(intent)
   if (intent.target.kind !== 'local') {
     onHostSeed?.(hostSeed)
@@ -206,7 +207,7 @@ export async function launchStructuredAgentSession(
     result = await callStructuredAgentSession<AgentSessionMutationResult<AgentSessionAttachResult>>(
       intent.target,
       'agentSession.create',
-      params,
+      forkFormat === 'legacy' ? legacySideChatCreateParams(params) : params,
       ...(forkOptions ? ([forkOptions] as const) : ([] as const))
     )
   } catch (error) {

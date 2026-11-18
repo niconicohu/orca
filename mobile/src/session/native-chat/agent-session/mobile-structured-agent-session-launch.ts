@@ -1,3 +1,9 @@
+import {
+  legacySideChatCreateParams,
+  LEGACY_SIDE_CHAT_CAPABILITY,
+  LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
+} from '../../../../../src/shared/agent-session/lifecycle/operations/legacy-side-chat-create'
+import { AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY } from '../../../../../src/shared/agent-session/lifecycle/operations/agent-session-create-capabilities'
 import { agentSessionForkSourceFailureWords } from '../../../../../src/shared/agent-session/failures/agent-session-failure-copy'
 import { sayMobileAgentSessionFailure } from './agent-session-failure-copy'
 import type { TuiAgent } from '../../../../../src/shared/agent-launch/catalog/tui-agent'
@@ -91,7 +97,8 @@ export async function createMobileStructuredAgentSession(
   /** Sent only to a host advertising forks. */
   forkFrom?: StructuredAgentSessionForkSource,
   /** Sent only to a host advertising create placement; the replay keeps it. */
-  tabPlacement?: StructuredAgentSessionCreateParams['tabPlacement']
+  tabPlacement?: StructuredAgentSessionCreateParams['tabPlacement'],
+  hostCapabilities?: readonly string[]
 ): Promise<MobileStructuredAgentLaunchResult> {
   const worktree = `id:${worktreeId}`
   let supportResponse
@@ -132,7 +139,23 @@ export async function createMobileStructuredAgentSession(
     return { kind: 'unsupported', reason: support?.reason }
   }
 
-  const params = createParamsFor(agent, worktree, forkFrom, tabPlacement)
+  if (
+    forkFrom?.current &&
+    forkFrom.permission === 'read-only' &&
+    !hostCapabilities?.includes(AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY) &&
+    hostCapabilities?.includes(LEGACY_SIDE_CHAT_CAPABILITY) &&
+    !hostCapabilities.includes(LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY)
+  ) {
+    return { kind: 'unsupported' }
+  }
+  const canonicalParams = createParamsFor(agent, worktree, forkFrom, tabPlacement)
+  const params =
+    forkFrom?.current &&
+    agent === 'codex' &&
+    !hostCapabilities?.includes(AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY) &&
+    hostCapabilities?.includes(LEGACY_SIDE_CHAT_CAPABILITY)
+      ? legacySideChatCreateParams(canonicalParams)
+      : canonicalParams
   rememberMobileCreatedStructuredSession(params.envelope.sessionId, worktree)
   let response
   let priorCreateOutcomeUnknown = false

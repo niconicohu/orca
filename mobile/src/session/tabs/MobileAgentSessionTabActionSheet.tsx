@@ -1,3 +1,7 @@
+import {
+  LEGACY_SIDE_CHAT_CAPABILITY,
+  LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
+} from '../../../../src/shared/agent-session/lifecycle/operations/legacy-side-chat-create'
 import { useMobileRegisteredAgent } from '../native-chat/agent-session/use-mobile-registered-agent'
 import { isTuiAgent } from '../../../../src/shared/agent-launch/catalog/tui-agent-config'
 import { agentChatPermissionModes } from '../../../../src/shared/agent-launch/permissions/agent-chat-permission-support'
@@ -35,6 +39,10 @@ export function MobileAgentSessionTabActionSheet({
     tab?.agent ?? null
   )?.capabilities.currentFork
   const agent = tab && isTuiAgent(tab.agent) ? tab.agent : null
+  const legacy =
+    agent === 'codex' &&
+    !controller.hostCapabilities?.includes(AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY) &&
+    controller.hostCapabilities?.includes(LEGACY_SIDE_CHAT_CAPABILITY) === true
   const dismiss = () => setAgentSessionActionTarget(null)
   const title = tab?.title || t('session.sheets.chat', 'Chat')
   // A fork's sheet names it with its mark, so its actions are not mistaken for the original's.
@@ -51,8 +59,11 @@ export function MobileAgentSessionTabActionSheet({
       actions={[
         ...(tab &&
         agent &&
-        currentFork &&
-        controller.hostCapabilities?.includes(AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY)
+        ((currentFork &&
+          controller.hostCapabilities?.includes(
+            AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY
+          )) ||
+          legacy)
           ? [
               {
                 id: 'currentSideChat',
@@ -67,7 +78,9 @@ export function MobileAgentSessionTabActionSheet({
                   })
                 }
               },
-              ...(agentChatPermissionModes(agent)?.modes.includes('read-only')
+              ...(agentChatPermissionModes(agent)?.modes.includes('read-only') &&
+              (!legacy ||
+                controller.hostCapabilities?.includes(LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY))
                 ? [
                     {
                       id: 'currentSideChatReadOnly',
