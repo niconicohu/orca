@@ -58,6 +58,7 @@ describe('the benchmarked bot environment', () => {
       runProcess({
         program,
         args,
+        cwd: root,
         env,
         ...(input === undefined ? {} : { input }),
         stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
@@ -113,7 +114,8 @@ describe('the benchmarked bot environment', () => {
 
     it('offers no stored credential', async () => {
       const filled = await run('git', ['credential', 'fill'], 'protocol=https\nhost=github.com\n\n')
-      expect(filled.stdout).not.toMatch(/^password=/m)
+      const offeredPassword = /^password=/m.test(filled.stdout)
+      expect(offeredPassword).toBe(false)
     })
 
     it('still clones a local checkout', async () => {
