@@ -2933,8 +2933,8 @@
       "linkedMessageMissing": "Не удалось найти это сообщение."
     },
     "currentSideChat": {
-      "open": "New side chat",
-      "readOnly": "New side chat · Read-only",
+      "open": "Новый параллельный чат",
+      "readOnly": "Новый параллельный чат только для чтения",
       "mark": "btw"
     }
   },
