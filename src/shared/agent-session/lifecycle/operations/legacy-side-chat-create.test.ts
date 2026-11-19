@@ -22,28 +22,6 @@ const cases = [
         afterTabId: 'source-tab'
       }
     }
-  },
-  {
-    permission: 'read-only',
-    expected: {
-      envelope: {
-        sessionId: '69f52f6b-fd2f-49fb-8b24-e2c2e35cba72',
-        clientOperationId: '1795032000000-11111111111141118111111111111111',
-        expectedRuntimeFence: null,
-        payloadFingerprint: '30456a36e4a6902eb63dadde154e07093cf06205c6bb43e10d026cf7120899e8'
-      },
-      worktree: 'id:workspace',
-      agent: 'codex',
-      sideChatOf: 'codex_parent_session',
-      tabId: 'structured-agent-session-69f52f6b-fd2f-49fb-8b24-e2c2e35cba72',
-      options: {
-        permissionMode: 'read-only'
-      },
-      tabPlacement: {
-        groupId: 'side-group',
-        afterTabId: 'source-tab'
-      }
-    }
   }
 ] as const
 

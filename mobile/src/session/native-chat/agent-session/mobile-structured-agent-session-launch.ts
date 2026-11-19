@@ -1,7 +1,6 @@
 import {
   legacySideChatCreateParams,
-  LEGACY_SIDE_CHAT_CAPABILITY,
-  LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
+  LEGACY_SIDE_CHAT_CAPABILITY
 } from '../../../../../src/shared/agent-session/lifecycle/operations/legacy-side-chat-create'
 import { AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY } from '../../../../../src/shared/agent-session/lifecycle/operations/agent-session-create-capabilities'
 import { agentSessionForkSourceFailureWords } from '../../../../../src/shared/agent-session/failures/agent-session-failure-copy'
@@ -139,15 +138,6 @@ export async function createMobileStructuredAgentSession(
     return { kind: 'unsupported', reason: support?.reason }
   }
 
-  if (
-    forkFrom?.current &&
-    forkFrom.permission === 'read-only' &&
-    !hostCapabilities?.includes(AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY) &&
-    hostCapabilities?.includes(LEGACY_SIDE_CHAT_CAPABILITY) &&
-    !hostCapabilities.includes(LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY)
-  ) {
-    return { kind: 'unsupported' }
-  }
   const canonicalParams = createParamsFor(agent, worktree, forkFrom, tabPlacement)
   const params =
     forkFrom?.current &&

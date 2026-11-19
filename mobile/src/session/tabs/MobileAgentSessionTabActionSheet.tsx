@@ -1,10 +1,6 @@
-import {
-  LEGACY_SIDE_CHAT_CAPABILITY,
-  LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
-} from '../../../../src/shared/agent-session/lifecycle/operations/legacy-side-chat-create'
+import { LEGACY_SIDE_CHAT_CAPABILITY } from '../../../../src/shared/agent-session/lifecycle/operations/legacy-side-chat-create'
 import { useMobileRegisteredAgent } from '../native-chat/agent-session/use-mobile-registered-agent'
 import { isTuiAgent } from '../../../../src/shared/agent-launch/catalog/tui-agent-config'
-import { agentChatPermissionModes } from '../../../../src/shared/agent-launch/permissions/agent-chat-permission-support'
 import { GitFork } from 'lucide-react-native'
 import { forkMobileStructuredChat } from '../mobile-structured-chat-fork'
 import { AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY } from '../../../../src/shared/agent-session/lifecycle/operations/agent-session-create-capabilities'
@@ -77,26 +73,7 @@ export function MobileAgentSessionTabActionSheet({
                     permission: 'inherit'
                   })
                 }
-              },
-              ...(agentChatPermissionModes(agent)?.modes.includes('read-only') &&
-              (!legacy ||
-                controller.hostCapabilities?.includes(LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY))
-                ? [
-                    {
-                      id: 'currentSideChatReadOnly',
-                      label: t('session.currentSideChat.readOnly', 'New read-only side chat'),
-                      icon: GitFork,
-                      onPress: () => {
-                        dismiss()
-                        void forkMobileStructuredChat(controller, agent, {
-                          sessionId: tab.sessionId,
-                          current: true,
-                          permission: 'read-only'
-                        })
-                      }
-                    }
-                  ]
-                : [])
+              }
             ]
           : []),
 

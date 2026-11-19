@@ -1838,7 +1838,10 @@
       "sleep": "Suspender",
       "unpin": "Desafixar",
       "rename": "Renomear",
-      "deleteFailed": "Falha ao excluir \"{{name}}\""
+      "deleteFailed": "Falha ao excluir \"{{name}}\"",
+      "markRead": "Marcar como Lido",
+      "markUnread": "Marcar como Não Lido",
+      "moveToStatus": "Mover para Status"
     },
     "workspaceDetailsSheet": {
       "checksFailing": "Verificações: com falha",
@@ -3285,7 +3288,6 @@
     },
     "currentSideChat": {
       "open": "Novo chat paralelo",
-      "readOnly": "Novo chat paralelo somente leitura",
       "mark": "btw"
     }
   },

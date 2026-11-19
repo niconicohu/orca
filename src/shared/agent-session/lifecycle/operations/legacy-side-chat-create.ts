@@ -2,7 +2,6 @@ import type { StructuredAgentSessionCreateParams } from './structured-agent-sess
 import { structuredAgentSessionPayloadFingerprint } from './structured-agent-session-mutation'
 
 export const LEGACY_SIDE_CHAT_CAPABILITY = 'agent-session.side-chat.v1'
-export const LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY = 'agent-session.side-chat.read-only.v1'
 
 /** Temporary client bridge for the privately deployed side-chat host, until its next update. */
 export function legacySideChatCreateParams(
@@ -19,7 +18,7 @@ export function legacySideChatCreateParams(
     sideChatOf: source.sessionId,
     tabId: params.tabId,
     firstMessage: params.firstMessage,
-    options: source.permission === 'read-only' ? { permissionMode: 'read-only' } : undefined
+    options: undefined
   }
   return {
     ...params,

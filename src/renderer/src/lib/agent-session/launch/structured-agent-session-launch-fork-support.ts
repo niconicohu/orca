@@ -1,7 +1,4 @@
-import {
-  LEGACY_SIDE_CHAT_CAPABILITY,
-  LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
-} from '../../../../../shared/agent-session/lifecycle/operations/legacy-side-chat-create'
+import { LEGACY_SIDE_CHAT_CAPABILITY } from '../../../../../shared/agent-session/lifecycle/operations/legacy-side-chat-create'
 import {
   AGENT_SESSION_CREATE_FORK_RUNTIME_CAPABILITY,
   AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY,
@@ -51,12 +48,6 @@ export async function requireHostForkSupport(
       intent.target,
       LEGACY_SIDE_CHAT_CAPABILITY
     )
-    if (support === 'supported' && intent.params.forkFrom.permission === 'read-only') {
-      support = await structuredAgentSessionHostCapabilityState(
-        intent.target,
-        LEGACY_READ_ONLY_SIDE_CHAT_CAPABILITY
-      )
-    }
     if (support === 'supported') {
       return 'legacy'
     }
