@@ -45,7 +45,6 @@ const ACCEPT_EDITS_TUI_AGENT_ARGS: Partial<Record<TuiAgent, string>> = {
 }
 
 const ARGS_BY_CHOICE: Record<AgentChatPermissionMode, Partial<Record<TuiAgent, string>>> = {
-  'read-only': { codex: '-a never -s read-only' },
   ask: ASK_TUI_AGENT_ARGS,
   'accept-edits': ACCEPT_EDITS_TUI_AGENT_ARGS,
   auto: AUTO_TUI_AGENT_ARGS,

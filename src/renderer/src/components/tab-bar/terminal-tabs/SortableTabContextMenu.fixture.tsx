@@ -2,7 +2,7 @@ import { AGENT_SESSION_CREATE_CURRENT_FORK_RUNTIME_CAPABILITY } from '../../../.
 import { STRUCTURED_AGENT_SESSION_REGISTERED_AGENTS_RUNTIME_CAPABILITY } from '../../../../../shared/agent-session/capabilities/structured-agent-session-surface-capabilities'
 import {
   loadHostStructuredAgents,
-  resetHostStructuredAgentsForTests
+  forgetHostStructuredAgents
 } from '@/runtime/native-chat/agent-catalogs/host-structured-agents'
 import {
   readLocalRuntimeCapabilitiesOrUnknown,
@@ -87,7 +87,7 @@ export const currentSideChat = defineFixture({
     ]
     const call = window.api.runtime.call
     const previousCapabilities = readLocalRuntimeCapabilitiesOrUnknown()
-    resetHostStructuredAgentsForTests()
+    forgetHostStructuredAgents(['local'])
     setLocalRuntimeCapabilitiesForTests(capabilities)
     window.api.runtime.call = async (request) =>
       request.method === 'agentSession.agents'
@@ -101,7 +101,7 @@ export const currentSideChat = defineFixture({
     void loadHostStructuredAgents('local', capabilities, null)
     return () => {
       window.api.runtime.call = call
-      resetHostStructuredAgentsForTests()
+      forgetHostStructuredAgents(['local'])
       setLocalRuntimeCapabilitiesForTests(previousCapabilities)
     }
   },

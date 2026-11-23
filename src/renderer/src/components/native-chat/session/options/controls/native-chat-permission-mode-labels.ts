@@ -1,5 +1,7 @@
+// @protected-copy scope=file
+// A permission's name and description: a language pack must never make Full access read as Ask.
 import type { LucideIcon } from 'lucide-react'
-import { Eye, FilePenLine, Hand, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { FilePenLine, Hand, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
 import {
@@ -9,7 +11,6 @@ import {
 } from '../../../../../../../shared/agent-launch/permissions/agent-chat-permission-mode'
 
 const ICONS_BY_NAME: Record<AgentChatPermissionModeIconName, LucideIcon> = {
-  Eye,
   Hand,
   FilePenLine,
   ShieldCheck,
@@ -17,7 +18,6 @@ const ICONS_BY_NAME: Record<AgentChatPermissionModeIconName, LucideIcon> = {
 }
 
 export const NATIVE_CHAT_PERMISSION_MODE_ICONS = {
-  'read-only': Eye,
   ask: ICONS_BY_NAME[AGENT_CHAT_PERMISSION_MODE_ICON_NAMES.ask],
   'accept-edits': ICONS_BY_NAME[AGENT_CHAT_PERMISSION_MODE_ICON_NAMES['accept-edits']],
   auto: ICONS_BY_NAME[AGENT_CHAT_PERMISSION_MODE_ICON_NAMES.auto],
@@ -29,8 +29,6 @@ export function nativeChatPermissionModeLabel(
   t: Translate = translate
 ): string {
   switch (mode) {
-    case 'read-only':
-      return t('components.native-chat.composer.permissionReadOnly', 'Read-only')
     case 'ask':
       return t('components.native-chat.composer.permissionAsk', 'Ask for approval')
     case 'accept-edits':
@@ -49,11 +47,6 @@ export function nativeChatPermissionModeDescription(
   t: Translate = translate
 ): string {
   switch (mode) {
-    case 'read-only':
-      return t(
-        'components.native-chat.composer.permissionReadOnlyDescription',
-        'Uses the agent’s read-only sandbox without approval escalation'
-      )
     case 'ask':
       if (agent !== 'claude') {
         return t(

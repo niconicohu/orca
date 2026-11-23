@@ -12,7 +12,7 @@ import type { TuiAgent } from '../catalog/tui-agent'
 /** A chat's own permission choice. Saved in chat records and settings: never rename a value. */
 export type AgentChatPermissionChoice = 'own' | AgentChatPermissionMode
 
-export type AgentChatPermissionMode = 'read-only' | 'ask' | 'accept-edits' | 'auto' | 'full-access'
+export type AgentChatPermissionMode = 'ask' | 'accept-edits' | 'auto' | 'full-access'
 
 export function isAgentChatPermissionChoice(value: unknown): value is AgentChatPermissionChoice {
   return value === 'own' || isAgentChatPermissionMode(value)
@@ -20,7 +20,6 @@ export function isAgentChatPermissionChoice(value: unknown): value is AgentChatP
 
 /** Picker order: least to most access. */
 export const AGENT_CHAT_PERMISSION_MODES = [
-  'read-only',
   'ask',
   'accept-edits',
   'auto',
@@ -29,7 +28,6 @@ export const AGENT_CHAT_PERMISSION_MODES = [
 
 /** Desktop/mobile resolve these lucide names through their own icon packages. */
 export const AGENT_CHAT_PERMISSION_MODE_ICON_NAMES = {
-  'read-only': 'Eye',
   ask: 'Hand',
   'accept-edits': 'FilePenLine',
   auto: 'ShieldCheck',
@@ -45,29 +43,7 @@ export function isAgentChatPermissionMode(value: unknown): value is AgentChatPer
   return AGENT_CHAT_PERMISSION_MODES.some((mode) => mode === value)
 }
 
-import {
-  agentChatPermissionModes,
-  type AgentChatPermissionModeSupport
-} from './agent-chat-permission-support'
-
-/** The saved choice if this agent offers it; anything else asks, never grants more access. */
-export function savedChatPermissionMode(
-  support: AgentChatPermissionModeSupport,
-  intent: AgentChatPermissionMode
-): AgentChatPermissionMode
-export function savedChatPermissionMode(
-  support: AgentChatPermissionModeSupport,
-  intent: unknown
-): AgentChatPermissionChoice
-export function savedChatPermissionMode(
-  support: AgentChatPermissionModeSupport,
-  intent: unknown
-): AgentChatPermissionChoice {
-  if (intent === 'own') {
-    return 'own'
-  }
-  return support.modes.find((mode) => mode === intent) ?? 'ask'
-}
+import { agentChatPermissionModes, savedChatPermissionMode } from './agent-chat-permission-support'
 
 export function newChatPermissionMode(
   agent: string,

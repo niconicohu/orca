@@ -1,11 +1,4 @@
-import {
-  Eye,
-  FilePenLine,
-  Hand,
-  ShieldAlert,
-  ShieldCheck,
-  type LucideIcon
-} from 'lucide-react-native'
+import { FilePenLine, Hand, ShieldAlert, ShieldCheck, type LucideIcon } from 'lucide-react-native'
 import { colors } from '../../../../theme/mobile-theme'
 import {
   AGENT_CHAT_PERMISSION_MODE_ICON_NAMES,
@@ -21,8 +14,6 @@ export function permissionModeIcon(value: string): LucideIcon | undefined {
     return undefined
   }
   switch (AGENT_CHAT_PERMISSION_MODE_ICON_NAMES[value]) {
-    case 'Eye':
-      return Eye
     case 'Hand':
       return Hand
     case 'FilePenLine':

@@ -64,6 +64,7 @@ export async function copyCurrentCodexConversation(
                 threadId: input.providerSessionId,
                 excludeTurns: true,
                 cwd,
+                threadSource: 'user',
                 ...codexForkModelOverrides(record.options?.model, metadata)
               })
             )?.thread

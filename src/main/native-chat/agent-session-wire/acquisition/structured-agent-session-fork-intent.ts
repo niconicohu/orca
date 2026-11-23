@@ -1,5 +1,6 @@
 import type { StructuredAgentSessionForkSource } from '../../../../shared/agent-session/lifecycle/operations/structured-agent-session-create'
 import { prepareStructuredAgentSessionCurrentFork } from './structured-agent-session-current-fork'
+import { agentSessionPinnedLaunchDirectory } from '../../../runtime/agent-session/records/agent-session-record-launch-directory'
 import { prepareStructuredAgentSessionFork } from './structured-agent-session-fork'
 import { resolveCommittedStructuredAgentSessionAdoptionIntent } from '../../../runtime/agent-session/ownership/structured-agent-session-create-adoption'
 import { agentConversationCopyRefusal } from '../../conversation-adoption/agent-conversation-copy-error'
@@ -25,20 +26,24 @@ export async function resolveStructuredAgentSessionForkIntent(input: {
       `${acpAgentName(input.agent)} could not reach the execution host. Reconnect to the host, then try again.`
     )
   }
-  if (input.forkFrom.current) {
-    return (
-      resolveCommittedStructuredAgentSessionAdoptionIntent({ ...input, host }) ??
-      prepareStructuredAgentSessionCurrentFork({ ...input, host, forkFrom: input.forkFrom })
-    )
-  }
-  return (
-    resolveCommittedStructuredAgentSessionAdoptionIntent({ ...input, host }) ??
-    prepareStructuredAgentSessionFork({
-      ...input,
-      host,
-      sessionId: input.forkFrom.sessionId,
-      throughItemId: input.forkFrom.throughItemId,
-      envelope: { ...input.envelope, expectedRuntimeFence: null, payloadFingerprint: '' }
-    })
-  )
+  const resolved = await (resolveCommittedStructuredAgentSessionAdoptionIntent({
+    ...input,
+    host
+  }) ??
+    (input.forkFrom.current
+      ? prepareStructuredAgentSessionCurrentFork({ ...input, host, forkFrom: input.forkFrom })
+      : prepareStructuredAgentSessionFork({
+          ...input,
+          host,
+          sessionId: input.forkFrom.sessionId,
+          throughItemId: input.forkFrom.throughItemId,
+          envelope: { ...input.envelope, expectedRuntimeFence: null, payloadFingerprint: '' }
+        })))
+  // A fork in its source's workspace runs where the source runs; its copied conversation is kept
+  // under that folder.
+  const source = host.deps.store.getRecord(input.forkFrom.sessionId)
+  const pinned = source && agentSessionPinnedLaunchDirectory(source)
+  return pinned && source.location.workspaceId === input.location.workspaceId
+    ? { ...resolved, hostLaunchDirectory: pinned }
+    : resolved
 }
