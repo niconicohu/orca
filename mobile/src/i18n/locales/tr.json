@@ -2882,6 +2882,10 @@
       "next": "Sonraki sekme",
       "previous": "Önceki sekme",
       "hint": "Tüm sekmeleri gösterir"
+    },
+    "currentSideChat": {
+      "open": "Yeni yan sohbet",
+      "mark": "btw"
     }
   },
   "settings": {

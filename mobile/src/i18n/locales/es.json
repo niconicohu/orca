@@ -2958,6 +2958,10 @@
       "next": "Pestaña siguiente",
       "previous": "Pestaña anterior",
       "hint": "Muestra todas las pestañas"
+    },
+    "currentSideChat": {
+      "open": "Nuevo chat paralelo",
+      "mark": "btw"
     }
   },
   "settings": {

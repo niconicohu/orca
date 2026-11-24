@@ -2958,6 +2958,10 @@
       "next": "Onglet suivant",
       "previous": "Onglet précédent",
       "hint": "Affiche tous les onglets"
+    },
+    "currentSideChat": {
+      "open": "Nouveau chat parallèle",
+      "mark": "btw"
     }
   },
   "settings": {

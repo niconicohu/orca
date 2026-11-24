@@ -2984,6 +2984,10 @@
       "next": "다음 탭",
       "previous": "이전 탭",
       "hint": "모든 탭 표시"
+    },
+    "currentSideChat": {
+      "open": "새 사이드 채팅",
+      "mark": "btw"
     }
   },
   "settings": {

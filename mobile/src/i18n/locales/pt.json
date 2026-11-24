@@ -3355,6 +3355,10 @@
       "next": "Próxima aba",
       "previous": "Aba anterior",
       "hint": "Mostra todas as abas"
+    },
+    "currentSideChat": {
+      "open": "Novo chat paralelo",
+      "mark": "btw"
     }
   },
   "settings": {

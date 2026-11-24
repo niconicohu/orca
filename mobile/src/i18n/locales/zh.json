@@ -3877,6 +3877,10 @@
     },
     "orcaCommands": {
       "desktopOnly": "可在桌面端使用"
+    },
+    "currentSideChat": {
+      "open": "新建侧聊",
+      "mark": "btw"
     }
   },
   "settings": {

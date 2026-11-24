@@ -21472,7 +21472,9 @@
         "retryChats": "Retry",
         "permissionAppliesNextMessage": "{{saved}} applies to your next message; currently using {{active}}",
         "modelAndEffortValue": "{{model}} · {{effort}}",
-        "modelAndEffort": "Model and effort"
+        "modelAndEffort": "Model and effort",
+        "permissionReadOnly": "Read-only",
+        "permissionReadOnlyDescription": "Uses the agent’s read-only sandbox without approval escalation"
       },
       "tool": {
         "exitCode": "exit {{value0}}",
@@ -22910,6 +22912,11 @@
         "sampleCall": "Sample call",
         "sampleNote": "Starts a real run",
         "send": "Send"
+      },
+      "currentSideChat": {
+        "open": "New side chat",
+        "pane": "Group side chats in a separate pane",
+        "mark": "btw"
       }
     },
     "tab": {

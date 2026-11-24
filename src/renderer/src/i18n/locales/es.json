@@ -19289,7 +19289,9 @@
         "exitPlanMode": "Salir del modo de planificación",
         "permissionAppliesNextMessage": "{{saved}} se aplica a tu próximo mensaje; actualmente se usa {{active}}",
         "botFor": "Para: {{detail}}",
-        "bots": "Bots"
+        "bots": "Bots",
+        "permissionReadOnly": "Solo lectura",
+        "permissionReadOnlyDescription": "Usa el entorno de solo lectura del agente sin elevar permisos"
       },
       "tool": {
         "result": "Resultado",
@@ -20301,6 +20303,11 @@
           "plugin": "Plugin",
           "session": "Sesión"
         }
+      },
+      "currentSideChat": {
+        "open": "Nuevo chat paralelo",
+        "pane": "Agrupar chats paralelos en un panel separado",
+        "mark": "btw"
       }
     },
     "tab": {

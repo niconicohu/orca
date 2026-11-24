@@ -2882,6 +2882,10 @@
       "next": "Nächster Tab",
       "previous": "Vorheriger Tab",
       "hint": "Zeigt alle Tabs"
+    },
+    "currentSideChat": {
+      "open": "Neuer Nebenchat",
+      "mark": "btw"
     }
   },
   "settings": {

@@ -3342,6 +3342,10 @@
     },
     "orcaCommands": {
       "desktopOnly": "Available in the desktop app"
+    },
+    "currentSideChat": {
+      "open": "New side chat",
+      "mark": "btw"
     }
   },
   "chat": {

@@ -2879,6 +2879,10 @@
       "next": "次のタブ",
       "previous": "前のタブ",
       "hint": "すべてのタブを表示"
+    },
+    "currentSideChat": {
+      "open": "新しいサイドチャット",
+      "mark": "btw"
     }
   },
   "settings": {

@@ -19584,7 +19584,9 @@
         "exitPlanMode": "Quitter le mode plan",
         "permissionAppliesNextMessage": "{{saved}} s’applique à votre prochain message ; réglage utilisé actuellement : {{active}}",
         "botFor": "Pour : {{detail}}",
-        "bots": "Bots"
+        "bots": "Bots",
+        "permissionReadOnly": "Lecture seule",
+        "permissionReadOnlyDescription": "Utilise le bac à sable en lecture seule sans élévation des autorisations"
       },
       "tool": {
         "result": "Résultat",
@@ -20596,6 +20598,11 @@
           "plugin": "Plugin",
           "session": "Session"
         }
+      },
+      "currentSideChat": {
+        "open": "Nouveau chat parallèle",
+        "pane": "Regrouper les chats parallèles dans un volet séparé",
+        "mark": "btw"
       }
     },
     "tab": {
