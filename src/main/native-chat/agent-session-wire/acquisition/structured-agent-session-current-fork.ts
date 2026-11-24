@@ -68,6 +68,23 @@ export async function prepareStructuredAgentSessionCurrentFork(input: {
     return next.head!
   }
   const handle = current().handle
+  const codexSource =
+    input.agent === 'codex'
+      ? {
+          workspaceCwd:
+            agentSessionPinnedLaunchDirectory(source) ??
+            (await host.deps.resolveWorkspacePath?.(source.location.workspaceId)) ??
+            fail(),
+          conversationStore:
+            metadata.transcriptImport.conversationStore({
+              accountHome: source.accountHome,
+              launchEnv: {
+                ...process.env,
+                ...(await host.deps.resolveLaunchEnv?.(input.agent))
+              }
+            }) ?? fail()
+        }
+      : null
   const copy = await copyStructuredAgentSessionCurrentContext({
     store: host.deps.store,
     callerKey: input.callerKey,
@@ -121,7 +138,8 @@ export async function prepareStructuredAgentSessionCurrentFork(input: {
         nativeId: metadata.transcriptImport.handleNamesTranscript ? copy.filePath : copy.sessionId,
         ...(copy.resumeCursor ? { resumeCursor: copy.resumeCursor } : {})
       },
-      transcriptPath: copy.filePath
+      transcriptPath: copy.filePath,
+      ...(codexSource ? { source: { ...codexSource, providerSessionId: copy.sessionId } } : {})
     }
   }
 }
