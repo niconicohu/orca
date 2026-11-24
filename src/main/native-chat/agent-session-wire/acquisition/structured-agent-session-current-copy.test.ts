@@ -96,3 +96,31 @@ it('keeps a lost fork reply uncertain across restart instead of dispatching anot
     })
   ).rejects.toMatchObject({ refusal: { code: 'agent_session_operation_unknown' } })
 })
+it('keeps the inherited context boundary when a confirmed copy is replayed after restart', async () => {
+  const input = request()
+  const store = await openTestAgentSessionRecordStore(root)
+  await copyStructuredAgentSessionCurrentContext({
+    ...input,
+    store,
+    copy: async ({ onCopyConfirmed }) => {
+      await onCopyConfirmed!('native-child')
+      return {
+        sessionId: 'native-child',
+        filePath: '/native-child.jsonl',
+        coverage: { unit: 'codex-turn', ids: ['inherited-turn'] }
+      }
+    }
+  })
+  await closeTestAgentSessionDatabase(root)
+  const reopened = await openTestAgentSessionRecordStore(root)
+  const replay = await copyStructuredAgentSessionCurrentContext({
+    ...input,
+    store: reopened,
+    copy: async ({ copiedCoverage }) => ({
+      sessionId: 'native-child',
+      filePath: '/archived/native-child.jsonl',
+      coverage: copiedCoverage ?? { unit: 'codex-turn', ids: ['inherited-turn', 'new-side-turn'] }
+    })
+  })
+  expect(replay.coverage).toEqual({ unit: 'codex-turn', ids: ['inherited-turn'] })
+})
