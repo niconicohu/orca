@@ -1,23 +1,28 @@
 import { pbkdf2Sync } from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { runProcessSync } from '@orca/process-host'
-import { windowsPowerShellPath } from '@orca/process-host/windows-system-binary'
+import { runProcess } from '@orca/process-host'
+import { readChromiumLocalStateDpapiKey } from '../../../windows-dpapi/chromium-local-state-key'
+import { unprotectWindowsDpapiCurrentUser } from '../../../windows-dpapi/current-user-unprotect'
 import { diag } from '../browser-cookie-import-diagnostics'
 import {
   CHROMIUM_BROWSERS,
   browserRootPath,
   type DetectedBrowser
-} from './browser-cookie-detection-types'
-import type { EncryptionKeyResult } from './browser-cookie-sqlite'
-import type { LinuxCookieKeyFailure } from '../../../../shared/browser-workspace-types'
+} from './browser-cookie-source-profiles'
+import type { EncryptionKeyResult } from './chromium-encryption-key-contract'
+import type { LinuxCookieKeyFailure } from '../../../../shared/browser/workspaces/browser-workspace-types'
 
 const PBKDF2_ITERATIONS = 1003
 const PBKDF2_KEY_LENGTH = 16
 const PBKDF2_SALT = 'saltysalt'
 
-function runKeychainCommand(program: string, args: readonly string[], timeoutMs: number): string {
-  const result = runProcessSync({ program, args, timeoutMs })
+// Why async: macOS can hold `security` open on a keychain prompt; main must stay responsive meanwhile.
+async function runKeychainCommand(
+  program: string,
+  args: readonly string[],
+  timeoutMs: number
+): Promise<string> {
+  const result = await runProcess({ program, args, timeoutMs })
   if (result.code !== 0 || result.timedOut) {
     throw Object.assign(new Error(`${program} exited with code ${result.code ?? 'unknown'}`), {
       stderr: result.stderr
@@ -26,11 +31,11 @@ function runKeychainCommand(program: string, args: readonly string[], timeoutMs:
   return result.stdout.trim()
 }
 
-export function getEncryptionKey(
+export async function getEncryptionKey(
   keychainService: string,
   keychainAccount: string,
-  browser?: DetectedBrowser
-): EncryptionKeyResult | null {
+  browser?: Pick<DetectedBrowser, 'family'>
+): Promise<EncryptionKeyResult | null> {
   if (process.platform === 'darwin') {
     return getMacEncryptionKey(keychainService, keychainAccount)
   }
@@ -46,12 +51,12 @@ export function getEncryptionKey(
   return null
 }
 
-export function getMacEncryptionKey(
+export async function getMacEncryptionKey(
   keychainService: string,
   keychainAccount: string
-): EncryptionKeyResult | null {
+): Promise<EncryptionKeyResult | null> {
   try {
-    const raw = runKeychainCommand(
+    const raw = await runKeychainCommand(
       'security',
       ['find-generic-password', '-s', keychainService, '-a', keychainAccount, '-w'],
       30_000
@@ -67,11 +72,11 @@ export function getMacEncryptionKey(
   }
 }
 
-export function getLinuxEncryptionKey(
+export async function getLinuxEncryptionKey(
   keychainService: string,
   keychainAccount: string,
   application = keychainAccount.toLowerCase().replaceAll(' ', '')
-): EncryptionKeyResult | null {
+): Promise<EncryptionKeyResult | null> {
   // Linux v10 uses "peanuts"; v11 requires OS key storage, and CBC cannot authenticate a wrong key.
   const v10Key = pbkdf2Sync('peanuts', PBKDF2_SALT, 1, PBKDF2_KEY_LENGTH, 'sha1')
 
@@ -82,7 +87,7 @@ export function getLinuxEncryptionKey(
     ['lookup', 'application', application]
   ]) {
     try {
-      keyringPassword = runKeychainCommand('secret-tool', args, 5_000)
+      keyringPassword = await runKeychainCommand('secret-tool', args, 5_000)
       break
     } catch (error) {
       if (typeof error === 'object' && error !== null) {
@@ -114,7 +119,9 @@ export function getLinuxEncryptionKey(
   return { mode: 'aes-128-cbc', keysByVersion: { v10: v10Key, v11: v11Key } }
 }
 
-export function getWindowsEncryptionKey(browser: DetectedBrowser): EncryptionKeyResult | null {
+export async function getWindowsEncryptionKey(
+  browser: Pick<DetectedBrowser, 'family'>
+): Promise<EncryptionKeyResult | null> {
   const browserDef = CHROMIUM_BROWSERS.find((b) => b.family === browser.family)
   if (!browserDef) {
     return null
@@ -124,49 +131,19 @@ export function getWindowsEncryptionKey(browser: DetectedBrowser): EncryptionKey
     return null
   }
 
-  const localStatePath = join(root, 'Local State')
-  if (!existsSync(localStatePath)) {
-    return null
-  }
-
   try {
-    const raw = readFileSync(localStatePath, 'utf-8')
-    const localState = JSON.parse(raw)
-    const encryptedKeyB64 = localState?.os_crypt?.encrypted_key
-    if (typeof encryptedKeyB64 !== 'string') {
+    const localStateKey = await readChromiumLocalStateDpapiKey(join(root, 'Local State'))
+    if (localStateKey.status !== 'ok') {
       return null
     }
 
-    const encryptedKey = Buffer.from(encryptedKeyB64, 'base64')
-    const dpapiPrefix = Buffer.from('DPAPI', 'utf-8')
-    if (!encryptedKey.subarray(0, dpapiPrefix.length).equals(dpapiPrefix)) {
-      return null
-    }
-
-    // Send DPAPI data through stdin to keep it out of the PowerShell script.
-    const dpapiData = encryptedKey.subarray(dpapiPrefix.length).toString('base64')
-    const script = [
-      'try { Add-Type -AssemblyName System.Security.Cryptography.ProtectedData -ErrorAction Stop }',
-      'catch { try { Add-Type -AssemblyName System.Security -ErrorAction Stop } catch {} };',
-      '$in=[Convert]::FromBase64String([Console]::In.ReadLine());',
-      '$out=[System.Security.Cryptography.ProtectedData]::Unprotect($in,$null,',
-      '[System.Security.Cryptography.DataProtectionScope]::CurrentUser);',
-      '[Convert]::ToBase64String($out)'
-    ].join('')
-
-    // Hide the console and use the system PowerShell path; Electron’s PATH may differ.
-    const result = runProcessSync({
-      program: windowsPowerShellPath(),
-      args: ['-NoProfile', '-NonInteractive', '-Command', script],
-      timeoutMs: 10_000,
-      input: dpapiData
-    })
-    if (result.code !== 0 || result.timedOut) {
+    const key = await unprotectWindowsDpapiCurrentUser(localStateKey.wrappedKey)
+    if (!key) {
       diag('  Windows DPAPI key extraction failed: PowerShell exited non-zero')
       return null
     }
 
-    return { key: Buffer.from(result.stdout.trim(), 'base64'), mode: 'aes-256-gcm' }
+    return { key, mode: 'aes-256-gcm' }
   } catch (err) {
     diag(`  Windows DPAPI key extraction failed: ${String(err)}`)
     return null

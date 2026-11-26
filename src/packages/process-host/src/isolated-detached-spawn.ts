@@ -4,6 +4,7 @@ import type { ProcessSpec } from './process-spec'
 import { spawnProcess } from './run-process'
 import { resolveSpawn } from './spawn-resolution'
 import { hasSpawnObserver, notifySpawnObserver } from './spawn-observer'
+import { quoteWindowsArgumentLikeLibuv } from './windows-command-line'
 
 /** Main installs the native spawner; daemon, relay, and CLI fall back to libuv. Empty cwd: ours. */
 export type IsolatedSpawner = (
@@ -26,31 +27,6 @@ let isolatedSpawner: IsolatedSpawner | null = null
 
 export function setIsolatedSpawner(next: IsolatedSpawner | null): void {
   isolatedSpawner = next
-}
-
-// libuv's quote_cmd_arg, so a holder's command line matches what uv_spawn produced before.
-export function quoteWindowsArgumentLikeLibuv(value: string): string {
-  if (value === '') {
-    return '""'
-  }
-  if (!/[ \t"]/.test(value)) {
-    return value
-  }
-  if (!/["\\]/.test(value)) {
-    return `"${value}"`
-  }
-  let quoted = '"'
-  let backslashes = 0
-  for (const char of value) {
-    if (char === '\\') {
-      backslashes += 1
-      continue
-    }
-    quoted +=
-      char === '"' ? `${'\\'.repeat(backslashes * 2 + 1)}"` : `${'\\'.repeat(backslashes)}${char}`
-    backslashes = 0
-  }
-  return `${quoted}${'\\'.repeat(backslashes * 2)}"`
 }
 
 // Variables libuv copies from the parent when the given env lacks them; Windows breaks without some.
@@ -112,6 +88,8 @@ export function spawnDetachedWithoutInheritance(spec: DetachedSpec): DetachedChi
   const startedAt = hasSpawnObserver() ? performance.now() : null
   let pid: number | undefined
   let exited = false
+  // No exit watch means no exit event: the pid may be reused, so kill() must not target it.
+  let untracked = false
   let killedWith: NodeJS.Signals | null = null
   // Like libuv: an exit after our own kill() reports (null, signal); any other exit, its code.
   const onExit = (code: number): void => {
@@ -120,7 +98,7 @@ export function spawnDetachedWithoutInheritance(spec: DetachedSpec): DetachedChi
     child.emit('close', killedWith ? null : code, killedWith)
   }
   const kill = (signal: NodeJS.Signals = 'SIGTERM'): boolean => {
-    if (pid === undefined || exited) {
+    if (pid === undefined || exited || untracked) {
       return false
     }
     try {
@@ -148,8 +126,9 @@ export function spawnDetachedWithoutInheritance(spec: DetachedSpec): DetachedChi
       console.warn(`[process-host] pid ${pid} could not break away from this process's job`)
     }
     if (spawned.exitWatchError !== null) {
+      untracked = true
       console.warn(
-        `[process-host] pid ${pid} exit is unobservable; Win32 error ${spawned.exitWatchError}`
+        `[process-host] pid ${pid} is untracked: its exit is unobservable (Win32 error ${spawned.exitWatchError}), so kill() will refuse it`
       )
     }
     process.nextTick(() => child.emit('spawn'))

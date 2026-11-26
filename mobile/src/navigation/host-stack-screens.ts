@@ -21,9 +21,21 @@ export const HOST_STACK_SCREENS = [
     }
   },
   {
+    name: '[hostId]/mcp',
+    get title() {
+      return translate('navigation.hostStackScreens.mcpServers', 'MCP servers')
+    }
+  },
+  {
     name: '[hostId]/tasks',
     get title() {
       return translate('navigation.hostStackScreens.tasks', 'Tasks')
+    }
+  },
+  {
+    name: '[hostId]/automations',
+    get title() {
+      return translate('navigation.hostStackScreens.automations', 'Automations')
     }
   },
   {

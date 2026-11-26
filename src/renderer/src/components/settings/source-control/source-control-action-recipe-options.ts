@@ -1,0 +1,133 @@
+import type { TuiAgent } from '../../../../../shared/agent-launch/catalog/tui-agent'
+import {
+  AI_TEXT_ACTION_IDS,
+  SOURCE_CONTROL_TEXT_ACTION_IDS,
+  type AiActionId,
+  type AiTextActionId
+} from '../../../../../shared/source-control/ai/recipes/source-control-ai-actions'
+import {
+  type CustomAgentId,
+  isCustomAgentId,
+  listCommitMessageAgentCapabilities
+} from '../../../../../shared/source-control/ai/generation/commit-message-agent-spec'
+import { getAgentCatalog, type AgentCatalogEntry } from '@/lib/agent-catalog/agent-catalog'
+import { createLocalizedCatalog } from '@/i18n/localized-catalog'
+import { translate } from '@/i18n/i18n'
+import type { Translate } from '@/i18n/use-translate'
+
+export const AI_TEXT_ACTION_ID_SET = new Set<string>(AI_TEXT_ACTION_IDS)
+export const SOURCE_CONTROL_TEXT_ACTION_ID_SET = new Set<string>(SOURCE_CONTROL_TEXT_ACTION_IDS)
+
+function isAiTextActionId(actionId: AiActionId): actionId is AiTextActionId {
+  return AI_TEXT_ACTION_ID_SET.has(actionId)
+}
+
+function textGenerationAgentIds(actionId: AiTextActionId): Set<string> {
+  return new Set(listCommitMessageAgentCapabilities(actionId).map((capability) => capability.id))
+}
+
+export const getActionDescriptions = createLocalizedCatalog((): Record<AiActionId, string> => ({
+  conversationName: translate(
+    'settings.chat.names.recipeDescription',
+    'Generate a short name from the first message in a new chat.'
+  ),
+  dictationCleanup: translate(
+    'settings.voice.cleanup.recipeDescription',
+    'Clean up dictated text before it lands.'
+  ),
+  commitMessage: translate(
+    'auto.components.settings.source.control.action.recipe.options.commitMessage',
+    'Generate the commit message from staged changes.'
+  ),
+  pullRequest: translate(
+    'auto.components.settings.source.control.action.recipe.options.pullRequest',
+    'Generate the hosted review title and description.'
+  ),
+  branchName: translate(
+    'auto.components.settings.source.control.action.recipe.options.branchName',
+    'Rename Orca-created branches from the initial agent task.'
+  ),
+  fixCommitFailure: translate(
+    'auto.components.settings.source.control.action.recipe.options.fixCommitFailure',
+    'Start an agent when a commit hook or git commit fails.'
+  ),
+  fixPushFailure: translate(
+    'auto.components.settings.source.control.action.recipe.options.fixPushFailure',
+    'Start an agent when a pre-push hook or git push fails.'
+  ),
+  fixChecks: translate(
+    'auto.components.settings.source.control.action.recipe.options.fixChecks',
+    'Start an agent from failed hosted-review checks.'
+  ),
+  resolveConflicts: translate(
+    'auto.components.settings.source.control.action.recipe.options.resolveConflicts',
+    'Start an agent for local or hosted-review merge conflicts.'
+  ),
+  resolveComments: translate(
+    'auto.components.settings.source.control.action.recipe.options.resolveComments',
+    'Start an agent from selected unresolved PR or MR comments.'
+  )
+}))
+
+// The model picker owns the model, so the example names no model that could differ from what runs.
+export const SOURCE_CONTROL_AGENT_ARGS_PLACEHOLDER = '--flag value'
+
+// Only text generators can run these actions; retain unsupported saved selections for visibility.
+export function getAgentCatalogForAction(
+  actionId: AiActionId,
+  selectedAgent: TuiAgent | CustomAgentId | null | undefined
+): AgentCatalogEntry[] {
+  if (!isAiTextActionId(actionId)) {
+    return getAgentCatalog()
+  }
+  const agentIds = textGenerationAgentIds(actionId)
+  return getAgentCatalog().filter((agent) => agentIds.has(agent.id) || agent.id === selectedAgent)
+}
+
+function formatSupportedAgentLabels(actionId: AiTextActionId, t: Translate = translate): string {
+  return [
+    ...listCommitMessageAgentCapabilities(actionId).map((capability) => capability.label),
+    t(
+      'auto.components.settings.source.control.action.recipe.options.customCommand',
+      'Custom command'
+    )
+  ].join(', ')
+}
+
+export function getSourceControlActionAgentSupportText(
+  actionId: AiActionId,
+  t: Translate = translate
+): string | null {
+  if (!isAiTextActionId(actionId)) {
+    return null
+  }
+  return t(
+    'auto.components.settings.source.control.action.recipe.options.supportedAgents',
+    'Supported agents for this recipe: {{value0}}.',
+    { value0: formatSupportedAgentLabels(actionId, t) }
+  )
+}
+
+export function getSourceControlActionAgentWarningText(
+  actionId: AiActionId,
+  selectedAgent: TuiAgent | CustomAgentId | null | undefined,
+  t: Translate = translate
+): string | null {
+  if (!isAiTextActionId(actionId)) {
+    return null
+  }
+
+  if (selectedAgent && !isCustomAgentId(selectedAgent)) {
+    if (textGenerationAgentIds(actionId).has(selectedAgent)) {
+      return null
+    }
+    const agentLabel = getAgentCatalog().find((agent) => agent.id === selectedAgent)?.label
+    return t(
+      'auto.components.settings.source.control.action.recipe.options.unsupportedSavedAgent',
+      '{{value0}} cannot run this text-generation recipe. Pick one of the supported agents below.',
+      { value0: agentLabel ?? selectedAgent }
+    )
+  }
+
+  return null
+}

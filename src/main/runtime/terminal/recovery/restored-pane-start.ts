@@ -1,8 +1,8 @@
 // Share one main-owned restored-pane start across CLI, mobile and orchestration triggers; resume only from this workspace's stored terminal/agent.
 
 import { isPtyIdMintedForAnotherWorkspace } from './foreign-pane-bindings'
-import type { RuntimeMobileSessionCreateTerminalResult as CreatedTerminal } from '../../../../shared/runtime-session-contracts'
-import { makePaneKey } from '../../../../shared/stable-pane-id'
+import type { RuntimeMobileSessionCreateTerminalResult as CreatedTerminal } from '../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
+import { makePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
 
 export type StartedPty = Pick<CreatedTerminal, 'startupCwdFallback'> & { id: string }
 export type RestoredPane = { worktreeId: string; tabId: string; leafId: string }
@@ -77,10 +77,12 @@ export class RestoredPaneStarter {
     }
     this.started.delete(key)
     this.ports.starting?.(pane)
-    const start = this.ports
-      .start(pane, restoredPaneStartPlan(pane, bound), trigger)
+    const start = Promise.resolve()
+      .then(() => this.ports.start(pane, restoredPaneStartPlan(pane, bound), trigger))
       .then((pty) => {
-        this.started.set(key, pty)
+        if (pty) {
+          this.started.set(key, pty)
+        }
         return pty
       })
       .catch((error: unknown) => {

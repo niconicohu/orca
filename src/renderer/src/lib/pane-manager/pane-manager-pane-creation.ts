@@ -1,11 +1,58 @@
-import { focusPanePreservingOverlays } from './pane-overlay-focus'
-import type { ManagedPane, ManagedPaneInternal, PaneManagerOptions } from './pane-manager-types'
+import { focusPanePreservingOverlays } from './pane-focus/pane-overlay-focus'
+import type {
+  ManagedPane,
+  ManagedPaneInternal,
+  PaneManagerOptions,
+  PaneActivationOptions
+} from './pane-manager-types'
 import type { PaneManagerHost } from './pane-manager-host'
-import { applyPaneOpacity } from './pane-divider'
-import { createPaneDOM, openTerminal } from './pane-lifecycle'
-import { suspendTerminalCursorBlink } from './pane-cursor-blink-suspension'
-import { shouldFollowMouseFocus } from './focus-follows-mouse'
+import {
+  applyPaneOpacity,
+  applyDividerStyles,
+  applyRootBackground
+} from './pane-layout/pane-divider'
+import { openTerminal } from './pane-lifecycle'
+import { createPaneDOM } from '@/lib/pane-manager/pane-dom-creation'
+import { shouldFollowMouseFocus } from './pane-focus/focus-follows-mouse'
 import { toPublicPane } from './pane-public-view'
+
+export function applyManagedPaneStyles(host: PaneManagerHost): void {
+  applyPaneOpacity(host.panes.values(), host.getActivePaneId(), host.getStyleOptions())
+  applyDividerStyles(host.root, host.getStyleOptions())
+  applyRootBackground(host.root, host.getStyleOptions())
+}
+
+export function activateManagedPane(
+  host: PaneManagerHost,
+  pane: ManagedPaneInternal,
+  opts?: PaneActivationOptions
+): void {
+  const changed = host.getActivePaneId() !== pane.id
+  host.setActivePaneId(pane.id)
+  applyPaneOpacity(host.panes.values(), host.getActivePaneId(), host.getStyleOptions())
+
+  if (opts?.focus !== false) {
+    if (opts?.interaction === 'hover' && host.options.withHoverFocus) {
+      host.options.withHoverFocus(() => focusPanePreservingOverlays(pane))
+    } else {
+      focusPanePreservingOverlays(pane)
+    }
+  }
+
+  if (changed) {
+    host.options.onActivePaneChange?.(toPublicPane(pane), opts?.interaction)
+  }
+  if (
+    host.options.onPaneActivation &&
+    (changed ||
+      opts?.interaction === 'user' ||
+      (opts?.interaction === 'hover' &&
+        pane.container.contains(pane.container.ownerDocument.activeElement))) &&
+    host.getActivePaneId() === pane.id
+  ) {
+    host.options.onPaneActivation(pane.leafId, opts?.interaction, changed)
+  }
+}
 
 export function createInitialManagedPane(
   host: PaneManagerHost,
@@ -49,18 +96,18 @@ export function createManagedPaneInternal(
     // Refocus even when already active: browser textarea focus can lag activePaneId after splits.
     (paneId, options) => {
       if (!host.isDestroyed()) {
-        host.setActivePane(paneId, { focus: options?.focusTerminal !== false })
+        host.setActivePane(paneId, {
+          focus: options?.focusTerminal !== false,
+          interaction: 'user'
+        })
       }
     },
     (paneId, event) => {
       handleManagedPaneMouseEnter(host, paneId, event)
     }
   )
+  // A pane mounted behind a hidden surface defers WebGL, so its DOM blink stays focus-gated and needs no suspension.
   pane.webglAttachmentDeferred = host.isRenderingSuspended()
-  if (host.isRenderingSuspended()) {
-    // A pane that mounts behind a hidden surface never sees suspendPaneRendering().
-    suspendTerminalCursorBlink(pane.terminal)
-  }
   host.panes.set(id, pane)
   host.identities.register(id, leafId)
   return pane
@@ -97,6 +144,6 @@ function handleManagedPaneMouseEnter(
       managerDestroyed: host.isDestroyed()
     })
   ) {
-    host.setActivePane(paneId, { focus: true })
+    host.setActivePane(paneId, { focus: true, interaction: 'hover' })
   }
 }
