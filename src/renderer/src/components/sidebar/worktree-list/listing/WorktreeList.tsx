@@ -81,6 +81,7 @@ const WorktreeList = React.memo(function WorktreeList({
 }: WorktreeListProps) {
   const {
     allWorktrees,
+    allRepoIds,
     repoMap,
     worktreeMap,
     repos,
@@ -381,7 +382,7 @@ const WorktreeList = React.memo(function WorktreeList({
         worktreeMap={worktreeMap}
         worktreeLineageById={worktreeLineageById}
         childrenByParentIdentity={childrenByParentIdentity}
-        allRepoIds={rowModel.allRepoIds}
+        allRepoIds={allRepoIds}
         onReorderHostSections={rowModel.handleReorderHostSections}
         onHostDragActiveChange={rowModel.setHostDragActive}
         prCache={prCache}
